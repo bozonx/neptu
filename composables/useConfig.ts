@@ -9,7 +9,7 @@ const CONFIG_FILE = 'config.json'
 
 const DEFAULT_CONFIG: AppConfig = {
   version: 1,
-  projects: [],
+  vaults: [],
 }
 
 /**
@@ -46,10 +46,10 @@ export function useConfig() {
 
     try {
       const raw = await fs.readMarkdown(configPath)
-      const parsed = JSON.parse(raw) as Partial<AppConfig>
+      const parsed = JSON.parse(raw) as Partial<AppConfig> & { projects?: unknown[] }
       return {
         version: 1,
-        projects: parsed.projects ?? [],
+        vaults: parsed.vaults ?? (parsed.projects as AppConfig['vaults']) ?? [],
       }
     }
     catch {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { FileNode, Project } from '~/types'
+import type { FileNode, Vault } from '~/types'
 
 interface Props {
-  project: Project
+  vault: Vault
   nodes: FileNode[]
   activePath: string | null
   level?: number
@@ -48,9 +48,9 @@ function toggle(node: FileNode) {
         />
       </div>
 
-      <ProjectTree
+      <VaultTree
         v-if="node.isDir && expanded[node.path]"
-        :project="project"
+        :vault="vault"
         :nodes="node.children ?? []"
         :active-path="activePath"
         :level="level + 1"

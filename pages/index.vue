@@ -2,7 +2,7 @@
 import Editor from '~/components/Editor.vue'
 import FirstRunDialog from '~/components/FirstRunDialog.vue'
 
-const projects = useProjectsStore()
+const vaults = useVaultsStore()
 const { isTauri } = useTauri()
 
 const ready = ref(false)
@@ -14,7 +14,7 @@ onMounted(async () => {
     return
   }
   try {
-    await projects.init()
+    await vaults.init()
   }
   catch (error) {
     initError.value = error instanceof Error ? error.message : String(error)
@@ -28,7 +28,7 @@ onMounted(async () => {
 <template>
   <Editor />
 
-  <FirstRunDialog v-if="ready && projects.needsMainRepo" />
+  <FirstRunDialog v-if="ready && vaults.needsMainRepo" />
 
   <UModal
     v-if="!isTauri && ready"

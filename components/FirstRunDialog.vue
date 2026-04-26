@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const projects = useProjectsStore()
+const vaults = useVaultsStore()
 const toast = useToast()
 
 const open = ref(true)
@@ -11,7 +11,7 @@ async function chooseMainRepo() {
     const fs = useFs()
     const path = await fs.pickDirectory({ title: 'Select main repository folder' })
     if (!path) return
-    await projects.setMainRepo(path)
+    await vaults.setMainRepo(path)
     open.value = false
   }
   catch (error) {
@@ -39,7 +39,7 @@ async function chooseMainRepo() {
         <p>
           The main repository is just a regular folder on your computer.
           A hidden <code>.neptu</code> directory will be created inside to store
-          your projects list and preferences.
+          your vaults list and preferences.
         </p>
         <p class="text-muted">
           You can sync this folder with any tool you like (Git, Syncthing, iCloud, Dropbox)

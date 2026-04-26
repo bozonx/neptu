@@ -1,4 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+/// <reference types="node" />
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
@@ -17,7 +18,7 @@ export default defineNuxtConfig({
   // Make development server reachable from physical mobile devices
   devServer: {
     host: '0',
-    port: 3000,
+    port: Number(process.env.NUXT_PORT || process.env.PORT || 3000),
   },
 
   vite: {

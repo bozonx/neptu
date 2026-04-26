@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
-import type { AppConfig, FileNode, Project, ProjectType, SaveStatus } from '~/types'
+import type { AppConfig, FileNode, Vault, VaultType, SaveStatus } from '~/types'
 
-interface ProjectsState {
+interface VaultsState {
   mainRepoPath: string | null
   initialized: boolean
-  projects: Project[]
+  vaults: Vault[]
   trees: Record<string, FileNode[]>
   currentFilePath: string | null
   currentContent: string
@@ -22,11 +22,11 @@ function basename(path: string): string {
   return parts[parts.length - 1] ?? norm
 }
 
-export const useProjectsStore = defineStore('projects', {
-  state: (): ProjectsState => ({
+export const useVaultsStore = defineStore('vaults', {
+  state: (): VaultsState => ({
     mainRepoPath: null,
     initialized: false,
-    projects: [],
+    vaults: [],
     trees: {},
     currentFilePath: null,
     currentContent: '',
@@ -36,7 +36,7 @@ export const useProjectsStore = defineStore('projects', {
 
   getters: {
     needsMainRepo: (state) => state.initialized && !state.mainRepoPath,
-    hasProjects: (state) => state.projects.length > 0,
+    hasVaults: (state) => state.vaults.length > 0,
   },
 
   actions: {
@@ -65,8 +65,8 @@ export const useProjectsStore = defineStore('projects', {
       // It may be missing if the config file was created in an older version
       // or edited manually.
       let mutated = false
-      if (!appConfig.projects.some(p => p.path === repoPath)) {
-        appConfig.projects.unshift({
+      if (!appConfig.vaults.some(v => v.path === repoPath)) {
+        appConfig.vaults.unshift({
           id: generateId(),
           name: basename(repoPath),
           type: 'local',
@@ -78,51 +78,51 @@ export const useProjectsStore = defineStore('projects', {
         await config.saveAppConfig(repoPath, appConfig)
       }
 
-      this.projects = appConfig.projects
+      this.vaults = appConfig.vaults
       await this.refreshAllTrees()
     },
 
-    async addProject(payload: { name?: string, type: ProjectType, path: string }) {
+    async addVault(payload: { name?: string, type: VaultType, path: string }) {
       if (!this.mainRepoPath) throw new Error('Main repository is not set')
 
-      const project: Project = {
+      const vault: Vault = {
         id: generateId(),
         name: payload.name?.trim() || basename(payload.path),
         type: payload.type,
         path: payload.path,
       }
 
-      this.projects.push(project)
+      this.vaults.push(vault)
       await this.persistConfig()
-      await this.refreshTree(project)
+      await this.refreshTree(vault)
     },
 
-    async removeProject(id: string) {
-      const idx = this.projects.findIndex(p => p.id === id)
+    async removeVault(id: string) {
+      const idx = this.vaults.findIndex(v => v.id === id)
       if (idx === -1) return
-      const removed = this.projects[idx]
+      const removed = this.vaults[idx]
       // Forbid removing the main repository entry
       if (removed && removed.path === this.mainRepoPath) return
 
-      this.projects.splice(idx, 1)
+      this.vaults.splice(idx, 1)
       if (removed) delete this.trees[removed.id]
       await this.persistConfig()
     },
 
-    async refreshTree(project: Project) {
+    async refreshTree(vault: Vault) {
       const fs = useFs()
       try {
-        const tree = await fs.scanMarkdownTree(project.path)
-        this.trees[project.id] = tree
+        const tree = await fs.scanMarkdownTree(vault.path)
+        this.trees[vault.id] = tree
       }
       catch (error) {
-        console.error('Failed to scan project tree', project.path, error)
-        this.trees[project.id] = []
+        console.error('Failed to scan vault tree', vault.path, error)
+        this.trees[vault.id] = []
       }
     },
 
     async refreshAllTrees() {
-      await Promise.all(this.projects.map(p => this.refreshTree(p)))
+      await Promise.all(this.vaults.map(v => this.refreshTree(v)))
     },
 
     async persistConfig() {
@@ -130,7 +130,7 @@ export const useProjectsStore = defineStore('projects', {
       const config = useConfig()
       const data: AppConfig = {
         version: 1,
-        projects: this.projects,
+        vaults: this.vaults,
       }
       await config.saveAppConfig(this.mainRepoPath, data)
     },
@@ -164,16 +164,16 @@ export const useProjectsStore = defineStore('projects', {
       }
     },
 
-    async createNote(payload: { project: Project, fileName: string, parentDir?: string }) {
+    async createNote(payload: { vault: Vault, fileName: string, parentDir?: string }) {
       const fs = useFs()
-      const dir = payload.parentDir ?? payload.project.path
+      const dir = payload.parentDir ?? payload.vault.path
       const fullPath = await fs.createMarkdown(dir, payload.fileName)
-      await this.refreshTree(payload.project)
+      await this.refreshTree(payload.vault)
       await this.openFile(fullPath)
       return fullPath
     },
 
-    async deleteNote(payload: { project: Project, path: string }) {
+    async deleteNote(payload: { vault: Vault, path: string }) {
       const fs = useFs()
       await fs.deleteFile(payload.path)
       if (this.currentFilePath === payload.path) {
@@ -181,7 +181,7 @@ export const useProjectsStore = defineStore('projects', {
         this.currentContent = ''
         this.saveStatus = 'idle'
       }
-      await this.refreshTree(payload.project)
+      await this.refreshTree(payload.vault)
     },
   },
 })

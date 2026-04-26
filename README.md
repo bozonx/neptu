@@ -5,12 +5,12 @@ Cross-platform markdown notes editor for desktop and mobile, built on
 
 ## Features (scaffold)
 
-- Sidebar with project list (collapses on desktop, slides over on mobile).
-- Add a project by picking a folder. Supported types: **local folder** (Git /
+- Sidebar with vault list (collapses on desktop, slides over on mobile).
+- Add a vault by picking a folder. Supported types: **local folder** (Git /
   GitHub / GitLab are stubbed for later).
-- Project tree shows only `.md` files, hidden directories (`.git`, `.neptu`, …)
+- Vault tree shows only `.md` files, hidden directories (`.git`, `.neptu`, …)
   are skipped.
-- Create / delete `.md` notes inside any project.
+- Create / delete `.md` notes inside any vault.
 - Central `<textarea>` editor with **autosave** (800 ms debounce) and a status
   indicator.
 - First-run wizard asks for a *main repository*; settings live inside
@@ -31,9 +31,9 @@ nuxt.config.ts        # ssr: false, modules, vite tweaks for Tauri
 app.config.ts         # Nuxt UI theme
 app.vue / pages/      # entry + index page
 layouts/default.vue   # UDashboardGroup + UDashboardSidebar
-components/           # AppSidebar, ProjectTree, Editor, FirstRunDialog
+components/           # AppSidebar, VaultTree, Editor, FirstRunDialog
 composables/          # useFs, useConfig, useTauri
-stores/projects.ts    # main state (Pinia)
+stores/vaults.ts      # main state (Pinia)
 types/index.ts        # shared types
 src-tauri/            # Rust shell (Cargo.toml, tauri.conf.json, capabilities)
 ```
@@ -55,13 +55,27 @@ pnpm install
 > auto-imports under `.nuxt/`. Editor errors about missing globals
 > (`defineNuxtConfig`, `useFs`, etc.) disappear after the first install.
 
+## Environment variables
+
+Copy `.env.example` to `.env` and adjust as needed:
+
+```bash
+cp .env.example .env
+```
+
+| Variable   | Description                   | Default |
+| ---------- | ----------------------------- | ------- |
+| `NUXT_PORT` | Nuxt development server port  | `3000`  |
+
+`PORT` is also supported as a fallback.
+
 ## Run desktop app (dev)
 
 ```bash
 pnpm tauri:dev
 ```
 
-Tauri starts the Nuxt dev server (`pnpm dev`) on port 3000 and opens the native
+Tauri starts the Nuxt dev server (`pnpm dev`) on the configured port and opens the native
 window. Edits hot-reload.
 
 ## Build desktop bundle
@@ -93,8 +107,8 @@ it.
    `mainRepoPath` is missing, the **First-run dialog** asks the user to pick a
    folder.
 2. The chosen folder gains a hidden `.neptu/config.json` that holds the list of
-   projects (the main repo itself is added as the first project).
-3. Adding a project opens a folder picker. The repo gets recursively scanned
+   vaults (the main repo itself is added as the first vault).
+3. Adding a vault opens a folder picker. The folder gets recursively scanned
    for `.md` files and rendered as a tree.
 4. Opening a file loads its content into the Pinia store. Typing in the
    textarea updates `currentContent`; a debounced watcher writes the file back

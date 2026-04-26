@@ -1,30 +1,30 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 
-const projects = useProjectsStore()
+const vaults = useVaultsStore()
 const toast = useToast()
 
-const localContent = ref(projects.currentContent)
+const localContent = ref(vaults.currentContent)
 
 // Keep local copy in sync when a different file is opened
-watch(() => projects.currentFilePath, () => {
-  localContent.value = projects.currentContent
+watch(() => vaults.currentFilePath, () => {
+  localContent.value = vaults.currentContent
 })
 
 watch(localContent, (value) => {
-  if (value !== projects.currentContent) {
-    projects.setContent(value)
+  if (value !== vaults.currentContent) {
+    vaults.setContent(value)
   }
 })
 
 watchDebounced(
-  () => projects.currentContent,
+  () => vaults.currentContent,
   async (value, prev) => {
-    if (!projects.currentFilePath) return
+    if (!vaults.currentFilePath) return
     if (prev === undefined) return
     if (value === prev) return
     try {
-      await projects.saveCurrentFile()
+      await vaults.saveCurrentFile()
     }
     catch (error) {
       toast.add({
@@ -38,7 +38,7 @@ watchDebounced(
 )
 
 const statusLabel = computed(() => {
-  switch (projects.saveStatus) {
+  switch (vaults.saveStatus) {
     case 'saving': return 'Saving…'
     case 'saved': return 'Saved'
     case 'error': return 'Error'
@@ -47,7 +47,7 @@ const statusLabel = computed(() => {
 })
 
 const statusColor = computed(() => {
-  switch (projects.saveStatus) {
+  switch (vaults.saveStatus) {
     case 'saving': return 'text-warning'
     case 'saved': return 'text-success'
     case 'error': return 'text-error'
@@ -65,7 +65,7 @@ function fileNameFromPath(path: string | null): string {
 <template>
   <UDashboardPanel>
     <template #header>
-      <UDashboardNavbar :title="fileNameFromPath(projects.currentFilePath) || 'Neptu'">
+      <UDashboardNavbar :title="fileNameFromPath(vaults.currentFilePath) || 'Neptu'">
         <template #leading>
           <UDashboardSidebarToggle />
         </template>
@@ -76,7 +76,7 @@ function fileNameFromPath(path: string | null): string {
     </template>
 
     <template #body>
-      <div v-if="!projects.currentFilePath" class="flex h-full items-center justify-center text-muted">
+      <div v-if="!vaults.currentFilePath" class="flex h-full items-center justify-center text-muted">
         <div class="text-center space-y-2">
           <UIcon name="i-lucide-file-text" class="size-10 mx-auto" />
           <p class="text-sm">

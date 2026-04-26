@@ -1,9 +1,9 @@
-export type ProjectType = 'local' | 'git' | 'github' | 'gitlab'
+export type VaultType = 'local' | 'git' | 'github' | 'gitlab'
 
-export interface Project {
+export interface Vault {
   id: string
   name: string
-  type: ProjectType
+  type: VaultType
   path: string
 }
 
@@ -16,7 +16,7 @@ export interface FileNode {
 
 export interface AppConfig {
   version: 1
-  projects: Project[]
+  vaults: Vault[]
 }
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
