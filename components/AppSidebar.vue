@@ -14,6 +14,11 @@ const newNoteOpen = ref(false)
 const newNoteName = ref('')
 const newNoteCtx = ref<{ vault: Vault, dir: string } | null>(null)
 
+const editVaultOpen = ref(false)
+const editingVault = ref<Vault | null>(null)
+const editVaultName = ref('')
+const editVaultPath = ref<string | null>(null)
+
 const vaultTypeItems = [
   { label: 'Local folder', value: 'local' },
   { label: 'Git repository', value: 'git', disabled: true },
@@ -26,6 +31,17 @@ async function browseFolder() {
   try {
     const path = await fs.pickDirectory({ title: 'Select vault folder' })
     if (path) newVaultPath.value = path
+  }
+  catch (error) {
+    toast.add({ title: 'Cannot open dialog', description: String(error), color: 'error' })
+  }
+}
+
+async function browseEditFolder() {
+  const fs = useFs()
+  try {
+    const path = await fs.pickDirectory({ title: 'Select vault folder' })
+    if (path) editVaultPath.value = path
   }
   catch (error) {
     toast.add({ title: 'Cannot open dialog', description: String(error), color: 'error' })
@@ -54,6 +70,30 @@ function openCreateNote(vault: Vault, dir?: string) {
   newNoteCtx.value = { vault, dir: dir ?? vault.path }
   newNoteName.value = ''
   newNoteOpen.value = true
+}
+
+function openEditVault(vault: Vault) {
+  editingVault.value = vault
+  editVaultName.value = vault.name
+  editVaultPath.value = vault.path
+  editVaultOpen.value = true
+}
+
+async function submitEditVault() {
+  if (!editingVault.value) return
+  try {
+    await vaults.updateVault(editingVault.value.id, {
+      name: editVaultName.value,
+      path: editVaultPath.value ?? undefined,
+    })
+    editVaultOpen.value = false
+    editingVault.value = null
+    editVaultName.value = ''
+    editVaultPath.value = null
+  }
+  catch (error) {
+    toast.add({ title: 'Failed to update vault', description: String(error), color: 'error' })
+  }
 }
 
 async function submitCreateNote() {
@@ -138,6 +178,15 @@ function toggleVault(vault: Vault) {
           />
           <span class="truncate flex-1 text-sm font-medium">{{ vault.name }}</span>
           <UButton
+            icon="i-lucide-pencil"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            title="Edit vault"
+            class="opacity-0 group-hover:opacity-100"
+            @click.stop="openEditVault(vault)"
+          />
+          <UButton
             icon="i-lucide-file-plus"
             size="xs"
             color="neutral"
@@ -202,6 +251,45 @@ function toggleVault(vault: Vault) {
             label="Add"
             :disabled="!newVaultPath"
             @click="submitNewVault"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <UModal v-model:open="editVaultOpen" title="Edit vault">
+      <template #body>
+        <div class="space-y-3">
+          <UFormField label="Name">
+            <UInput v-model="editVaultName" placeholder="Vault name" />
+          </UFormField>
+
+          <UFormField label="Folder">
+            <div class="flex items-center gap-2">
+              <UInput
+                :model-value="editVaultPath ?? ''"
+                readonly
+                placeholder="No folder selected"
+                class="flex-1"
+                :disabled="editingVault?.path === vaults.mainRepoPath"
+              />
+              <UButton
+                icon="i-lucide-folder-search"
+                label="Browse"
+                :disabled="editingVault?.path === vaults.mainRepoPath"
+                @click="browseEditFolder"
+              />
+            </div>
+          </UFormField>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton color="neutral" variant="ghost" label="Cancel" @click="editVaultOpen = false" />
+          <UButton
+            label="Save"
+            :disabled="!editVaultName.trim()"
+            @click="submitEditVault"
           />
         </div>
       </template>

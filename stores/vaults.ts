@@ -109,6 +109,24 @@ export const useVaultsStore = defineStore('vaults', {
       await this.persistConfig()
     },
 
+    async updateVault(id: string, updates: Partial<Pick<Vault, 'name' | 'path'>>) {
+      const vault = this.vaults.find(v => v.id === id)
+      if (!vault) return
+
+      const isMainRepo = vault.path === this.mainRepoPath
+
+      if (updates.name !== undefined) {
+        vault.name = updates.name.trim() || vault.name
+      }
+
+      if (updates.path !== undefined && !isMainRepo) {
+        vault.path = updates.path
+        await this.refreshTree(vault)
+      }
+
+      await this.persistConfig()
+    },
+
     async refreshTree(vault: Vault) {
       const fs = useFs()
       try {
