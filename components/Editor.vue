@@ -61,6 +61,17 @@ watch(() => editor.scrollToLineTrigger, (line) => {
         placeholder="Start writing markdown…"
         @input="onInput"
       />
+
+      <!-- Mobile Bottom Toolbar Placeholder -->
+      <div class="lg:hidden h-10 border-t border-default bg-elevated/50 flex items-center px-4 shrink-0">
+        <div class="flex items-center gap-4">
+           <UButton icon="i-lucide-bold" variant="ghost" size="xs" color="neutral" />
+           <UButton icon="i-lucide-italic" variant="ghost" size="xs" color="neutral" />
+           <UButton icon="i-lucide-list" variant="ghost" size="xs" color="neutral" />
+           <UButton icon="i-lucide-link" variant="ghost" size="xs" color="neutral" />
+           <UButton icon="i-lucide-image" variant="ghost" size="xs" color="neutral" />
+        </div>
+      </div>
     </div>
   </div>
 </template>

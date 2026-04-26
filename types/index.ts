@@ -103,6 +103,8 @@ export interface FileNode {
   children?: FileNode[]
 }
 
+export type LayoutMode = 'auto' | 'desktop' | 'mobile'
+
 export interface AppSettings {
   /** Debounce for autosave (writing the editor buffer to disk) */
   autosaveDebounceMs: number
@@ -111,6 +113,8 @@ export interface AppSettings {
   /** Override for git author. Falls back to git's global config when empty */
   gitAuthorName: string
   gitAuthorEmail: string
+  /** UI Layout mode */
+  layoutMode: LayoutMode
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -118,6 +122,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultCommitDebounceMs: 5000,
   gitAuthorName: '',
   gitAuthorEmail: '',
+  layoutMode: 'auto',
 }
 
 export interface AppConfig {

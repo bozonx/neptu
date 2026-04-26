@@ -10,6 +10,7 @@ const autosaveSec = ref(0)
 const commitSec = ref(0)
 const authorName = ref('')
 const authorEmail = ref('')
+const layoutMode = ref<AppSettings['layoutMode']>('auto')
 const detectedAuthor = ref<GitAuthor | null>(null)
 
 watch(open, async (value) => {
@@ -20,6 +21,7 @@ watch(open, async (value) => {
   commitSec.value = +(s.defaultCommitDebounceMs / 1000).toFixed(2)
   authorName.value = s.gitAuthorName
   authorEmail.value = s.gitAuthorEmail
+  layoutMode.value = s.layoutMode
   try {
     const git = useGit()
     detectedAuthor.value = await git.globalAuthor()
@@ -43,6 +45,7 @@ async function save() {
       defaultCommitDebounceMs: Math.max(0, Math.round(commitSec.value * 1000)),
       gitAuthorName: authorName.value.trim(),
       gitAuthorEmail: authorEmail.value.trim(),
+      layoutMode: layoutMode.value,
     })
     open.value = false
     toast.add({ title: 'Settings saved', color: 'success' })
@@ -65,6 +68,25 @@ async function save() {
   >
     <template #body>
       <div class="space-y-6">
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            Interface
+          </h3>
+          <UFormField
+            label="Layout Mode"
+            hint="Switch between desktop and mobile interfaces."
+          >
+            <URadioGroup
+              v-model="layoutMode"
+              :items="[
+                { label: 'Automatic (Screen size)', value: 'auto' },
+                { label: 'Force Desktop', value: 'desktop' },
+                { label: 'Force Mobile', value: 'mobile' }
+              ]"
+            />
+          </UFormField>
+        </section>
+
         <section class="space-y-3">
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
             Editor
