@@ -104,6 +104,7 @@ export interface FileNode {
 }
 
 export type LayoutMode = 'auto' | 'desktop' | 'mobile'
+export type Theme = 'system' | 'light' | 'dark'
 
 export interface AppSettings {
   /** Debounce for autosave (writing the editor buffer to disk) */
@@ -115,6 +116,8 @@ export interface AppSettings {
   gitAuthorEmail: string
   /** UI Layout mode */
   layoutMode: LayoutMode
+  /** UI Theme */
+  theme: Theme
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -123,6 +126,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitAuthorName: '',
   gitAuthorEmail: '',
   layoutMode: 'auto',
+  theme: 'system',
 }
 
 export interface AppConfig {

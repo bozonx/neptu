@@ -4,6 +4,7 @@ import {
   readDir,
   readTextFile,
   remove,
+  rename,
   writeTextFile,
 } from '@tauri-apps/plugin-fs'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
@@ -46,6 +47,10 @@ export function useFs() {
 
   async function deleteFile(path: string) {
     await remove(path)
+  }
+
+  async function renameFile(oldPath: string, newPath: string) {
+    await rename(oldPath, newPath)
   }
 
   async function createMarkdown(dirPath: string, fileName: string) {
@@ -143,6 +148,7 @@ export function useFs() {
     readText,
     writeText,
     deleteFile,
+    renameFile,
     createMarkdown,
     createFolder,
     scanMarkdownTree,

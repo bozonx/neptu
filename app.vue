@@ -2,8 +2,16 @@
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 
 const settings = useSettingsStore()
+const colorMode = useColorMode()
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isDesktop = breakpoints.greaterOrEqual('lg')
+
+// Sync color mode with settings
+watchEffect(() => {
+  if (settings.initialized) {
+    colorMode.preference = settings.settings.theme
+  }
+})
 
 useHead({
   title: 'Neptu',

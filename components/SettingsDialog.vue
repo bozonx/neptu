@@ -11,8 +11,11 @@ const commitSec = ref(0)
 const authorName = ref('')
 const authorEmail = ref('')
 const layoutMode = ref<AppSettings['layoutMode']>('auto')
+const theme = ref<AppSettings['theme']>('system')
 const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
+
+const colorMode = useColorMode()
 
 let skipNextWatch = false
 
@@ -26,6 +29,7 @@ watch(open, async (value) => {
   authorName.value = s.gitAuthorName
   authorEmail.value = s.gitAuthorEmail
   layoutMode.value = s.layoutMode
+  theme.value = s.theme
   try {
     const git = useGit()
     detectedAuthor.value = await git.globalAuthor()
@@ -67,7 +71,9 @@ async function save() {
       gitAuthorName: authorName.value.trim(),
       gitAuthorEmail: authorEmail.value.trim(),
       layoutMode: layoutMode.value,
+      theme: theme.value,
     })
+    colorMode.preference = theme.value
   }
   catch (error) {
     toast.add({
@@ -81,7 +87,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, layoutMode],
+  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -102,6 +108,20 @@ watch(
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
             Interface
           </h3>
+          <UFormField
+            label="Theme"
+            hint="Switch between light and dark modes."
+          >
+            <URadioGroup
+              v-model="theme"
+              :items="[
+                { label: 'System', value: 'auto' },
+                { label: 'Light', value: 'light' },
+                { label: 'Dark', value: 'dark' },
+              ]"
+            />
+          </UFormField>
+
           <UFormField
             label="Layout Mode"
             hint="Switch between desktop and mobile interfaces."

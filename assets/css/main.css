@@ -2,13 +2,31 @@
 @import "@nuxt/ui";
 @import "splitpanes/dist/splitpanes.css";
 
+@theme {
+  --color-primary: var(--ui-primary);
+}
+
 html,
 body,
 #__nuxt {
   height: 100%;
   margin: 0;
   overflow: hidden;
+  background-color: var(--ui-bg);
+  color: var(--ui-text);
 }
+
+.bg-default { background-color: var(--ui-bg); }
+.text-default { color: var(--ui-text); }
+.bg-elevated { background-color: var(--ui-bg-muted); }
+.text-muted { color: var(--ui-text-muted); }
+.border-default { border-color: var(--ui-border); }
+.border-t-default { border-top-color: var(--ui-border); }
+.border-b-default { border-bottom-color: var(--ui-border); }
+.border-r-default { border-right-color: var(--ui-border); }
+.border-l-default { border-left-color: var(--ui-border); }
+
+
 
 .splitpanes__splitter {
   background-color: var(--ui-border);
