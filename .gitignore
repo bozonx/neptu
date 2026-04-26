@@ -1,0 +1,20 @@
+# Nuxt / Node
+node_modules
+.nuxt
+.output
+.data
+dist
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+
+# Editors
+.vscode
+.idea
+
+# Tauri
+src-tauri/target
+src-tauri/gen
+src-tauri/Cargo.lock
