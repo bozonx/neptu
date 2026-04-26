@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { FileNode, Vault } from '~/types'
+import type { FileFilterSettings, FileNode, Vault } from '~/types'
 
 interface Props {
   vault: Vault
   nodes: FileNode[]
   activePath: string | null
   level?: number
+  filters?: FileFilterSettings
 }
 
 withDefaults(defineProps<Props>(), { level: 0 })
@@ -17,6 +18,26 @@ const emit = defineEmits<{
 }>()
 
 const expanded = ref<Record<string, boolean>>({})
+
+function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
+  if (!ext) return 'i-lucide-file'
+
+  if (filters) {
+    for (const group of filters.groups) {
+      if (!group.enabled) continue
+      if (group.extensions.some((e) => e.ext.toLowerCase() === ext)) {
+        switch (group.label) {
+          case 'Image': return 'i-lucide-image'
+          case 'Video': return 'i-lucide-video'
+          case 'Audio': return 'i-lucide-music'
+          case 'Text': return 'i-lucide-file-text'
+        }
+      }
+    }
+  }
+  return 'i-lucide-file-text'
+}
 
 function toggle(node: FileNode) {
   expanded.value[node.path] = !expanded.value[node.path]
@@ -60,6 +81,7 @@ function toggle(node: FileNode) {
         :nodes="node.children ?? []"
         :active-path="activePath"
         :level="level + 1"
+        :filters="filters"
         @open="(p) => emit('open', p)"
         @delete="(n) => emit('delete', n)"
         @create-in="(d) => emit('createIn', d)"
@@ -73,7 +95,7 @@ function toggle(node: FileNode) {
         @click="emit('open', node.path)"
       >
         <UIcon
-          name="i-lucide-file-text"
+          :name="getFileIcon(node.name, filters)"
           class="size-4 text-muted shrink-0"
         />
         <span class="truncate flex-1">{{ node.name }}</span>

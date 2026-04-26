@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FileNode, GitCommitMode, Vault, VaultType } from '~/types'
+import { DEFAULT_FILE_FILTERS, type FileFilterGroup, type FileFilterSettings, type FileNode, type GitCommitMode, type Vault, type VaultType } from '~/types'
 import VaultTree from '~/components/VaultTree.vue'
 import SettingsDialog from '~/components/SettingsDialog.vue'
 
@@ -30,6 +30,9 @@ const editVaultName = ref('')
 const editVaultPath = ref<string | null>(null)
 const editCommitMode = ref<GitCommitMode>('auto')
 const editCommitDebounceSec = ref(5)
+const editShowHidden = ref(false)
+const editFilters = ref<FileFilterSettings>({ groups: [] })
+const newCustomExt = ref('')
 
 const vaultTypeItems = [
   { label: 'Local folder', value: 'local' },
@@ -58,6 +61,15 @@ function resetAddForm() {
 watch(addVaultOpen, (value) => {
   if (value) resetAddForm()
 })
+
+function addCustomExtension(group: FileFilterGroup) {
+  const raw = newCustomExt.value.trim().toLowerCase().replace(/^\.+/, '')
+  if (!raw) return
+  if (!group.extensions.some((e) => e.ext === raw)) {
+    group.extensions.push({ ext: raw, enabled: true })
+  }
+  newCustomExt.value = ''
+}
 
 async function browseFolder() {
   try {
@@ -133,6 +145,10 @@ function openEditVault(vault: Vault) {
   editVaultPath.value = vault.path
   editCommitMode.value = vault.git?.commitMode ?? 'auto'
   editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? settings.settings.defaultCommitDebounceMs) / 1000
+  editShowHidden.value = vault.showHidden ?? false
+  editFilters.value = vault.filters
+    ? JSON.parse(JSON.stringify(vault.filters))
+    : JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
   editVaultOpen.value = true
 }
 
@@ -149,6 +165,8 @@ async function submitEditVault() {
             commitDebounceMs: Math.max(0, Math.round(editCommitDebounceSec.value * 1000)),
           }
         : undefined,
+      filters: editFilters.value,
+      showHidden: editShowHidden.value,
     })
     editVaultOpen.value = false
     editingVault.value = null
@@ -289,6 +307,7 @@ function toggleVault(vault: Vault) {
           :vault="vault"
           :nodes="vaults.trees[vault.id] ?? []"
           :active-path="editor.currentFilePath"
+          :filters="vault.filters"
           @open="openFile"
           @delete="(n) => handleDelete(vault, n)"
           @create-in="(d) => openCreateNote(vault, d)"
@@ -442,6 +461,60 @@ function toggleVault(vault: Vault) {
               />
             </UFormField>
           </template>
+
+          <UFormField label="Show hidden files and folders">
+            <USwitch v-model="editShowHidden" />
+          </UFormField>
+
+          <section class="space-y-2">
+            <h4 class="text-sm font-semibold text-muted uppercase tracking-wide">
+              File filters
+            </h4>
+            <div
+              v-for="group in editFilters.groups"
+              :key="group.label"
+              class="space-y-1"
+            >
+              <div class="flex items-center gap-2">
+                <UCheckbox
+                  :label="group.label"
+                  :model-value="group.enabled"
+                  @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') group.enabled = v }"
+                />
+              </div>
+              <div
+                v-if="group.enabled"
+                class="flex flex-wrap gap-2 ml-6"
+              >
+                <UCheckbox
+                  v-for="ext in group.extensions"
+                  :key="ext.ext"
+                  :label="`.${ext.ext}`"
+                  :model-value="ext.enabled"
+                  @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') ext.enabled = v }"
+                />
+              </div>
+              <div
+                v-if="group.editable && group.enabled"
+                class="flex items-center gap-2 ml-6"
+              >
+                <UInput
+                  v-model="newCustomExt"
+                  placeholder="Add custom extension"
+                  size="xs"
+                  class="w-36"
+                  @keydown.enter="addCustomExtension(group)"
+                />
+                <UButton
+                  icon="i-lucide-plus"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  @click="addCustomExtension(group)"
+                />
+              </div>
+            </div>
+          </section>
         </div>
       </template>
 

@@ -8,7 +8,7 @@ import {
 } from '@tauri-apps/plugin-fs'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { join, sep } from '@tauri-apps/api/path'
-import type { FileNode } from '~/types'
+import type { FileFilterSettings, FileNode } from '~/types'
 
 // Non-hidden directories we still want to skip while scanning vaults.
 // Dot-prefixed directories are filtered by `startsWith('.')`.
@@ -56,11 +56,35 @@ export function useFs() {
   }
 
   /**
-   * Recursively scans a directory and returns a tree of folders and `.md` files.
-   * Hidden (`.git`, `.neptu`, …) and system folders are skipped, but empty
-   * subdirectories are kept so the user can still create notes inside them.
+   * Recursively scans a directory and returns a tree of folders and files
+   * matching the vault's enabled extension groups. Empty subdirectories
+   * are kept so the user can still create notes inside them.
    */
-  async function scanMarkdownTree(rootPath: string): Promise<FileNode[]> {
+  async function scanMarkdownTree(
+    rootPath: string,
+    options: { showHidden?: boolean, filterSettings?: FileFilterSettings } = {},
+  ): Promise<FileNode[]> {
+    const { showHidden = false, filterSettings } = options
+
+    const enabledExts = new Set<string>()
+    if (filterSettings) {
+      for (const group of filterSettings.groups) {
+        if (!group.enabled) continue
+        for (const e of group.extensions) {
+          if (e.enabled) enabledExts.add(e.ext.toLowerCase())
+        }
+      }
+    }
+    else {
+      enabledExts.add('md')
+    }
+
+    function getExt(name: string): string | null {
+      const idx = name.lastIndexOf('.')
+      if (idx <= 0 || idx === name.length - 1) return null
+      return name.slice(idx + 1).toLowerCase()
+    }
+
     async function walk(dirPath: string): Promise<FileNode[]> {
       const entries = await readDir(dirPath)
       const nodes: FileNode[] = []
@@ -68,8 +92,10 @@ export function useFs() {
       for (const entry of entries) {
         if (!entry.name) continue
 
+        const isHidden = entry.name.startsWith('.')
         if (entry.isDirectory) {
-          if (entry.name.startsWith('.') || SKIP_DIRS.has(entry.name)) continue
+          if (SKIP_DIRS.has(entry.name)) continue
+          if (isHidden && !showHidden) continue
           const childPath = await join(dirPath, entry.name)
           const children = await walk(childPath)
           nodes.push({
@@ -79,7 +105,10 @@ export function useFs() {
             children,
           })
         }
-        else if (entry.isFile && entry.name.toLowerCase().endsWith('.md')) {
+        else if (entry.isFile) {
+          if (isHidden && !showHidden) continue
+          const ext = getExt(entry.name)
+          if (!ext || !enabledExts.has(ext)) continue
           const childPath = await join(dirPath, entry.name)
           nodes.push({
             name: entry.name,

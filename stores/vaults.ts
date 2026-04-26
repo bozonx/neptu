@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import type {
-  AddVaultPayload,
-  FileNode,
-  GitVaultSettings,
-  Vault,
+import {
+  DEFAULT_FILE_FILTERS,
+  type AddVaultPayload,
+  type FileNode,
+  type GitVaultSettings,
+  type Vault,
 } from '~/types'
 
 function generateId() {
@@ -62,9 +63,23 @@ export const useVaultsStore = defineStore('vaults', () => {
         name: basename(mainRepoPath),
         type: 'local',
         path: mainRepoPath,
+        filters: JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)),
+        showHidden: false,
       })
       mutated = true
     }
+
+    for (const v of vaults) {
+      if (!v.filters) {
+        v.filters = JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
+        mutated = true
+      }
+      if (v.showHidden === undefined) {
+        v.showHidden = false
+        mutated = true
+      }
+    }
+
     list.value = vaults
 
     if (mutated) await useSettingsStore().persist()
@@ -80,6 +95,8 @@ export const useVaultsStore = defineStore('vaults', () => {
       name: payload.name?.trim() || basename(payload.path),
       type: payload.type,
       path: payload.path,
+      filters: DEFAULT_FILE_FILTERS,
+      showHidden: false,
     }
 
     if (payload.type === 'git') {
@@ -126,7 +143,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function updateVault(
     id: string,
-    updates: Partial<Pick<Vault, 'name' | 'path'>> & { git?: GitVaultSettings },
+    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'showHidden'>> & { git?: GitVaultSettings },
   ) {
     const vault = findById(id)
     if (!vault) return
@@ -149,6 +166,8 @@ export const useVaultsStore = defineStore('vaults', () => {
       if (vault.type === 'git') await git.refreshStatus(vault.id)
     }
 
+    let needsRefresh = false
+
     if (updates.git !== undefined && vault.type === 'git') {
       vault.git = updates.git
       // Re-evaluate scheduled commit if mode changed
@@ -157,13 +176,28 @@ export const useVaultsStore = defineStore('vaults', () => {
       }
     }
 
+    if (updates.filters !== undefined) {
+      vault.filters = updates.filters
+      needsRefresh = true
+    }
+
+    if (updates.showHidden !== undefined) {
+      vault.showHidden = updates.showHidden
+      needsRefresh = true
+    }
+
     await settings.persist()
+
+    if (needsRefresh) await refreshTree(vault)
   }
 
   async function refreshTree(vault: Vault) {
     const fs = useFs()
     try {
-      trees.value[vault.id] = await fs.scanMarkdownTree(vault.path)
+      trees.value[vault.id] = await fs.scanMarkdownTree(vault.path, {
+        showHidden: vault.showHidden ?? false,
+        filterSettings: vault.filters,
+      })
     }
     catch (error) {
       console.error('Failed to scan vault tree', vault.path, error)
