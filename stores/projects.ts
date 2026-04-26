@@ -54,24 +54,30 @@ export const useProjectsStore = defineStore('projects', {
       const config = useConfig()
       await config.setMainRepoPath(path)
       this.mainRepoPath = path
-
-      // Ensure the main repo itself appears as the first project
-      const appConfig = await config.loadAppConfig(path)
-      if (!appConfig.projects.some(p => p.path === path)) {
-        appConfig.projects.unshift({
-          id: generateId(),
-          name: basename(path),
-          type: 'local',
-          path,
-        })
-        await config.saveAppConfig(path, appConfig)
-      }
       await this.loadFromRepo(path)
     },
 
     async loadFromRepo(repoPath: string) {
       const config = useConfig()
       const appConfig = await config.loadAppConfig(repoPath)
+
+      // Always make sure the main repository is present as a project entry.
+      // It may be missing if the config file was created in an older version
+      // or edited manually.
+      let mutated = false
+      if (!appConfig.projects.some(p => p.path === repoPath)) {
+        appConfig.projects.unshift({
+          id: generateId(),
+          name: basename(repoPath),
+          type: 'local',
+          path: repoPath,
+        })
+        mutated = true
+      }
+      if (mutated) {
+        await config.saveAppConfig(repoPath, appConfig)
+      }
+
       this.projects = appConfig.projects
       await this.refreshAllTrees()
     },
