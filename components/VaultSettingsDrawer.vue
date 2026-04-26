@@ -24,10 +24,13 @@ const editShowHidden = ref(false)
 const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
 const newCustomExt = ref('')
 
+let skipNextWatch = false
+
 watch(
   () => [open.value, props.vault] as const,
   ([isOpen, vault]) => {
     if (!isOpen || !vault) return
+    skipNextWatch = true
     editVaultName.value = vault.name
     editVaultPath.value = vault.path
     editCommitMode.value = vault.git?.commitMode ?? 'auto'
@@ -37,6 +40,9 @@ watch(
       ? JSON.parse(JSON.stringify(vault.filters))
       : JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
     newCustomExt.value = ''
+    nextTick(() => {
+      skipNextWatch = false
+    })
   },
   { immediate: true },
 )
@@ -60,7 +66,7 @@ async function browseEditFolder() {
   }
 }
 
-async function submitEditVault() {
+async function save() {
   if (!props.vault) return
   try {
     const isGit = props.vault.type === 'git'
@@ -76,17 +82,30 @@ async function submitEditVault() {
       filters: editFilters.value,
       showHidden: editShowHidden.value,
     })
-    open.value = false
-    emit('close')
   }
   catch (error) {
     toast.add({
-      title: 'Failed to update vault',
+      title: 'Failed to auto-save vault',
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
   }
 }
+
+const debouncedSave = useDebounceFn(save, 500)
+
+watch(
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editShowHidden, editFilters],
+  () => {
+    if (skipNextWatch || !open.value) return
+    debouncedSave()
+  },
+  { deep: true },
+)
+
+watch(open, (val) => {
+  if (!val) emit('close')
+})
 
 const commitModeItems = [
   { label: 'Auto-commit (debounced)', value: 'auto' as const },
@@ -215,41 +234,40 @@ const commitModeItems = [
             </div>
           </div>
         </section>
+
+        <section
+          v-if="vault && vault.path !== settings.mainRepoPath"
+          class="space-y-3 pt-6 border-t border-error/10"
+        >
+          <h3 class="text-sm font-semibold text-error uppercase tracking-wide">
+            Danger Zone
+          </h3>
+          <div class="rounded-md bg-error/5 border border-error/10 p-3">
+            <p class="text-xs text-muted mb-2">
+              The vault folder itself is <strong>not</strong> deleted. Only its settings are removed and it disappears from the app.
+            </p>
+            <UButton
+              icon="i-lucide-trash-2"
+              label="Remove from app"
+              color="error"
+              variant="soft"
+              size="sm"
+              block
+              @click="open = false; emit('remove', vault)"
+            />
+          </div>
+        </section>
       </div>
     </template>
 
     <template #footer>
-      <div class="flex flex-col gap-3 w-full">
-        <div
-          v-if="vault && vault.path !== settings.mainRepoPath"
-          class="rounded-md bg-error/5 border border-error/10 p-3"
-        >
-          <p class="text-xs text-muted mb-2">
-            The vault folder itself is <strong>not</strong> deleted. Only its settings are removed and it disappears from the app.
-          </p>
-          <UButton
-            icon="i-lucide-trash-2"
-            label="Remove from app"
-            color="error"
-            variant="soft"
-            size="sm"
-            block
-            @click="open = false; emit('remove', vault)"
-          />
-        </div>
-        <div class="flex justify-end gap-2 w-full">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            label="Cancel"
-            @click="open = false"
-          />
-          <UButton
-            label="Save"
-            :disabled="!editVaultName.trim()"
-            @click="submitEditVault"
-          />
-        </div>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Close"
+          @click="open = false"
+        />
       </div>
     </template>
   </USlideover>

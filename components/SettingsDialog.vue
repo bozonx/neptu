@@ -14,10 +14,13 @@ const layoutMode = ref<AppSettings['layoutMode']>('auto')
 const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
 
+let skipNextWatch = false
+
 watch(open, async (value) => {
   if (!value) return
   // Snapshot current settings every time the dialog opens
   const s = settingsStore.settings
+  skipNextWatch = true
   autosaveSec.value = +(s.autosaveDebounceMs / 1000).toFixed(2)
   commitSec.value = +(s.defaultCommitDebounceMs / 1000).toFixed(2)
   authorName.value = s.gitAuthorName
@@ -33,6 +36,9 @@ watch(open, async (value) => {
     detectedAuthor.value = null
     configPath.value = ''
   }
+  nextTick(() => {
+    skipNextWatch = false
+  })
 }, { immediate: true })
 
 async function copyConfigPath() {
@@ -62,17 +68,26 @@ async function save() {
       gitAuthorEmail: authorEmail.value.trim(),
       layoutMode: layoutMode.value,
     })
-    open.value = false
-    toast.add({ title: 'Settings saved', color: 'success' })
   }
   catch (error) {
     toast.add({
-      title: 'Failed to save settings',
+      title: 'Failed to auto-save settings',
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
   }
 }
+
+const debouncedSave = useDebounceFn(save, 500)
+
+watch(
+  [autosaveSec, commitSec, authorName, authorEmail, layoutMode],
+  () => {
+    if (skipNextWatch || !open.value) return
+    debouncedSave()
+  },
+  { deep: true },
+)
 </script>
 
 <template>
@@ -183,12 +198,8 @@ async function save() {
         <UButton
           color="neutral"
           variant="ghost"
-          label="Cancel"
+          label="Close"
           @click="open = false"
-        />
-        <UButton
-          label="Save"
-          @click="save"
         />
       </div>
     </template>

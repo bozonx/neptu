@@ -115,6 +115,7 @@ async function handleDelete(node: FileNode) {
     <UContextMenu
       :items="vaultMenuItems()"
       :modal="false"
+      class="w-full block"
     >
       <div
         class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated hover:ring-1 hover:ring-inset hover:ring-border/50"
