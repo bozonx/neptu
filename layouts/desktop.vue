@@ -64,22 +64,27 @@ async function handleCommit() {
 }
 
 function handleLayout(sizes: number[]) {
-  // sizes are [left, center, right]
-  tabsStore.updateSidebarSizes(sizes[0], sizes[2])
+  // We only care about the top-level layout which has exactly 3 panels: [left, center, right]
+  if (sizes.length === 3) {
+    tabsStore.updateSidebarSizes(sizes[0], sizes[2])
+  }
 }
 </script>
 
 <template>
   <div class="h-screen overflow-hidden bg-default text-default">
     <PanelGroup
+      id="main-layout"
       direction="horizontal"
       @layout="handleLayout"
     >
       <!-- Left Sidebar -->
       <Panel
+        id="left-sidebar"
         :default-size="tabsStore.leftSidebarSize"
         :min-size="15"
         :max-size="40"
+        :order="1"
         class="flex flex-col bg-default"
       >
         <div class="h-10 border-b border-default flex items-center px-3 gap-2 shrink-0">
@@ -104,22 +109,34 @@ function handleLayout(sizes: number[]) {
         </div>
       </Panel>
 
-      <PanelResizeHandle class="w-1 hover:bg-primary/30 transition-colors cursor-col-resize z-50 border-r border-default" />
+      <PanelResizeHandle
+        id="left-sidebar-handle"
+        class="w-1 hover:bg-primary/30 transition-colors cursor-col-resize z-50 border-r border-default"
+      />
 
       <!-- Central Content -->
-      <Panel class="flex flex-col min-w-0 bg-default relative">
+      <Panel
+        id="central-content"
+        :order="2"
+        class="flex flex-col min-w-0 bg-default relative"
+      >
         <main class="flex-1 flex flex-col min-w-0 bg-default relative">
           <slot />
         </main>
       </Panel>
 
-      <PanelResizeHandle class="w-1 hover:bg-primary/30 transition-colors cursor-col-resize z-50 border-l border-default" />
+      <PanelResizeHandle
+        id="right-sidebar-handle"
+        class="w-1 hover:bg-primary/30 transition-colors cursor-col-resize z-50 border-l border-default"
+      />
 
       <!-- Right Sidebar -->
       <Panel
+        id="right-sidebar"
         :default-size="tabsStore.rightSidebarSize"
         :min-size="10"
         :max-size="30"
+        :order="3"
         class="flex flex-col bg-default"
       >
         <FileSidebar />
