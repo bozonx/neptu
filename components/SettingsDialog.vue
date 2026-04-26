@@ -115,7 +115,7 @@ watch(
             <URadioGroup
               v-model="theme"
               :items="[
-                { label: 'System', value: 'auto' },
+                { label: 'System', value: 'system' },
                 { label: 'Light', value: 'light' },
                 { label: 'Dark', value: 'dark' },
               ]"

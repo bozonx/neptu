@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { basename, join } from '@tauri-apps/api/path'
 import { DEFAULT_SETTINGS, type AppConfig, type AppSettings } from '~/types'
 
 /**
@@ -31,6 +32,37 @@ export const useSettingsStore = defineStore('settings', () => {
 
   async function setMainRepo(path: string) {
     mainRepoPath.value = path
+    await persist()
+    const config = useConfig()
+    const appConfig = await config.loadAppConfig()
+    await applyConfig(appConfig)
+  }
+
+  async function changeMainRepo(newPath: string) {
+    const oldPath = mainRepoPath.value
+    if (!oldPath || oldPath === newPath) return
+
+    const fs = useFs()
+    const oldNeptu = await join(oldPath, '.neptu')
+    const newNeptu = await join(newPath, '.neptu')
+
+    if (await fs.exists(oldNeptu)) {
+      try {
+        await fs.renameFile(oldNeptu, newNeptu)
+      }
+      catch (error) {
+        console.error('Failed to move .neptu folder:', error)
+      }
+    }
+
+    const vaults = useVaultsStore()
+    const mainVault = vaults.list.find((v) => v.path === oldPath)
+    if (mainVault) {
+      mainVault.path = newPath
+      mainVault.name = await basename(newPath)
+    }
+
+    mainRepoPath.value = newPath
     await persist()
     const config = useConfig()
     const appConfig = await config.loadAppConfig()
@@ -75,6 +107,7 @@ export const useSettingsStore = defineStore('settings', () => {
     needsMainRepo,
     init,
     setMainRepo,
+    changeMainRepo,
     updateSettings,
     persist,
   }

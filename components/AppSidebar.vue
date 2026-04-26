@@ -39,7 +39,10 @@ const removeGroupConfirmOpen = ref(false)
 const removeGroupConfirmTarget = ref<VaultGroup | null>(null)
 const expandedGroups = ref<Record<string, boolean>>({})
 
-const ungroupedVaults = computed(() => vaults.list.filter((v) => !v.groupId))
+const mainVault = computed(() => vaults.list.find((v) => v.path === settings.mainRepoPath))
+const otherUngroupedVaults = computed(() =>
+  vaults.list.filter((v) => !v.groupId && v.path !== settings.mainRepoPath),
+)
 function vaultsInGroup(groupId: string) {
   return vaults.list.filter((v) => v.groupId === groupId)
 }

@@ -145,6 +145,7 @@ export function useFs() {
   return {
     pickDirectory,
     ensureDir,
+    exists,
     readText,
     writeText,
     deleteFile,
