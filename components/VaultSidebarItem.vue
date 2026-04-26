@@ -112,71 +112,76 @@ async function handleDelete(node: FileNode) {
 
 <template>
   <div>
-    <div
-      class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated hover:ring-1 hover:ring-inset hover:ring-border/50"
-      @click="emit('toggle')"
+    <UContextMenu
+      :items="vaultMenuItems()"
+      :modal="false"
     >
-      <div class="flex items-center gap-1 min-w-0">
-        <UIcon
-          :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
-          class="size-4 shrink-0"
-          :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"
-        />
-        <span class="truncate text-sm font-medium">{{ vault.name }}</span>
-        <UIcon
-          name="i-lucide-chevron-right"
-          class="size-4 text-muted shrink-0 transition-transform"
-          :class="{ 'rotate-90': expanded }"
-        />
-      </div>
+      <div
+        class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated hover:ring-1 hover:ring-inset hover:ring-border/50"
+        @click="emit('toggle')"
+      >
+        <div class="flex items-center gap-1 min-w-0">
+          <UIcon
+            :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
+            class="size-4 shrink-0"
+            :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"
+          />
+          <span class="truncate text-sm font-medium">{{ vault.name }}</span>
+          <UIcon
+            name="i-lucide-chevron-right"
+            class="size-4 text-muted shrink-0 transition-transform"
+            :class="{ 'rotate-90': expanded }"
+          />
+        </div>
 
-      <div class="flex items-center justify-between gap-1 min-w-0 h-6">
-        <span class="text-xs text-muted capitalize hidden md:block">
-          {{ vault.type }}
-        </span>
-        <div class="flex items-center gap-1 md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity">
-          <UButton
-            icon="i-lucide-file-plus"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            title="New note"
-            @click.stop="emit('createNote', vault)"
-          />
-          <UButton
-            icon="i-lucide-folder-plus"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            title="New folder"
-            @click.stop="emit('createFolder', vault)"
-          />
-          <UButton
-            v-if="vault.type === 'git'"
-            icon="i-lucide-refresh-cw"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            title="Sync (pull & push)"
-            @click.stop="handleSync()"
-          />
-          <UDropdownMenu
-            :items="vaultMenuItems()"
-            :modal="false"
-            size="xs"
-          >
+        <div class="flex items-center justify-between gap-1 min-w-0 h-6">
+          <span class="text-xs text-muted capitalize hidden md:block">
+            {{ vault.type }}
+          </span>
+          <div class="flex items-center gap-1 md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity">
             <UButton
-              icon="i-lucide-ellipsis-vertical"
+              icon="i-lucide-file-plus"
               size="xs"
               color="neutral"
               variant="ghost"
-              title="More"
-              @click.stop
+              title="New note"
+              @click.stop="emit('createNote', vault)"
             />
-          </UDropdownMenu>
+            <UButton
+              icon="i-lucide-folder-plus"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              title="New folder"
+              @click.stop="emit('createFolder', vault)"
+            />
+            <UButton
+              v-if="vault.type === 'git'"
+              icon="i-lucide-refresh-cw"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              title="Sync (pull & push)"
+              @click.stop="handleSync()"
+            />
+            <UDropdownMenu
+              :items="vaultMenuItems()"
+              :modal="false"
+              size="xs"
+            >
+              <UButton
+                icon="i-lucide-ellipsis-vertical"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                title="More"
+                @click.stop
+              />
+            </UDropdownMenu>
+          </div>
         </div>
       </div>
-    </div>
+    </UContextMenu>
 
     <VaultTree
       v-if="expanded"

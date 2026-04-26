@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
 import type { FileFilterSettings, FileNode, Vault } from '~/types'
 
 interface Props {
@@ -42,6 +43,15 @@ function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
 
 function toggle(node: FileNode) {
   expanded.value[node.path] = !expanded.value[node.path]
+}
+
+function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
+  return [
+    [
+      { label: 'Open in new panel', icon: 'i-lucide-panel-right-open', onSelect: () => emit('openInNewPanel', node.path) },
+      { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
+    ],
+  ]
 }
 </script>
 
@@ -91,7 +101,8 @@ function toggle(node: FileNode) {
 
       <UContextMenu
         v-if="!node.isDir"
-        :items="[[{ label: 'Open in new panel', icon: 'i-lucide-panel-right-open', onSelect: () => emit('openInNewPanel', node.path) }]]"
+        :items="fileMenuItems(node)"
+        :modal="false"
       >
         <div
           class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
@@ -104,14 +115,20 @@ function toggle(node: FileNode) {
             class="size-4 text-muted shrink-0"
           />
           <span class="truncate flex-1">{{ node.name }}</span>
-          <UButton
-            icon="i-lucide-trash-2"
+          <UDropdownMenu
+            :items="fileMenuItems(node)"
+            :modal="false"
             size="xs"
-            color="error"
-            variant="ghost"
-            class="opacity-0 group-hover:opacity-100"
-            @click.stop="emit('delete', node)"
-          />
+          >
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              class="opacity-0 group-hover:opacity-100"
+              @click.stop
+            />
+          </UDropdownMenu>
         </div>
       </UContextMenu>
     </li>

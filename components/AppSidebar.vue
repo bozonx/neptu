@@ -236,87 +236,102 @@ function toggleVault(vault: Vault) {
   <div class="flex flex-col h-full bg-default">
     <SettingsDialog v-model:open="settingsOpen" />
 
-    <div class="flex-1 overflow-auto p-2">
-      <div
-        v-if="vaults.list.length === 0"
-        class="text-sm text-muted px-2 py-4"
-      >
-        No vaults yet. Add a folder to get started.
-      </div>
-
-      <VaultSidebarItem
-        v-for="vault in ungroupedVaults"
-        :key="vault.id"
-        class="mb-2"
-        :vault="vault"
-        :expanded="expandedVaults[vault.id] ?? false"
-        :nodes="vaults.trees[vault.id] ?? []"
-        :active-path="editor.currentFilePath"
-        :filters="vault.filters"
-        @toggle="toggleVault(vault)"
-        @create-note="(v) => openCreateNote(v)"
-        @create-folder="(v) => openCreateFolder(v)"
-        @edit-vault="(v) => openEditVault(v)"
-        @remove-vault="(v) => openRemoveVaultConfirm(v)"
-      />
-
-      <div
-        v-for="group in vaults.groups"
-        :key="group.id"
-        class="mb-2"
-      >
+    <UContextMenu
+      :items="[
+        [
+          { label: 'Add vault', icon: 'i-lucide-folder-plus', onSelect: () => addVaultOpen = true },
+          { label: 'Create group', icon: 'i-lucide-folder-closed-plus', onSelect: () => openCreateGroup() },
+        ],
+      ]"
+      :modal="false"
+    >
+      <div class="flex-1 overflow-auto p-2">
         <div
-          class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/50 hover:ring-1 hover:ring-inset hover:ring-border/50"
-          @click="toggleGroup(group)"
+          v-if="vaults.list.length === 0"
+          class="text-sm text-muted px-2 py-4"
         >
-          <UIcon
-            name="i-lucide-chevron-right"
-            class="size-4 text-muted shrink-0 transition-transform"
-            :class="{ 'rotate-90': expandedGroups[group.id] }"
-          />
-          <UIcon
-            name="i-lucide-folder-closed"
-            class="size-4 text-muted shrink-0"
-          />
-          <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
-          <UDropdownMenu
+          No vaults yet. Add a folder to get started.
+        </div>
+
+        <VaultSidebarItem
+          v-for="vault in ungroupedVaults"
+          :key="vault.id"
+          class="mb-2"
+          :vault="vault"
+          :expanded="expandedVaults[vault.id] ?? false"
+          :nodes="vaults.trees[vault.id] ?? []"
+          :active-path="editor.currentFilePath"
+          :filters="vault.filters"
+          @toggle="toggleVault(vault)"
+          @create-note="(v) => openCreateNote(v)"
+          @create-folder="(v) => openCreateFolder(v)"
+          @edit-vault="(v) => openEditVault(v)"
+          @remove-vault="(v) => openRemoveVaultConfirm(v)"
+        />
+
+        <div
+          v-for="group in vaults.groups"
+          :key="group.id"
+          class="mb-2"
+        >
+          <UContextMenu
             :items="[[{ label: 'Delete group', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
             :modal="false"
-            size="xs"
           >
-            <UButton
-              icon="i-lucide-ellipsis-vertical"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              title="More"
-              @click.stop
-            />
-          </UDropdownMenu>
-        </div>
+            <div
+              class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/50 hover:ring-1 hover:ring-inset hover:ring-border/50"
+              @click="toggleGroup(group)"
+            >
+              <UIcon
+                name="i-lucide-chevron-right"
+                class="size-4 text-muted shrink-0 transition-transform"
+                :class="{ 'rotate-90': expandedGroups[group.id] }"
+              />
+              <UIcon
+                name="i-lucide-folder-closed"
+                class="size-4 text-muted shrink-0"
+              />
+              <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
+              <UDropdownMenu
+                :items="[[{ label: 'Delete group', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
+                :modal="false"
+                size="xs"
+              >
+                <UButton
+                  icon="i-lucide-ellipsis-vertical"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  title="More"
+                  @click.stop
+                />
+              </UDropdownMenu>
+            </div>
+          </UContextMenu>
 
-        <div
-          v-if="expandedGroups[group.id]"
-          class="pl-3 mt-1 space-y-1"
-        >
-          <VaultSidebarItem
-            v-for="vault in vaultsInGroup(group.id)"
-            :key="vault.id"
-            class="mb-2"
-            :vault="vault"
-            :expanded="expandedVaults[vault.id] ?? false"
-            :nodes="vaults.trees[vault.id] ?? []"
-            :active-path="editor.currentFilePath"
-            :filters="vault.filters"
-            @toggle="toggleVault(vault)"
-            @create-note="(v) => openCreateNote(v)"
-            @create-folder="(v) => openCreateFolder(v)"
-            @edit-vault="(v) => openEditVault(v)"
-            @remove-vault="(v) => openRemoveVaultConfirm(v)"
-          />
+          <div
+            v-if="expandedGroups[group.id]"
+            class="pl-3 mt-1 space-y-1"
+          >
+            <VaultSidebarItem
+              v-for="vault in vaultsInGroup(group.id)"
+              :key="vault.id"
+              class="mb-2"
+              :vault="vault"
+              :expanded="expandedVaults[vault.id] ?? false"
+              :nodes="vaults.trees[vault.id] ?? []"
+              :active-path="editor.currentFilePath"
+              :filters="vault.filters"
+              @toggle="toggleVault(vault)"
+              @create-note="(v) => openCreateNote(v)"
+              @create-folder="(v) => openCreateFolder(v)"
+              @edit-vault="(v) => openEditVault(v)"
+              @remove-vault="(v) => openRemoveVaultConfirm(v)"
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </UContextMenu>
 
     <div class="flex items-center gap-1 p-2 border-t border-default shrink-0">
       <div class="flex-1 flex items-center gap-1">
