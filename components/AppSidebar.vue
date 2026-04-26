@@ -259,47 +259,55 @@ function toggleVault(vault: Vault) {
         class="mb-2"
       >
         <div
-          class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer hover:bg-elevated"
+          class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated hover:ring-1 hover:ring-inset hover:ring-border/50"
           @click="toggleVault(vault)"
         >
-          <UIcon
-            :name="expandedVaults[vault.id] ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-            class="size-4 text-muted shrink-0"
-          />
-          <UIcon
-            :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : 'i-lucide-folder'"
-            class="size-4 shrink-0"
-            :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"
-          />
-          <span class="truncate flex-1 text-sm font-medium">{{ vault.name }}</span>
-          <UButton
-            icon="i-lucide-pencil"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            title="Edit vault"
-            class="opacity-0 group-hover:opacity-100"
-            @click.stop="openEditVault(vault)"
-          />
-          <UButton
-            icon="i-lucide-file-plus"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            title="New note"
-            class="opacity-0 group-hover:opacity-100"
-            @click.stop="openCreateNote(vault)"
-          />
-          <UButton
-            v-if="vault.path !== settings.mainRepoPath"
-            icon="i-lucide-x"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            title="Remove from list"
-            class="opacity-0 group-hover:opacity-100"
-            @click.stop="handleRemoveVault(vault)"
-          />
+          <div class="flex items-center gap-1 min-w-0">
+            <UIcon
+              :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
+              class="size-4 shrink-0"
+              :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"
+            />
+            <span class="truncate text-sm font-medium">{{ vault.name }}</span>
+            <UIcon
+              v-if="!expandedVaults[vault.id]"
+              name="i-lucide-chevron-right"
+              class="size-4 text-muted shrink-0"
+            />
+          </div>
+
+          <div class="flex items-center justify-end gap-1 min-w-0 h-6">
+            <span class="text-xs text-muted capitalize hidden md:block md:opacity-100 md:group-hover:opacity-0 transition-opacity">
+              {{ vault.type }}
+            </span>
+            <div class="flex items-center gap-1 md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity">
+              <UButton
+                icon="i-lucide-pencil"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                title="Edit vault"
+                @click.stop="openEditVault(vault)"
+              />
+              <UButton
+                icon="i-lucide-file-plus"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                title="New note"
+                @click.stop="openCreateNote(vault)"
+              />
+              <UButton
+                v-if="vault.path !== settings.mainRepoPath"
+                icon="i-lucide-x"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                title="Remove from list"
+                @click.stop="handleRemoveVault(vault)"
+              />
+            </div>
+          </div>
         </div>
 
         <VaultTree
