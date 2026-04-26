@@ -6,6 +6,7 @@ import SettingsDialog from '~/components/SettingsDialog.vue'
 const settings = useSettingsStore()
 const vaults = useVaultsStore()
 const editor = useEditorStore()
+const tabs = useTabsStore()
 const git = useGitStore()
 const toast = useToast()
 
@@ -194,7 +195,7 @@ async function handleRemoveVault(vault: Vault) {
 }
 
 function openFile(path: string) {
-  editor.openFile(path).catch((error: unknown) => {
+  tabs.openFile(path).catch((error: unknown) => {
     toast.add({ title: 'Failed to open file', description: String(error), color: 'error' })
   })
 }

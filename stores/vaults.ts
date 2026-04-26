@@ -113,9 +113,11 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     const editor = useEditorStore()
     const git = useGitStore()
+    const tabs = useTabsStore()
     git.cancelCommit(id)
     git.dropVault(id)
     if (editor.currentFilePath?.startsWith(removed.path)) editor.reset()
+    await tabs.dropByPrefix(removed.path)
 
     list.value.splice(idx, 1)
     Reflect.deleteProperty(trees.value, removed.id)
@@ -138,8 +140,10 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (updates.path !== undefined && !isMainRepo) {
       const editor = useEditorStore()
       const git = useGitStore()
+      const tabs = useTabsStore()
       git.cancelCommit(vault.id)
       if (editor.currentFilePath?.startsWith(vault.path)) editor.reset()
+      await tabs.dropByPrefix(vault.path)
       vault.path = updates.path
       await refreshTree(vault)
       if (vault.type === 'git') await git.refreshStatus(vault.id)

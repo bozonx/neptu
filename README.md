@@ -15,6 +15,9 @@ Cross-platform markdown notes editor for desktop and mobile, built on
 - Create / delete `.md` notes inside any vault.
 - Central `<textarea>` editor with **autosave** (debounce configurable in
   Settings) and a status indicator.
+- **Tabs** above the editor — each opened file gets its own tab, tabs may
+  reference files from different vaults; switching tabs flushes the current
+  buffer before loading the next file.
 - Per-vault git auto-commit with its own debounce — restarted by every new
   edit, scheduled only after a successful autosave. Or switch to **manual**
   mode and use the **Commit** button in the top bar.
@@ -47,6 +50,7 @@ stores/                # Pinia setup-stores
   vaults.ts           # vault list and file trees
   git.ts              # git status, commit timers, debounced auto-commit
   editor.ts           # active file buffer + autosave
+  tabs.ts             # list of open editor tabs (cross-vault)
 types/index.ts        # shared types
 src-tauri/            # Rust shell (Cargo.toml, tauri.conf.json, capabilities)
   src/git.rs          # libgit2-backed git commands

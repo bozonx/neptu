@@ -98,29 +98,33 @@ function onInput(event: Event) {
     </template>
 
     <template #body>
-      <div
-        v-if="!editor.currentFilePath"
-        class="flex h-full items-center justify-center text-muted"
-      >
-        <div class="text-center space-y-2">
-          <UIcon
-            name="i-lucide-file-text"
-            class="size-10 mx-auto"
-          />
-          <p class="text-sm">
-            Select or create a markdown file to start editing
-          </p>
-        </div>
-      </div>
+      <div class="flex h-full flex-col">
+        <EditorTabs />
 
-      <textarea
-        v-else
-        :value="editor.currentContent"
-        class="w-full h-full resize-none bg-transparent outline-none p-4 font-mono text-sm leading-relaxed"
-        spellcheck="false"
-        placeholder="Start writing markdown…"
-        @input="onInput"
-      />
+        <div
+          v-if="!editor.currentFilePath"
+          class="flex flex-1 items-center justify-center text-muted"
+        >
+          <div class="text-center space-y-2">
+            <UIcon
+              name="i-lucide-file-text"
+              class="size-10 mx-auto"
+            />
+            <p class="text-sm">
+              Select or create a markdown file to start editing
+            </p>
+          </div>
+        </div>
+
+        <textarea
+          v-else
+          :value="editor.currentContent"
+          class="w-full flex-1 resize-none bg-transparent outline-none p-4 font-mono text-sm leading-relaxed"
+          spellcheck="false"
+          placeholder="Start writing markdown…"
+          @input="onInput"
+        />
+      </div>
     </template>
   </UDashboardPanel>
 </template>

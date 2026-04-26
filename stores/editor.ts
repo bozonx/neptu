@@ -98,7 +98,7 @@ export const useEditorStore = defineStore('editor', () => {
     if (payload.vault.type === 'git') {
       await useGitStore().refreshStatus(payload.vault.id)
     }
-    await openFile(fullPath)
+    await useTabsStore().openFile(fullPath)
     return fullPath
   }
 
@@ -111,6 +111,7 @@ export const useEditorStore = defineStore('editor', () => {
       if (payload.vault.type === 'git') useGitStore().cancelCommit(payload.vault.id)
       reset()
     }
+    await useTabsStore().dropByPath(payload.path)
     await fs.deleteFile(payload.path)
     const vaults = useVaultsStore()
     await vaults.refreshTree(payload.vault)
