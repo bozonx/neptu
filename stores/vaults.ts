@@ -5,6 +5,7 @@ import {
   type FileNode,
   type GitVaultSettings,
   type Vault,
+  type VaultGroup,
 } from '~/types'
 
 function generateId() {
@@ -42,6 +43,7 @@ function pickVaultForPath(vaults: Vault[], filePath: string): Vault | null {
 export const useVaultsStore = defineStore('vaults', () => {
   const list = ref<Vault[]>([])
   const trees = ref<Record<string, FileNode[]>>({})
+  const groups = ref<VaultGroup[]>([])
 
   function findById(id: string): Vault | null {
     return list.value.find((v) => v.id === id) ?? null
@@ -55,7 +57,7 @@ export const useVaultsStore = defineStore('vaults', () => {
    * Initial load from `AppConfig`. Ensures the main repo is always present in
    * the vault list (in case the config file was edited manually).
    */
-  async function hydrate(vaults: Vault[], mainRepoPath: string) {
+  async function hydrate(vaults: Vault[], mainRepoPath: string, loadedGroups?: VaultGroup[]) {
     let mutated = false
     if (!vaults.some((v) => v.path === mainRepoPath)) {
       vaults.unshift({
@@ -81,6 +83,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     }
 
     list.value = vaults
+    groups.value = loadedGroups ?? []
 
     if (mutated) await useSettingsStore().persist()
     await refreshAllTrees()
@@ -216,9 +219,30 @@ export const useVaultsStore = defineStore('vaults', () => {
     await Promise.all(list.value.map((v) => refreshTree(v)))
   }
 
+  async function addGroup(name: string) {
+    const group: VaultGroup = {
+      id: generateId(),
+      name: name.trim(),
+    }
+    groups.value.push(group)
+    await useSettingsStore().persist()
+  }
+
+  async function removeGroup(id: string) {
+    for (const v of list.value) {
+      if (v.groupId === id) {
+        delete v.groupId
+      }
+    }
+    const idx = groups.value.findIndex((g) => g.id === id)
+    if (idx !== -1) groups.value.splice(idx, 1)
+    await useSettingsStore().persist()
+  }
+
   return {
     list,
     trees,
+    groups,
     findById,
     findVaultForPath,
     hydrate,
@@ -228,5 +252,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     createVaultFolder,
     refreshTree,
     refreshAllTrees,
+    addGroup,
+    removeGroup,
   }
 })

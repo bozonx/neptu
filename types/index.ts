@@ -76,6 +76,11 @@ export interface GitVaultSettings {
   commitDebounceMs: number
 }
 
+export interface VaultGroup {
+  id: string
+  name: string
+}
+
 export interface Vault {
   id: string
   name: string
@@ -87,6 +92,8 @@ export interface Vault {
   filters?: FileFilterSettings
   /** Whether to show hidden files and folders (names starting with ".") */
   showHidden?: boolean
+  /** ID of the group this vault belongs to */
+  groupId?: string
 }
 
 export interface FileNode {
@@ -117,6 +124,7 @@ export interface AppConfig {
   version: 1
   vaults: Vault[]
   settings: AppSettings
+  groups: VaultGroup[]
 }
 
 export interface AddVaultPayload {

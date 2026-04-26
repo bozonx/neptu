@@ -1,0 +1,186 @@
+<script setup lang="ts">
+import type { FileFilterSettings, FileNode, Vault } from '~/types'
+import type { DropdownMenuItem } from '@nuxt/ui'
+
+interface Props {
+  vault: Vault
+  expanded: boolean
+  nodes: FileNode[]
+  activePath: string | null
+  filters?: FileFilterSettings
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  toggle: []
+  createNote: [vault: Vault]
+  createFolder: [vault: Vault]
+  editVault: [vault: Vault]
+  removeVault: [vault: Vault]
+}>()
+
+const settings = useSettingsStore()
+const editor = useEditorStore()
+const git = useGitStore()
+const tabs = useTabsStore()
+const toast = useToast()
+
+function vaultMenuItems(): DropdownMenuItem[][] {
+  const groups: DropdownMenuItem[][] = []
+  const top: DropdownMenuItem[] = [
+    { label: 'Edit vault', icon: 'i-lucide-pencil', onSelect: () => emit('editVault', props.vault) },
+  ]
+  if (props.vault.path !== settings.mainRepoPath) {
+    top.push({
+      label: 'Remove from app',
+      icon: 'i-lucide-trash-2',
+      color: 'error',
+      onSelect: () => emit('removeVault', props.vault),
+    })
+  }
+  if (top.length) groups.push(top)
+  if (props.vault.type === 'git') {
+    groups.push([
+      { label: 'Pull', icon: 'i-lucide-git-pull-request', onSelect: () => handlePull() },
+      { label: 'Push', icon: 'i-lucide-git-pull-request-arrow', onSelect: () => handlePush() },
+    ])
+  }
+  return groups
+}
+
+async function handleSync() {
+  if (props.vault.type !== 'git') return
+  try {
+    await git.commit(props.vault.id)
+    await useGit().pull(props.vault.path)
+    await useGit().push(props.vault.path)
+    toast.add({ title: 'Sync completed', color: 'success' })
+    await git.refreshStatus(props.vault.id)
+  }
+  catch (error) {
+    toast.add({ title: 'Sync failed', description: String(error), color: 'error' })
+  }
+}
+
+async function handlePull() {
+  if (props.vault.type !== 'git') return
+  try {
+    const output = await useGit().pull(props.vault.path)
+    toast.add({ title: 'Pull completed', description: output || undefined, color: 'success' })
+    await git.refreshStatus(props.vault.id)
+  }
+  catch (error) {
+    toast.add({ title: 'Pull failed', description: String(error), color: 'error' })
+  }
+}
+
+async function handlePush() {
+  if (props.vault.type !== 'git') return
+  try {
+    const output = await useGit().push(props.vault.path)
+    toast.add({ title: 'Push completed', description: output || undefined, color: 'success' })
+    await git.refreshStatus(props.vault.id)
+  }
+  catch (error) {
+    toast.add({ title: 'Push failed', description: String(error), color: 'error' })
+  }
+}
+
+function openFile(path: string) {
+  tabs.openFile(path).catch((error: unknown) => {
+    toast.add({ title: 'Failed to open file', description: String(error), color: 'error' })
+  })
+}
+
+async function handleDelete(node: FileNode) {
+  if (!confirm(`Delete "${node.name}"? This cannot be undone.`)) return
+  try {
+    await editor.deleteNote({ vault: props.vault, path: node.path })
+  }
+  catch (error) {
+    toast.add({ title: 'Failed to delete', description: String(error), color: 'error' })
+  }
+}
+</script>
+
+<template>
+  <div>
+    <div
+      class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated hover:ring-1 hover:ring-inset hover:ring-border/50"
+      @click="emit('toggle')"
+    >
+      <div class="flex items-center gap-1 min-w-0">
+        <UIcon
+          :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
+          class="size-4 shrink-0"
+          :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"
+        />
+        <span class="truncate text-sm font-medium">{{ vault.name }}</span>
+        <UIcon
+          name="i-lucide-chevron-right"
+          class="size-4 text-muted shrink-0 transition-transform"
+          :class="{ 'rotate-90': expanded }"
+        />
+      </div>
+
+      <div class="flex items-center justify-between gap-1 min-w-0 h-6">
+        <span class="text-xs text-muted capitalize hidden md:block">
+          {{ vault.type }}
+        </span>
+        <div class="flex items-center gap-1 md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity">
+          <UButton
+            icon="i-lucide-file-plus"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            title="New note"
+            @click.stop="emit('createNote', vault)"
+          />
+          <UButton
+            icon="i-lucide-folder-plus"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            title="New folder"
+            @click.stop="emit('createFolder', vault)"
+          />
+          <UButton
+            v-if="vault.type === 'git'"
+            icon="i-lucide-refresh-cw"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            title="Sync (pull & push)"
+            @click.stop="handleSync()"
+          />
+          <UDropdownMenu
+            :items="vaultMenuItems()"
+            :modal="false"
+            size="xs"
+          >
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              title="More"
+              @click.stop
+            />
+          </UDropdownMenu>
+        </div>
+      </div>
+    </div>
+
+    <VaultTree
+      v-if="expanded"
+      :vault="vault"
+      :nodes="nodes"
+      :active-path="activePath"
+      :filters="filters"
+      @open="openFile"
+      @delete="handleDelete"
+      @create-in="(d) => emit('createNote', vault)"
+    />
+  </div>
+</template>

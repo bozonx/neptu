@@ -11,6 +11,7 @@ const DEFAULT_CONFIG: AppConfig = {
   version: 1,
   vaults: [],
   settings: { ...DEFAULT_SETTINGS },
+  groups: [],
 }
 
 /**
@@ -52,6 +53,7 @@ export function useConfig() {
         version: 1,
         vaults: parsed.vaults ?? [],
         settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
+        groups: parsed.groups ?? [],
       }
     }
     catch {

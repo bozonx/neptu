@@ -6,8 +6,8 @@ useHead({
 </script>
 
 <template>
-  <UApp>
-    <NuxtLayout>
+  <UApp class="h-full">
+    <NuxtLayout class="h-full">
       <NuxtPage />
     </NuxtLayout>
   </UApp>

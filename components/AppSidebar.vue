@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import type { FileNode, GitCommitMode, Vault, VaultType } from '~/types'
-import type { DropdownMenuItem } from '@nuxt/ui'
-import VaultTree from '~/components/VaultTree.vue'
+import type { GitCommitMode, Vault, VaultType, VaultGroup } from '~/types'
 import SettingsDialog from '~/components/SettingsDialog.vue'
+import VaultSidebarItem from '~/components/VaultSidebarItem.vue'
 
 const settings = useSettingsStore()
 const vaults = useVaultsStore()
 const editor = useEditorStore()
-const tabs = useTabsStore()
 const git = useGitStore()
 const toast = useToast()
 
@@ -34,6 +32,17 @@ const editingVault = ref<Vault | null>(null)
 
 const removeVaultConfirmOpen = ref(false)
 const removeVaultConfirmTarget = ref<Vault | null>(null)
+
+const createGroupOpen = ref(false)
+const newGroupName = ref('')
+const removeGroupConfirmOpen = ref(false)
+const removeGroupConfirmTarget = ref<VaultGroup | null>(null)
+const expandedGroups = ref<Record<string, boolean>>({})
+
+const ungroupedVaults = computed(() => vaults.list.filter((v) => !v.groupId))
+function vaultsInGroup(groupId: string) {
+  return vaults.list.filter((v) => v.groupId === groupId)
+}
 
 const vaultTypeItems = [
   { label: 'Local folder', value: 'local' },
@@ -141,16 +150,6 @@ async function submitCreateNote() {
   }
 }
 
-async function handleDelete(vault: Vault, node: FileNode) {
-  if (!confirm(`Delete "${node.name}"? This cannot be undone.`)) return
-  try {
-    await editor.deleteNote({ vault, path: node.path })
-  }
-  catch (error) {
-    toast.add({ title: 'Failed to delete', description: String(error), color: 'error' })
-  }
-}
-
 function openRemoveVaultConfirm(vault: Vault) {
   removeVaultConfirmTarget.value = vault
   removeVaultConfirmOpen.value = true
@@ -173,6 +172,33 @@ async function submitRemoveVault() {
   }
 }
 
+function toggleGroup(group: VaultGroup) {
+  expandedGroups.value[group.id] = !expandedGroups.value[group.id]
+}
+
+function openCreateGroup() {
+  newGroupName.value = ''
+  createGroupOpen.value = true
+}
+
+async function submitCreateGroup() {
+  if (!newGroupName.value.trim()) return
+  await vaults.addGroup(newGroupName.value.trim())
+  createGroupOpen.value = false
+}
+
+function openRemoveGroupConfirm(group: VaultGroup) {
+  removeGroupConfirmTarget.value = group
+  removeGroupConfirmOpen.value = true
+}
+
+async function submitRemoveGroup() {
+  if (!removeGroupConfirmTarget.value) return
+  await vaults.removeGroup(removeGroupConfirmTarget.value.id)
+  removeGroupConfirmOpen.value = false
+  removeGroupConfirmTarget.value = null
+}
+
 function openCreateFolder(vault: Vault, dir?: string) {
   newFolderCtx.value = { vault, dir: dir ?? vault.path }
   newFolderName.value = ''
@@ -190,50 +216,6 @@ async function submitCreateFolder() {
   }
 }
 
-async function handleSync(vault: Vault) {
-  if (vault.type !== 'git') return
-  try {
-    await git.commit(vault.id)
-    await useGit().pull(vault.path)
-    await useGit().push(vault.path)
-    toast.add({ title: 'Sync completed', color: 'success' })
-    await git.refreshStatus(vault.id)
-  }
-  catch (error) {
-    toast.add({ title: 'Sync failed', description: String(error), color: 'error' })
-  }
-}
-
-async function handlePull(vault: Vault) {
-  if (vault.type !== 'git') return
-  try {
-    const output = await useGit().pull(vault.path)
-    toast.add({ title: 'Pull completed', description: output || undefined, color: 'success' })
-    await git.refreshStatus(vault.id)
-  }
-  catch (error) {
-    toast.add({ title: 'Pull failed', description: String(error), color: 'error' })
-  }
-}
-
-async function handlePush(vault: Vault) {
-  if (vault.type !== 'git') return
-  try {
-    const output = await useGit().push(vault.path)
-    toast.add({ title: 'Push completed', description: output || undefined, color: 'success' })
-    await git.refreshStatus(vault.id)
-  }
-  catch (error) {
-    toast.add({ title: 'Push failed', description: String(error), color: 'error' })
-  }
-}
-
-function openFile(path: string) {
-  tabs.openFile(path).catch((error: unknown) => {
-    toast.add({ title: 'Failed to open file', description: String(error), color: 'error' })
-  })
-}
-
 // Per-vault expansion state in the sidebar.
 // The main repository is expanded by default so the user can start editing immediately.
 const expandedVaults = ref<Record<string, boolean>>({})
@@ -247,29 +229,6 @@ watchEffect(() => {
 
 function toggleVault(vault: Vault) {
   expandedVaults.value[vault.id] = !expandedVaults.value[vault.id]
-}
-
-function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
-  const groups: DropdownMenuItem[][] = []
-  const top: DropdownMenuItem[] = [
-    { label: 'Edit vault', icon: 'i-lucide-pencil', onSelect: () => openEditVault(vault) },
-  ]
-  if (vault.path !== settings.mainRepoPath) {
-    top.push({
-      label: 'Remove from app',
-      icon: 'i-lucide-trash-2',
-      color: 'error',
-      onSelect: () => openRemoveVaultConfirm(vault),
-    })
-  }
-  if (top.length) groups.push(top)
-  if (vault.type === 'git') {
-    groups.push([
-      { label: 'Pull', icon: 'i-lucide-git-pull-request', onSelect: () => handlePull(vault) },
-      { label: 'Push', icon: 'i-lucide-git-pull-request-arrow', onSelect: () => handlePush(vault) },
-    ])
-  }
-  return groups
 }
 </script>
 
@@ -285,87 +244,77 @@ function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
         No vaults yet. Add a folder to get started.
       </div>
 
-      <div
-        v-for="vault in vaults.list"
+      <VaultSidebarItem
+        v-for="vault in ungroupedVaults"
         :key="vault.id"
+        class="mb-2"
+        :vault="vault"
+        :expanded="expandedVaults[vault.id] ?? false"
+        :nodes="vaults.trees[vault.id] ?? []"
+        :active-path="editor.currentFilePath"
+        :filters="vault.filters"
+        @toggle="toggleVault(vault)"
+        @create-note="(v) => openCreateNote(v)"
+        @create-folder="(v) => openCreateFolder(v)"
+        @edit-vault="(v) => openEditVault(v)"
+        @remove-vault="(v) => openRemoveVaultConfirm(v)"
+      />
+
+      <div
+        v-for="group in vaults.groups"
+        :key="group.id"
         class="mb-2"
       >
         <div
-          class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated hover:ring-1 hover:ring-inset hover:ring-border/50"
-          @click="toggleVault(vault)"
+          class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/50 hover:ring-1 hover:ring-inset hover:ring-border/50"
+          @click="toggleGroup(group)"
         >
-          <div class="flex items-center gap-1 min-w-0">
-            <UIcon
-              :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
-              class="size-4 shrink-0"
-              :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"
+          <UIcon
+            name="i-lucide-chevron-right"
+            class="size-4 text-muted shrink-0 transition-transform"
+            :class="{ 'rotate-90': expandedGroups[group.id] }"
+          />
+          <UIcon
+            name="i-lucide-folder-closed"
+            class="size-4 text-muted shrink-0"
+          />
+          <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
+          <UDropdownMenu
+            :items="[[{ label: 'Delete group', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
+            :modal="false"
+            size="xs"
+          >
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              title="More"
+              @click.stop
             />
-            <span class="truncate text-sm font-medium">{{ vault.name }}</span>
-            <UIcon
-              name="i-lucide-chevron-right"
-              class="size-4 text-muted shrink-0 transition-transform"
-              :class="{ 'rotate-90': expandedVaults[vault.id] }"
-            />
-          </div>
-
-          <div class="flex items-center justify-between gap-1 min-w-0 h-6">
-            <span class="text-xs text-muted capitalize hidden md:block">
-              {{ vault.type }}
-            </span>
-            <div class="flex items-center gap-1 md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity">
-              <UButton
-                icon="i-lucide-file-plus"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                title="New note"
-                @click.stop="openCreateNote(vault)"
-              />
-              <UButton
-                icon="i-lucide-folder-plus"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                title="New folder"
-                @click.stop="openCreateFolder(vault)"
-              />
-              <UButton
-                v-if="vault.type === 'git'"
-                icon="i-lucide-refresh-cw"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                title="Sync (pull & push)"
-                @click.stop="handleSync(vault)"
-              />
-              <UDropdownMenu
-                :items="vaultMenuItems(vault)"
-                :modal="false"
-                size="xs"
-              >
-                <UButton
-                  icon="i-lucide-ellipsis-vertical"
-                  size="xs"
-                  color="neutral"
-                  variant="ghost"
-                  title="More"
-                  @click.stop
-                />
-              </UDropdownMenu>
-            </div>
-          </div>
+          </UDropdownMenu>
         </div>
 
-        <VaultTree
-          v-if="expandedVaults[vault.id]"
-          :vault="vault"
-          :nodes="vaults.trees[vault.id] ?? []"
-          :active-path="editor.currentFilePath"
-          :filters="vault.filters"
-          @open="openFile"
-          @delete="(n) => handleDelete(vault, n)"
-          @create-in="(d) => openCreateNote(vault, d)"
-        />
+        <div
+          v-if="expandedGroups[group.id]"
+          class="pl-3 mt-1 space-y-1"
+        >
+          <VaultSidebarItem
+            v-for="vault in vaultsInGroup(group.id)"
+            :key="vault.id"
+            class="mb-2"
+            :vault="vault"
+            :expanded="expandedVaults[vault.id] ?? false"
+            :nodes="vaults.trees[vault.id] ?? []"
+            :active-path="editor.currentFilePath"
+            :filters="vault.filters"
+            @toggle="toggleVault(vault)"
+            @create-note="(v) => openCreateNote(v)"
+            @create-folder="(v) => openCreateFolder(v)"
+            @edit-vault="(v) => openEditVault(v)"
+            @remove-vault="(v) => openRemoveVaultConfirm(v)"
+          />
+        </div>
       </div>
     </div>
 
@@ -377,6 +326,13 @@ function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
           size="xs"
           variant="ghost"
           @click="addVaultOpen = true"
+        />
+        <UButton
+          icon="i-lucide-folder-closed-plus"
+          label="Create group"
+          size="xs"
+          variant="ghost"
+          @click="openCreateGroup"
         />
       </div>
       <UButton
@@ -539,6 +495,67 @@ function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
             color="error"
             label="Remove"
             @click="submitRemoveVault"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="createGroupOpen"
+      title="Create group"
+    >
+      <template #body>
+        <UFormField label="Group name">
+          <UInput
+            v-model="newGroupName"
+            placeholder="Work vaults"
+            autofocus
+          />
+        </UFormField>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="createGroupOpen = false"
+          />
+          <UButton
+            label="Create"
+            :disabled="!newGroupName.trim()"
+            @click="submitCreateGroup"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="removeGroupConfirmOpen"
+      title="Delete group"
+    >
+      <template #body>
+        <p class="text-sm">
+          Delete "<strong>{{ removeGroupConfirmTarget?.name }}</strong>"?
+        </p>
+        <p class="text-xs text-muted mt-1">
+          Vaults inside this group will be ungrouped. No files or data will be deleted.
+        </p>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="removeGroupConfirmOpen = false"
+          />
+          <UButton
+            color="error"
+            label="Delete"
+            @click="submitRemoveGroup"
           />
         </div>
       </template>

@@ -3,7 +3,7 @@ import AppSidebar from '~/components/AppSidebar.vue'
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
+  <div class="flex flex-col h-screen overflow-hidden">
     <TopBar />
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <UDashboardSidebar
@@ -13,7 +13,7 @@ import AppSidebar from '~/components/AppSidebar.vue'
         <AppSidebar />
       </UDashboardSidebar>
 
-      <div class="flex-1 overflow-hidden">
+      <div class="flex-1 min-h-0 overflow-hidden">
         <slot />
       </div>
     </div>
