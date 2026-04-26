@@ -15,6 +15,7 @@ const emit = defineEmits<{
 const settings = useSettingsStore()
 const vaults = useVaultsStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const editVaultName = ref('')
 const editVaultPath = ref<string | null>(null)
@@ -62,7 +63,7 @@ async function browseEditFolder() {
     if (path) editVaultPath.value = path
   }
   catch (error) {
-    toast.add({ title: 'Cannot open dialog', description: String(error), color: 'error' })
+    toast.add({ title: t('toast.cannotOpenDialog'), description: String(error), color: 'error' })
   }
 }
 
@@ -85,7 +86,7 @@ async function save() {
   }
   catch (error) {
     toast.add({
-      title: 'Failed to auto-save vault',
+      title: t('toast.autoSaveFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
@@ -108,15 +109,15 @@ watch(open, (val) => {
 })
 
 const commitModeItems = [
-  { label: 'Auto-commit (debounced)', value: 'auto' as const },
-  { label: 'Manual (Commit button)', value: 'manual' as const },
+  { label: t('vault.autoCommit'), value: 'auto' as const },
+  { label: t('vault.manualCommit'), value: 'manual' as const },
 ]
 </script>
 
 <template>
   <USlideover
     v-model:open="open"
-    title="Vault settings"
+    :title="$t('vault.editVault')"
     description="Configure name, path, git and filters for the selected vault"
     side="right"
     class="w-full sm:max-w-[480px]"
@@ -125,27 +126,27 @@ const commitModeItems = [
       <div class="space-y-6">
         <section class="space-y-3">
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-            General
+            {{ $t('vault.name') }}
           </h3>
-          <UFormField label="Name">
+          <UFormField :label="$t('vault.name')">
             <UInput
               v-model="editVaultName"
               placeholder="Vault name"
             />
           </UFormField>
 
-          <UFormField label="Folder">
+          <UFormField :label="$t('vault.folder')">
             <div class="flex items-center gap-2">
               <UInput
                 :model-value="editVaultPath ?? ''"
                 readonly
-                placeholder="No folder selected"
+                :placeholder="$t('vault.noFolderSelected')"
                 class="flex-1"
                 :disabled="vault?.path === settings.mainRepoPath"
               />
               <UButton
                 icon="i-lucide-folder-search"
-                label="Browse"
+                :label="$t('vault.browse')"
                 :disabled="vault?.path === settings.mainRepoPath"
                 @click="browseEditFolder"
               />
@@ -156,9 +157,9 @@ const commitModeItems = [
         <template v-if="vault?.type === 'git'">
           <section class="space-y-3">
             <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-              Git
+              {{ $t('settings.git') }}
             </h3>
-            <UFormField label="Commit mode">
+            <UFormField :label="$t('vault.commitMode')">
               <URadioGroup
                 v-model="editCommitMode"
                 :items="commitModeItems"
@@ -166,7 +167,7 @@ const commitModeItems = [
             </UFormField>
             <UFormField
               v-if="editCommitMode === 'auto'"
-              label="Commit debounce (seconds)"
+              :label="$t('vault.commitDebounce')"
             >
               <UInput
                 v-model="editCommitDebounceSec"
@@ -248,7 +249,7 @@ const commitModeItems = [
             </p>
             <UButton
               icon="i-lucide-trash-2"
-              label="Remove from app"
+              :label="$t('vault.removeFromApp')"
               color="error"
               variant="soft"
               size="sm"
@@ -265,7 +266,7 @@ const commitModeItems = [
         <UButton
           color="neutral"
           variant="ghost"
-          label="Close"
+          :label="$t('settings.close')"
           @click="open = false"
         />
       </div>

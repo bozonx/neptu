@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const settings = useSettingsStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const open = ref(true)
 const loading = ref(false)
@@ -16,7 +17,7 @@ async function chooseMainRepo() {
   }
   catch (error) {
     toast.add({
-      title: 'Failed to set main repository',
+      title: t('toast.setMainRepoFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
@@ -31,17 +32,17 @@ async function chooseMainRepo() {
   <UModal
     v-model:open="open"
     :dismissible="false"
-    title="Welcome to Neptu"
-    description="Choose a main repository — a folder where your notes will live."
+    :title="$t('welcome.title')"
+    :description="$t('welcome.description')"
   >
     <template #body>
       <div class="space-y-3 text-sm">
         <p>
-          The main repository is just a regular folder on your computer.
-          It will be added as your first vault.
+          {{ $t('welcome.info1') }}
+          {{ $t('welcome.info2') }}
         </p>
         <p class="text-muted">
-          App settings are stored in the Tauri app config directory.
+          {{ $t('welcome.info3') }}
         </p>
       </div>
     </template>
@@ -50,7 +51,7 @@ async function chooseMainRepo() {
       <div class="flex justify-end w-full">
         <UButton
           icon="i-lucide-folder-open"
-          label="Choose folder"
+          :label="$t('welcome.chooseFolder')"
           :loading="loading"
           @click="chooseMainRepo"
         />

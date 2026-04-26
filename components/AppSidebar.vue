@@ -8,6 +8,7 @@ const vaults = useVaultsStore()
 const editor = useEditorStore()
 const git = useGitStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const settingsOpen = ref(false)
 
@@ -48,18 +49,18 @@ function vaultsInGroup(groupId: string) {
 }
 
 const vaultTypeItems = [
-  { label: 'Local folder', value: 'local' },
-  { label: 'Git repository (local)', value: 'git' },
+  { label: t('vault.localFolder'), value: 'local' },
+  { label: t('vault.gitRepo'), value: 'git' },
 ] satisfies Array<{ label: string, value: VaultType, disabled?: boolean }>
 
 const gitModeItems = [
-  { label: 'Connect existing repository', value: 'connect' as const },
-  { label: 'Initialize new repository', value: 'init' as const },
+  { label: t('vault.connectExisting'), value: 'connect' as const },
+  { label: t('vault.initNew'), value: 'init' as const },
 ]
 
 const commitModeItems = [
-  { label: 'Auto-commit (debounced)', value: 'auto' as const },
-  { label: 'Manual (Commit button)', value: 'manual' as const },
+  { label: t('vault.autoCommit'), value: 'auto' as const },
+  { label: t('vault.manualCommit'), value: 'manual' as const },
 ]
 
 function resetAddForm() {
@@ -81,7 +82,7 @@ async function browseFolder() {
     if (path) newVaultPath.value = path
   }
   catch (error) {
-    toast.add({ title: 'Cannot open dialog', description: String(error), color: 'error' })
+    toast.add({ title: t('toast.cannotOpenDialog'), description: String(error), color: 'error' })
   }
 }
 
@@ -93,8 +94,8 @@ async function submitNewVault() {
     const author = await git.resolveAuthor()
     if (!author) {
       toast.add({
-        title: 'Configure git author first',
-        description: 'Set author name/email in Settings or run `git config --global user.name/email`.',
+        title: t('toast.configureGitAuthor'),
+        description: t('toast.gitAuthorHint'),
         color: 'warning',
       })
       settingsOpen.value = true
@@ -120,7 +121,7 @@ async function submitNewVault() {
   }
   catch (error) {
     toast.add({
-      title: 'Failed to add vault',
+      title: t('toast.addVaultFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
@@ -149,7 +150,7 @@ async function submitCreateNote() {
     newNoteOpen.value = false
   }
   catch (error) {
-    toast.add({ title: 'Failed to create note', description: String(error), color: 'error' })
+    toast.add({ title: t('toast.createNoteFailed'), description: String(error), color: 'error' })
   }
 }
 
@@ -171,7 +172,7 @@ async function submitRemoveVault() {
     }
   }
   catch (error) {
-    toast.add({ title: 'Failed to remove vault', description: String(error), color: 'error' })
+    toast.add({ title: t('toast.removeVaultFailed'), description: String(error), color: 'error' })
   }
 }
 
@@ -215,7 +216,7 @@ async function submitCreateFolder() {
     newFolderOpen.value = false
   }
   catch (error) {
-    toast.add({ title: 'Failed to create folder', description: String(error), color: 'error' })
+    toast.add({ title: t('toast.createFolderFailed'), description: String(error), color: 'error' })
   }
 }
 
@@ -242,8 +243,8 @@ function toggleVault(vault: Vault) {
     <UContextMenu
       :items="[
         [
-          { label: 'Add vault', icon: 'i-lucide-folder-plus', onSelect: () => addVaultOpen = true },
-          { label: 'Create group', icon: 'i-lucide-folder-closed-plus', onSelect: () => openCreateGroup() },
+          { label: $t('sidebar.addVault'), icon: 'i-lucide-folder-plus', onSelect: () => addVaultOpen = true },
+          { label: $t('sidebar.createGroup'), icon: 'i-lucide-folder-closed-plus', onSelect: () => openCreateGroup() },
         ],
       ]"
       :modal="false"
@@ -253,7 +254,7 @@ function toggleVault(vault: Vault) {
           v-if="vaults.list.length === 0"
           class="text-sm text-muted px-2 py-4"
         >
-          No vaults yet. Add a folder to get started.
+          {{ $t('sidebar.noVaults') }}
         </div>
 
         <VaultSidebarItem
@@ -299,7 +300,7 @@ function toggleVault(vault: Vault) {
           class="mb-2"
         >
           <UContextMenu
-            :items="[[{ label: 'Delete group', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
+            :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
             :modal="false"
           >
             <div
@@ -317,7 +318,7 @@ function toggleVault(vault: Vault) {
               />
               <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
               <UDropdownMenu
-                :items="[[{ label: 'Delete group', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
+                :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
                 :modal="false"
                 size="xs"
               >
@@ -326,7 +327,7 @@ function toggleVault(vault: Vault) {
                   size="xs"
                   color="neutral"
                   variant="ghost"
-                  title="More"
+                  :title="$t('vault.more')"
                   @click.stop
                 />
               </UDropdownMenu>
@@ -361,14 +362,14 @@ function toggleVault(vault: Vault) {
       <div class="flex-1 flex items-center gap-1">
         <UButton
           icon="i-lucide-folder-plus"
-          label="Add vault"
+          :label="$t('sidebar.addVault')"
           size="xs"
           variant="ghost"
           @click="addVaultOpen = true"
         />
         <UButton
           icon="i-lucide-folder-closed-plus"
-          label="Create group"
+          :label="$t('sidebar.createGroup')"
           size="xs"
           variant="ghost"
           @click="openCreateGroup"
@@ -379,20 +380,20 @@ function toggleVault(vault: Vault) {
         size="xs"
         color="neutral"
         variant="ghost"
-        title="Settings"
+        :title="$t('sidebar.settings')"
         @click="settingsOpen = true"
       />
     </div>
 
     <UModal
       v-model:open="addVaultOpen"
-      title="Add vault"
+      :title="$t('sidebar.addVault')"
     >
       <template #body>
         <div class="space-y-3">
           <UFormField
-            label="Name"
-            hint="Optional, defaults to folder name"
+            :label="$t('vault.name')"
+            :hint="$t('vault.nameHint')"
           >
             <UInput
               v-model="newVaultName"
@@ -400,38 +401,38 @@ function toggleVault(vault: Vault) {
             />
           </UFormField>
 
-          <UFormField label="Type">
+          <UFormField :label="$t('vault.type')">
             <URadioGroup
               v-model="newVaultType"
               :items="vaultTypeItems"
             />
           </UFormField>
 
-          <UFormField label="Folder">
+          <UFormField :label="$t('vault.folder')">
             <div class="flex items-center gap-2">
               <UInput
                 :model-value="newVaultPath ?? ''"
                 readonly
-                placeholder="No folder selected"
+                :placeholder="$t('vault.noFolderSelected')"
                 class="flex-1"
               />
               <UButton
                 icon="i-lucide-folder-search"
-                label="Browse"
+                :label="$t('vault.browse')"
                 @click="browseFolder"
               />
             </div>
           </UFormField>
 
           <template v-if="newVaultType === 'git'">
-            <UFormField label="Repository">
+            <UFormField :label="$t('vault.repository')">
               <URadioGroup
                 v-model="newGitMode"
                 :items="gitModeItems"
               />
             </UFormField>
 
-            <UFormField label="Commit mode">
+            <UFormField :label="$t('vault.commitMode')">
               <URadioGroup
                 v-model="newCommitMode"
                 :items="commitModeItems"
@@ -440,8 +441,8 @@ function toggleVault(vault: Vault) {
 
             <UFormField
               v-if="newCommitMode === 'auto'"
-              label="Commit debounce (seconds)"
-              hint="Counted from the last autosave; new edits reset it."
+              :label="$t('vault.commitDebounce')"
+              :hint="$t('vault.commitDebounceHint')"
             >
               <UInput
                 v-model="newCommitDebounceSec"
@@ -459,11 +460,11 @@ function toggleVault(vault: Vault) {
           <UButton
             color="neutral"
             variant="ghost"
-            label="Cancel"
+            :label="$t('vault.cancel')"
             @click="addVaultOpen = false"
           />
           <UButton
-            label="Add"
+            :label="$t('vault.add')"
             :disabled="!newVaultPath"
             @click="submitNewVault"
           />
@@ -480,10 +481,10 @@ function toggleVault(vault: Vault) {
 
     <UModal
       v-model:open="newFolderOpen"
-      title="New folder"
+      :title="$t('vault.newFolder')"
     >
       <template #body>
-        <UFormField label="Folder name">
+        <UFormField :label="$t('vault.folderName')">
           <UInput
             v-model="newFolderName"
             placeholder="my-folder"
@@ -497,11 +498,11 @@ function toggleVault(vault: Vault) {
           <UButton
             color="neutral"
             variant="ghost"
-            label="Cancel"
+            :label="$t('vault.cancel')"
             @click="newFolderOpen = false"
           />
           <UButton
-            label="Create"
+            :label="$t('vault.create')"
             :disabled="!newFolderName.trim()"
             @click="submitCreateFolder"
           />
@@ -511,14 +512,14 @@ function toggleVault(vault: Vault) {
 
     <UModal
       v-model:open="removeVaultConfirmOpen"
-      title="Remove vault"
+      :title="$t('vault.removeVault')"
     >
       <template #body>
         <p class="text-sm">
-          Remove "<strong>{{ removeVaultConfirmTarget?.name }}</strong>" from the app?
+          {{ $t('vault.removeVaultConfirm', { name: removeVaultConfirmTarget?.name }) }}
         </p>
         <p class="text-xs text-muted mt-1">
-          The folder and all its files on disk will remain intact. Only the app settings are removed.
+          {{ $t('vault.removeVaultHint') }}
         </p>
       </template>
 
@@ -527,12 +528,12 @@ function toggleVault(vault: Vault) {
           <UButton
             color="neutral"
             variant="ghost"
-            label="Cancel"
+            :label="$t('vault.cancel')"
             @click="removeVaultConfirmOpen = false"
           />
           <UButton
             color="error"
-            label="Remove"
+            :label="$t('vault.remove')"
             @click="submitRemoveVault"
           />
         </div>
@@ -541,10 +542,10 @@ function toggleVault(vault: Vault) {
 
     <UModal
       v-model:open="createGroupOpen"
-      title="Create group"
+      :title="$t('vault.createGroup')"
     >
       <template #body>
-        <UFormField label="Group name">
+        <UFormField :label="$t('vault.groupName')">
           <UInput
             v-model="newGroupName"
             placeholder="Work vaults"
@@ -558,11 +559,11 @@ function toggleVault(vault: Vault) {
           <UButton
             color="neutral"
             variant="ghost"
-            label="Cancel"
+            :label="$t('vault.cancel')"
             @click="createGroupOpen = false"
           />
           <UButton
-            label="Create"
+            :label="$t('vault.create')"
             :disabled="!newGroupName.trim()"
             @click="submitCreateGroup"
           />
@@ -572,14 +573,14 @@ function toggleVault(vault: Vault) {
 
     <UModal
       v-model:open="removeGroupConfirmOpen"
-      title="Delete group"
+      :title="$t('sidebar.deleteGroup')"
     >
       <template #body>
         <p class="text-sm">
-          Delete "<strong>{{ removeGroupConfirmTarget?.name }}</strong>"?
+          {{ $t('vault.deleteGroupConfirm', { name: removeGroupConfirmTarget?.name }) }}
         </p>
         <p class="text-xs text-muted mt-1">
-          Vaults inside this group will be ungrouped. No files or data will be deleted.
+          {{ $t('vault.deleteGroupHint') }}
         </p>
       </template>
 
@@ -588,12 +589,12 @@ function toggleVault(vault: Vault) {
           <UButton
             color="neutral"
             variant="ghost"
-            label="Cancel"
+            :label="$t('vault.cancel')"
             @click="removeGroupConfirmOpen = false"
           />
           <UButton
             color="error"
-            label="Delete"
+            :label="$t('vault.delete')"
             @click="submitRemoveGroup"
           />
         </div>
@@ -602,12 +603,12 @@ function toggleVault(vault: Vault) {
 
     <UModal
       v-model:open="newNoteOpen"
-      title="New note"
+      :title="$t('vault.newNote')"
     >
       <template #body>
         <UFormField
-          label="File name"
-          hint="`.md` is added automatically"
+          :label="$t('vault.fileName')"
+          :hint="$t('vault.fileNameHint')"
         >
           <UInput
             v-model="newNoteName"
@@ -622,11 +623,11 @@ function toggleVault(vault: Vault) {
           <UButton
             color="neutral"
             variant="ghost"
-            label="Cancel"
+            :label="$t('vault.cancel')"
             @click="newNoteOpen = false"
           />
           <UButton
-            label="Create"
+            :label="$t('vault.create')"
             :disabled="!newNoteName.trim()"
             @click="submitCreateNote"
           />

@@ -19,6 +19,8 @@ const emit = defineEmits<{
   createIn: [dirPath: string]
 }>()
 
+const { t } = useI18n()
+
 const expanded = ref<Record<string, boolean>>({})
 
 function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
@@ -48,8 +50,8 @@ function toggle(node: FileNode) {
 function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
   return [
     [
-      { label: 'Open in new panel', icon: 'i-lucide-panel-right-open', onSelect: () => emit('openInNewPanel', node.path) },
-      { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
+      { label: t('vault.openInNewPanel'), icon: 'i-lucide-panel-right-open', onSelect: () => emit('openInNewPanel', node.path) },
+      { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
     ],
   ]
 }
@@ -57,8 +59,8 @@ function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
 function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
   return [
     [
-      { label: 'New note', icon: 'i-lucide-file-plus', onSelect: () => emit('createIn', node.path) },
-      { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
+      { label: t('vault.newNoteBtn'), icon: 'i-lucide-file-plus', onSelect: () => emit('createIn', node.path) },
+      { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
     ],
   ]
 }

@@ -118,6 +118,8 @@ export interface AppSettings {
   layoutMode: LayoutMode
   /** UI Theme */
   theme: Theme
+  /** UI language locale */
+  locale: string
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -127,6 +129,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitAuthorEmail: '',
   layoutMode: 'auto',
   theme: 'system',
+  locale: 'en-US',
 }
 
 export interface AppConfig {

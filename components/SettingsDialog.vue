@@ -5,6 +5,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 const settingsStore = useSettingsStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const activeTab = ref('general')
 const tabs = [
@@ -18,6 +19,7 @@ const authorName = ref('')
 const authorEmail = ref('')
 const layoutMode = ref<AppSettings['layoutMode']>('auto')
 const theme = ref<AppSettings['theme']>('system')
+const locale = ref<AppSettings['locale']>('en-US')
 const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
 const newMainPath = ref('')
@@ -37,6 +39,7 @@ watch(open, async (value) => {
   authorEmail.value = s.gitAuthorEmail
   layoutMode.value = s.layoutMode
   theme.value = s.theme
+  locale.value = s.locale
   newMainPath.value = ''
   try {
     const git = useGit()
@@ -83,18 +86,18 @@ async function copyConfigPath() {
   if (!configPath.value) return
   try {
     await navigator.clipboard.writeText(configPath.value)
-    toast.add({ title: 'Copied to clipboard', color: 'success' })
+    toast.add({ title: t('toast.copied'), color: 'success' })
   }
   catch {
-    toast.add({ title: 'Failed to copy', color: 'error' })
+    toast.add({ title: t('toast.copyFailed'), color: 'error' })
   }
 }
 
 const detectedHint = computed(() => {
   if (!detectedAuthor.value) return ''
   const { name, email } = detectedAuthor.value
-  if (!name && !email) return 'Not configured in git'
-  return `Detected from git: ${name ?? '—'} <${email ?? '—'}>`
+  if (!name && !email) return t('settings.notConfigured')
+  return t('settings.detectedFromGit', { name: name ?? '—', email: email ?? '—' })
 })
 
 async function save() {
@@ -106,12 +109,13 @@ async function save() {
       gitAuthorEmail: authorEmail.value.trim(),
       layoutMode: layoutMode.value,
       theme: theme.value,
+      locale: locale.value,
     })
     colorMode.preference = theme.value
   }
   catch (error) {
     toast.add({
-      title: 'Failed to auto-save settings',
+      title: t('toast.autoSaveFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
@@ -121,7 +125,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme],
+  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -169,29 +173,41 @@ watch(
                 Interface
               </h3>
               <UFormField
-                label="Theme"
-                hint="Switch between light and dark modes."
+                :label="$t('settings.language')"
               >
                 <URadioGroup
-                  v-model="theme"
+                  v-model="locale"
                   :items="[
-                    { label: 'System', value: 'system' },
-                    { label: 'Light', value: 'light' },
-                    { label: 'Dark', value: 'dark' },
+                    { label: 'English', value: 'en-US' },
+                    { label: 'Русский', value: 'ru-RU' },
                   ]"
                 />
               </UFormField>
 
               <UFormField
-                label="Layout Mode"
-                hint="Switch between desktop and mobile interfaces."
+                :label="$t('settings.theme')"
+                :hint="$t('settings.themeHint')"
+              >
+                <URadioGroup
+                  v-model="theme"
+                  :items="[
+                    { label: $t('settings.system'), value: 'system' },
+                    { label: $t('settings.light'), value: 'light' },
+                    { label: $t('settings.dark'), value: 'dark' },
+                  ]"
+                />
+              </UFormField>
+
+              <UFormField
+                :label="$t('settings.layoutMode')"
+                :hint="$t('settings.layoutModeHint')"
               >
                 <URadioGroup
                   v-model="layoutMode"
                   :items="[
-                    { label: 'Automatic (Screen size)', value: 'auto' },
-                    { label: 'Force Desktop', value: 'desktop' },
-                    { label: 'Force Mobile', value: 'mobile' },
+                    { label: $t('settings.auto'), value: 'auto' },
+                    { label: $t('settings.desktop'), value: 'desktop' },
+                    { label: $t('settings.mobile'), value: 'mobile' },
                   ]"
                 />
               </UFormField>
@@ -199,11 +215,11 @@ watch(
 
             <section class="space-y-4">
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
-                Editor
+                {{ $t('settings.editor') }}
               </h3>
               <UFormField
-                label="Autosave debounce (seconds)"
-                hint="Applies to every vault — how long to wait after the last keystroke before writing the file to disk."
+                :label="$t('settings.autosaveDebounce')"
+                :hint="$t('settings.autosaveDebounceHint')"
               >
                 <UInput
                   v-model="autosaveSec"
@@ -247,9 +263,9 @@ watch(
 
             <section class="space-y-4">
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
-                Storage
+                {{ $t('settings.storage') }}
               </h3>
-              <UFormField label="Config path">
+              <UFormField :label="$t('settings.configPath')">
                 <div class="flex items-center gap-2">
                   <UInput
                     :model-value="configPath"
@@ -275,11 +291,11 @@ watch(
           >
             <section class="space-y-4">
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
-                Git Settings
+                {{ $t('settings.git') }}
               </h3>
               <UFormField
-                label="Default commit debounce (seconds)"
-                hint="Used as the default for new git vaults in auto-commit mode. The timer starts after each autosave."
+                :label="$t('settings.defaultCommitDebounce')"
+                :hint="$t('settings.defaultCommitDebounceHint')"
               >
                 <UInput
                   v-model="commitSec"
@@ -291,21 +307,21 @@ watch(
               </UFormField>
 
               <UFormField
-                label="Author name"
+                :label="$t('settings.authorName')"
                 :hint="detectedHint"
               >
                 <UInput
                   v-model="authorName"
-                  placeholder="Leave empty to use git's global config"
+                  :placeholder="$t('settings.authorHint')"
                   class="w-full"
                 />
               </UFormField>
 
-              <UFormField label="Author email">
+              <UFormField :label="$t('settings.authorEmail')">
                 <UInput
                   v-model="authorEmail"
                   type="email"
-                  placeholder="Leave empty to use git's global config"
+                  :placeholder="$t('settings.authorHint')"
                   class="w-full"
                 />
               </UFormField>
@@ -319,10 +335,9 @@ watch(
       <UButton
         color="neutral"
         variant="ghost"
-        label="Close"
+        :label="$t('settings.close')"
         @click="open = false"
       />
     </template>
   </UModal>
 </template>
-

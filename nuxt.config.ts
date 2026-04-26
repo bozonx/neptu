@@ -2,7 +2,7 @@
 /// <reference types="node" />
 export default defineNuxtConfig({
 
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt'],
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt', '@nuxtjs/i18n'],
 
   // SPA mode required for Tauri
   ssr: false,
@@ -54,6 +54,20 @@ export default defineNuxtConfig({
         quotes: 'single',
         commaDangle: 'always-multiline',
       },
+    },
+  },
+
+  i18n: {
+    strategy: 'no_prefix',
+    defaultLocale: 'en-US',
+    locales: [
+      { code: 'en-US', name: 'English', file: 'en-US.json' },
+      { code: 'ru-RU', name: 'Русский', file: 'ru-RU.json' },
+    ],
+    langDir: 'locales/',
+    detectBrowserLanguage: false,
+    bundle: {
+      optimizeTranslationDirective: false,
     },
   },
 })
