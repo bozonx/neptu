@@ -45,13 +45,6 @@ export const useTabsStore = defineStore('tabs', () => {
     return [...allLeaves(panel.first), ...allLeaves(panel.second)]
   }
 
-  function findLeafForPath(panel: Panel, path: string): PanelLeaf | null {
-    if (panel.type === 'leaf') {
-      return panel.tabs.some((t) => t.filePath === path) ? panel : null
-    }
-    return findLeafForPath(panel.first, path) ?? findLeafForPath(panel.second, path)
-  }
-
   const activePanel = computed(() => findLeaf(desktopLayout.value, activeDesktopPanelId.value))
 
   async function openFile(path: string) {
@@ -69,11 +62,20 @@ export const useTabsStore = defineStore('tabs', () => {
       await editor.openFile(path)
     }
     else {
-      let panel = activePanel.value
+      let panel: PanelLeaf | null = activePanel.value
       if (!panel) {
-        panel = allLeaves(desktopLayout.value)[0]
-        activeDesktopPanelId.value = panel.id
+        const leaves = allLeaves(desktopLayout.value)
+        if (leaves.length === 0) {
+          desktopLayout.value = createLeaf()
+          activeDesktopPanelId.value = (desktopLayout.value as PanelLeaf).id
+          panel = desktopLayout.value as PanelLeaf
+        }
+        else {
+          panel = leaves[0]!
+          activeDesktopPanelId.value = panel.id
+        }
       }
+      if (!panel) return
 
       const existing = panel.tabs.find((t) => t.filePath === path)
       if (existing) {
@@ -148,7 +150,8 @@ export const useTabsStore = defineStore('tabs', () => {
         }
         // Ensure active panel ID is still valid
         if (activeDesktopPanelId.value === panelId) {
-          activeDesktopPanelId.value = allLeaves(desktopLayout.value)[0].id
+          const leaves = allLeaves(desktopLayout.value)
+          activeDesktopPanelId.value = leaves.length > 0 ? leaves[0]!.id : (desktopLayout.value as PanelLeaf).id
         }
       }
     }
@@ -257,14 +260,16 @@ export const useTabsStore = defineStore('tabs', () => {
     const leaves = allLeaves(desktopLayout.value)
     for (const leaf of leaves) {
       const idx = leaf.tabs.findIndex((t) => t.filePath === path)
-      if (idx !== -1) {
-        await closeTab(leaf.id, leaf.tabs[idx].id)
+      const tab = leaf.tabs[idx]
+      if (tab) {
+        await closeTab(leaf.id, tab.id)
       }
     }
     // Remove from mobile
     const mIdx = mobileTabs.value.findIndex((t) => t.filePath === path)
-    if (mIdx !== -1) {
-      await closeMobileTab(mobileTabs.value[mIdx].id)
+    const mTab = mobileTabs.value[mIdx]
+    if (mTab) {
+      await closeMobileTab(mTab.id)
     }
   }
 

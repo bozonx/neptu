@@ -10,8 +10,9 @@ const props = defineProps<{
 const tabsStore = useTabsStore()
 
 function handleLayout(sizes: number[]) {
-  if (props.panel.type === 'node') {
-    tabsStore.updatePanelRatio(props.panel.id, sizes[0] / 100)
+  const panel = props.panel!
+  if (panel.type === 'node' && sizes.length > 0) {
+    tabsStore.updatePanelRatio(panel.id, sizes[0]! / 100)
   }
 }
 </script>
@@ -36,6 +37,7 @@ function handleLayout(sizes: number[]) {
         <ResizablePanel
           :id="panel.first.id"
           :default-size="panel.ratio * 100"
+          :min-size="10"
           class="flex min-w-0 min-h-0"
         >
           <PanelContainer :panel="panel.first" />
@@ -49,6 +51,7 @@ function handleLayout(sizes: number[]) {
         <ResizablePanel
           :id="panel.second.id"
           :default-size="(1 - panel.ratio) * 100"
+          :min-size="10"
           class="flex min-w-0 min-h-0"
         >
           <PanelContainer :panel="panel.second" />

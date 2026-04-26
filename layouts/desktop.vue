@@ -2,7 +2,6 @@
 import { PanelGroup, Panel, PanelResizeHandle } from 'vue-resizable-panels'
 import AppSidebar from '~/components/AppSidebar.vue'
 import FileSidebar from '~/components/FileSidebar.vue'
-import PanelContainer from '~/components/PanelContainer.vue'
 
 const editor = useEditorStore()
 const tabsStore = useTabsStore()
@@ -65,7 +64,7 @@ async function handleCommit() {
 
 function handleLayout(sizes: number[]) {
   // We only care about the top-level layout which has exactly 3 panels: [left, center, right]
-  if (sizes.length === 3) {
+  if (sizes.length === 3 && sizes[0] !== undefined && sizes[2] !== undefined) {
     tabsStore.updateSidebarSizes(sizes[0], sizes[2])
   }
 }

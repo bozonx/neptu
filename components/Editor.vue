@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import EditorTabs from '~/components/EditorTabs.vue'
+import type { EditorTab, Panel, PanelLeaf } from '~/types'
 
 const props = defineProps<{
   panelId?: string
@@ -10,7 +11,7 @@ const tabsStore = useTabsStore()
 const editorStore = useEditorStore()
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
-function findLeaf(panel: any, id: string): any {
+function findLeaf(panel: Panel, id: string): PanelLeaf | null {
   if (panel.type === 'leaf') return panel.id === id ? panel : null
   return findLeaf(panel.first, id) ?? findLeaf(panel.second, id)
 }
@@ -21,7 +22,7 @@ const activeTab = computed(() => {
   }
   if (!props.panelId) return null
   const leaf = findLeaf(tabsStore.desktopLayout, props.panelId)
-  return leaf?.tabs.find((t: any) => t.id === leaf.activeId)
+  return leaf?.tabs.find((t: EditorTab) => t.id === leaf.activeId)
 })
 
 const currentFilePath = computed(() => activeTab.value?.filePath ?? null)
@@ -34,7 +35,7 @@ function onInput(event: Event) {
   }
 }
 
-watch(() => currentFilePath.value && editorStore.scrollToLineTrigger[currentFilePath.value], (line) => {
+watch(() => currentFilePath.value ? editorStore.scrollToLineTrigger[currentFilePath.value] : null, (line) => {
   if (line !== undefined && line !== null && textareaRef.value) {
     const text = textareaRef.value.value
     const lines = text.split('\n')
@@ -56,6 +57,38 @@ function handleFocus() {
     tabsStore.activeDesktopPanelId = props.panelId
   }
 }
+
+function saveCursorState() {
+  const el = textareaRef.value
+  const path = currentFilePath.value
+  if (!el || !path) return
+  editorStore.saveCursorPosition(path, {
+    selectionStart: el.selectionStart,
+    selectionEnd: el.selectionEnd,
+    scrollTop: el.scrollTop,
+  })
+  editorStore.saveUiState()
+}
+
+function restoreCursorState() {
+  const el = textareaRef.value
+  const path = currentFilePath.value
+  if (!el || !path) return
+  const pos = editorStore.getCursorPosition(path)
+  if (!pos) return
+  nextTick(() => {
+    if (!textareaRef.value) return
+    const max = textareaRef.value.value.length
+    const start = Math.min(pos.selectionStart, max)
+    const end = Math.min(pos.selectionEnd, max)
+    textareaRef.value.setSelectionRange(start, end)
+    textareaRef.value.scrollTop = pos.scrollTop
+  })
+}
+
+watch(currentFilePath, () => {
+  restoreCursorState()
+})
 </script>
 
 <template>
@@ -90,12 +123,14 @@ function handleFocus() {
 
       <textarea
         v-else
+        :key="currentFilePath"
         ref="textareaRef"
         :value="buffer?.content ?? ''"
         class="w-full flex-1 resize-none bg-transparent outline-none p-6 font-mono text-sm leading-relaxed text-default"
         spellcheck="false"
         placeholder="Start writing markdown…"
         @input="onInput"
+        @blur="saveCursorState"
       />
 
       <!-- Mobile Bottom Toolbar Placeholder -->

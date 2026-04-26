@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { SaveStatus, Vault } from '~/types'
+import type { CursorPosition, SaveStatus, Vault } from '~/types'
 
 const SAVED_HINT_MS = 1500
 
@@ -132,6 +132,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function deleteNote(payload: { vault: Vault, path: string }) {
     const fs = useFs()
     if (payload.vault.type === 'git') useGitStore().cancelCommit(payload.vault.id)
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete buffers.value[payload.path]
 
     await useTabsStore().dropByPath(payload.path)
@@ -145,6 +146,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   function reset(path?: string) {
     if (path) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete buffers.value[path]
     }
     else {
@@ -175,6 +177,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   const scrollToLineTrigger = ref<Record<string, number | null>>({})
   const activeRightTab = ref<'info' | 'outline'>('outline')
+  const cursorPositions = ref<Record<string, CursorPosition>>({})
 
   function scrollToLine(line: number, path?: string) {
     const p = path ?? currentFilePath.value
@@ -185,10 +188,19 @@ export const useEditorStore = defineStore('editor', () => {
     })
   }
 
+  function saveCursorPosition(path: string, position: CursorPosition) {
+    cursorPositions.value[path] = position
+  }
+
+  function getCursorPosition(path: string): CursorPosition | undefined {
+    return cursorPositions.value[path]
+  }
+
   async function loadUiState() {
     const config = useConfig()
     const state = await config.loadUiState()
     activeRightTab.value = state.activeRightTab
+    cursorPositions.value = state.cursorPositions ?? {}
     await useTabsStore().loadUiState(state)
   }
 
@@ -203,6 +215,7 @@ export const useEditorStore = defineStore('editor', () => {
       mobileActiveId: tabs.mobileActiveId,
       leftSidebarSize: tabs.leftSidebarSize,
       rightSidebarSize: tabs.rightSidebarSize,
+      cursorPositions: cursorPositions.value,
     })
   }
 
@@ -217,6 +230,7 @@ export const useEditorStore = defineStore('editor', () => {
     currentVault,
     activeRightTab,
     scrollToLineTrigger,
+    cursorPositions,
     openFile,
     setContent,
     save,
@@ -224,6 +238,8 @@ export const useEditorStore = defineStore('editor', () => {
     deleteNote,
     reset,
     scrollToLine,
+    saveCursorPosition,
+    getCursorPosition,
     loadUiState,
     saveUiState,
   }

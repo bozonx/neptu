@@ -158,6 +158,12 @@ export interface PanelNode {
 
 export type Panel = PanelLeaf | PanelNode
 
+export interface CursorPosition {
+  selectionStart: number
+  selectionEnd: number
+  scrollTop: number
+}
+
 export interface UiState {
   activeRightTab: 'outline' | 'info'
   desktopLayout?: Panel
@@ -166,6 +172,7 @@ export interface UiState {
   mobileActiveId?: string | null
   leftSidebarSize?: number
   rightSidebarSize?: number
+  cursorPositions?: Record<string, CursorPosition>
 }
 
 export const DEFAULT_UI_STATE: UiState = {

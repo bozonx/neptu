@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EditorTab } from '~/types'
+import type { EditorTab, Panel, PanelLeaf } from '~/types'
 
 const props = defineProps<{
   panelId?: string
@@ -13,7 +13,7 @@ const vaults = useVaultsStore()
 const tabs = computed(() => {
   if (props.isMobile) return tabsStore.mobileTabs
   if (!props.panelId) return []
-  const leaf = (tabsStore.desktopLayout as any).type === 'leaf' && tabsStore.desktopLayout.id === props.panelId
+  const leaf = tabsStore.desktopLayout.type === 'leaf' && tabsStore.desktopLayout.id === props.panelId
     ? tabsStore.desktopLayout
     : findLeaf(tabsStore.desktopLayout, props.panelId)
   return leaf?.tabs ?? []
@@ -26,7 +26,7 @@ const activeId = computed(() => {
   return leaf?.activeId ?? null
 })
 
-function findLeaf(panel: any, id: string): any {
+function findLeaf(panel: Panel, id: string): PanelLeaf | null {
   if (panel.type === 'leaf') return panel.id === id ? panel : null
   return findLeaf(panel.first, id) ?? findLeaf(panel.second, id)
 }
