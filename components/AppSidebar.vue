@@ -257,7 +257,28 @@ function toggleVault(vault: Vault) {
         </div>
 
         <VaultSidebarItem
-          v-for="vault in ungroupedVaults"
+          v-if="mainVault"
+          :key="mainVault.id"
+          class="mb-2"
+          :vault="mainVault"
+          :expanded="expandedVaults[mainVault.id] ?? false"
+          :nodes="vaults.trees[mainVault.id] ?? []"
+          :active-path="editor.currentFilePath"
+          :filters="mainVault.filters"
+          @toggle="toggleVault(mainVault)"
+          @create-note="(v) => openCreateNote(v)"
+          @create-folder="(v) => openCreateFolder(v)"
+          @edit-vault="(v) => openEditVault(v)"
+          @remove-vault="(v) => openRemoveVaultConfirm(v)"
+        />
+
+        <div
+          v-if="mainVault && otherUngroupedVaults.length"
+          class="my-2 border-t border-default"
+        />
+
+        <VaultSidebarItem
+          v-for="vault in otherUngroupedVaults"
           :key="vault.id"
           class="mb-2"
           :vault="vault"
