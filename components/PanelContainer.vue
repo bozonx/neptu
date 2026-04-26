@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PanelGroup, Panel as ResizablePanel, PanelResizeHandle } from 'vue-resizable-panels'
+import { Splitpanes, Pane } from 'splitpanes'
 import type { Panel } from '~/types'
 import Editor from '~/components/Editor.vue'
 
@@ -9,10 +9,10 @@ const props = defineProps<{
 
 const tabsStore = useTabsStore()
 
-function handleLayout(sizes: number[]) {
+function handleResize(event: Array<{ pane: number, size: number }>) {
   const panel = props.panel!
-  if (panel.type === 'node' && sizes.length > 0) {
-    tabsStore.updatePanelRatio(panel.id, sizes[0]! / 100)
+  if (panel.type === 'node' && event.length > 0) {
+    tabsStore.updatePanelRatio(panel.id, event[0]!.size / 100)
   }
 }
 </script>
@@ -28,35 +28,28 @@ function handleLayout(sizes: number[]) {
     </template>
 
     <template v-else>
-      <PanelGroup
+      <Splitpanes
         :key="panel.id"
-        :direction="panel.direction"
+        :horizontal="panel.direction === 'vertical'"
         class="flex-1 flex min-w-0 min-h-0"
-        @layout="handleLayout"
+        @resized="handleResize"
       >
-        <ResizablePanel
-          :id="panel.first.id"
-          :default-size="panel.ratio * 100"
-          :min-size="10"
+        <Pane
+          :size="panel.ratio * 100"
+          min-size="10"
           class="flex min-w-0 min-h-0"
         >
           <PanelContainer :panel="panel.first" />
-        </ResizablePanel>
+        </Pane>
 
-        <PanelResizeHandle
-          class="bg-default border-default z-20 transition-colors hover:bg-primary/30"
-          :class="panel.direction === 'horizontal' ? 'w-1 cursor-col-resize h-full border-r' : 'h-1 cursor-row-resize w-full border-b'"
-        />
-
-        <ResizablePanel
-          :id="panel.second.id"
-          :default-size="(1 - panel.ratio) * 100"
-          :min-size="10"
+        <Pane
+          :size="(1 - panel.ratio) * 100"
+          min-size="10"
           class="flex min-w-0 min-h-0"
         >
           <PanelContainer :panel="panel.second" />
-        </ResizablePanel>
-      </PanelGroup>
+        </Pane>
+      </Splitpanes>
     </template>
   </div>
 </template>

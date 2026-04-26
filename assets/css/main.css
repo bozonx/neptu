@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+@import "splitpanes/dist/splitpanes.css";
 
 html,
 body,
@@ -7,4 +8,27 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
+}
+
+.splitpanes__splitter {
+  background-color: var(--ui-border);
+  position: relative;
+  z-index: 50;
+  transition: background-color 0.2s;
+}
+
+.splitpanes__splitter:hover {
+  background-color: var(--ui-primary);
+}
+
+.splitpanes--vertical > .splitpanes__splitter {
+  width: 1px;
+  cursor: col-resize;
+  border-right: 1px solid var(--ui-border);
+}
+
+.splitpanes--horizontal > .splitpanes__splitter {
+  height: 1px;
+  cursor: row-resize;
+  border-bottom: 1px solid var(--ui-border);
 }

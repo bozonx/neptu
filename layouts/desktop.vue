@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PanelGroup, Panel, PanelResizeHandle } from 'vue-resizable-panels'
+import { Splitpanes, Pane } from 'splitpanes'
 import AppSidebar from '~/components/AppSidebar.vue'
 import FileSidebar from '~/components/FileSidebar.vue'
 
@@ -62,28 +62,25 @@ async function handleCommit() {
   }
 }
 
-function handleLayout(sizes: number[]) {
-  // We only care about the top-level layout which has exactly 3 panels: [left, center, right]
-  if (sizes.length === 3 && sizes[0] !== undefined && sizes[2] !== undefined) {
-    tabsStore.updateSidebarSizes(sizes[0], sizes[2])
+function handleResize(event: Array<{ pane: number, size: number }>) {
+  // We only care about the top-level layout which has exactly 3 panes: [left, center, right]
+  if (event.length === 3 && event[0] !== undefined && event[2] !== undefined) {
+    tabsStore.updateSidebarSizes(event[0].size, event[2].size)
   }
 }
 </script>
 
 <template>
   <div class="h-screen overflow-hidden bg-default text-default">
-    <PanelGroup
+    <Splitpanes
       id="main-layout"
-      direction="horizontal"
-      @layout="handleLayout"
+      @resized="handleResize"
     >
       <!-- Left Sidebar -->
-      <Panel
-        id="left-sidebar"
-        :default-size="tabsStore.leftSidebarSize"
-        :min-size="15"
-        :max-size="40"
-        :order="1"
+      <Pane
+        :size="tabsStore.leftSidebarSize"
+        min-size="15"
+        max-size="40"
         class="flex flex-col bg-default"
       >
         <div class="h-10 border-b border-default flex items-center px-3 gap-2 shrink-0">
@@ -106,40 +103,24 @@ function handleLayout(sizes: number[]) {
         <div class="flex-1 overflow-hidden">
           <AppSidebar />
         </div>
-      </Panel>
-
-      <PanelResizeHandle
-        id="left-sidebar-handle"
-        class="w-1 hover:bg-primary/30 transition-colors cursor-col-resize z-50 border-r border-default"
-      />
+      </Pane>
 
       <!-- Central Content -->
-      <Panel
-        id="central-content"
-        :order="2"
-        class="flex flex-col min-w-0 bg-default relative"
-      >
+      <Pane class="flex flex-col min-w-0 bg-default relative">
         <main class="flex-1 flex flex-col min-w-0 bg-default relative">
           <slot />
         </main>
-      </Panel>
-
-      <PanelResizeHandle
-        id="right-sidebar-handle"
-        class="w-1 hover:bg-primary/30 transition-colors cursor-col-resize z-50 border-l border-default"
-      />
+      </Pane>
 
       <!-- Right Sidebar -->
-      <Panel
-        id="right-sidebar"
-        :default-size="tabsStore.rightSidebarSize"
-        :min-size="10"
-        :max-size="30"
-        :order="3"
+      <Pane
+        :size="tabsStore.rightSidebarSize"
+        min-size="10"
+        max-size="30"
         class="flex flex-col bg-default"
       >
         <FileSidebar />
-      </Panel>
-    </PanelGroup>
+      </Pane>
+    </Splitpanes>
   </div>
 </template>

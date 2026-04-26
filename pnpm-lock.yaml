@@ -44,6 +44,9 @@ importers:
       pinia:
         specifier: ^2.2.6
         version: 2.3.1(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3))
+      splitpanes:
+        specifier: ^4.0.0
+        version: 4.0.4(vue@3.5.33(typescript@5.9.3))
       tailwindcss:
         specifier: ^4.0.0
         version: 4.2.4
@@ -53,9 +56,6 @@ importers:
       vue-draggable-plus:
         specifier: ^0.6.0
         version: 0.6.1(@types/sortablejs@1.15.9)
-      vue-resizable-panels:
-        specifier: ^0.0.1
-        version: 0.0.1
     devDependencies:
       '@tauri-apps/cli':
         specifier: ^2.1.0
@@ -4501,6 +4501,11 @@ packages:
   spdx-license-ids@3.0.23:
     resolution: {integrity: sha512-CWLcCCH7VLu13TgOH+r8p1O/Znwhqv/dbb6lqWy67G+pT1kHmeD/+V36AVb/vq8QMIQwVShJ6Ssl5FPh0fuSdw==}
 
+  splitpanes@4.0.4:
+    resolution: {integrity: sha512-RbysugZhjbCw5fgplvk3hOXr41stahQDtZhHVkhnnJI6H4wlGDhM2kIpbehy7v92duy9GnMa8zIhHigIV1TWtg==}
+    peerDependencies:
+      vue: ^3.2.0
+
   srvx@0.11.15:
     resolution: {integrity: sha512-iXsux0UcOjdvs0LCMa2Ws3WwcDUozA3JN3BquNXkaFPP7TpRqgunKdEgoZ/uwb1J6xaYHfxtz9Twlh6yzwM6Tg==}
     engines: {node: '>=20.16.0'}
@@ -5016,9 +5021,6 @@ packages:
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
-
-  vue-resizable-panels@0.0.1:
-    resolution: {integrity: sha512-8al3kvbhZWnE6bS14lrKkJ6tc55N/wFeVIo+A/Ip8ZPBc5BIJYOdQU3pexhp+hj6pfxhV9UNynwJYZzAtvkCSg==}
 
   vue-router@5.0.6:
     resolution: {integrity: sha512-9+kmUTGbKMyW9Asoy98IXXYIzrTMT7JDAdpDDeEkorHvybpUvBI2wsrSM5jFOXrFydpzRFJ9vAh+80DN2PGu9w==}
@@ -9994,6 +9996,10 @@ snapshots:
 
   spdx-license-ids@3.0.23: {}
 
+  splitpanes@4.0.4(vue@3.5.33(typescript@5.9.3)):
+    dependencies:
+      vue: 3.5.33(typescript@5.9.3)
+
   srvx@0.11.15: {}
 
   stable-hash-x@0.2.0: {}
@@ -10503,8 +10509,6 @@ snapshots:
       semver: 7.7.4
     transitivePeerDependencies:
       - supports-color
-
-  vue-resizable-panels@0.0.1: {}
 
   vue-router@5.0.6(@vue/compiler-sfc@3.5.33)(pinia@2.3.1(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3)))(vue@3.5.33(typescript@5.9.3)):
     dependencies:
