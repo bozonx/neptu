@@ -8,7 +8,7 @@ function onInput(event: Event) {
 </script>
 
 <template>
-  <UDashboardPanel>
+  <UDashboardPanel class="h-full">
     <template #body>
       <div class="flex h-full flex-col">
         <div

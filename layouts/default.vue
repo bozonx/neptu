@@ -3,9 +3,9 @@ import AppSidebar from '~/components/AppSidebar.vue'
 </script>
 
 <template>
-  <div class="flex flex-col h-screen">
+  <div class="flex flex-col h-full overflow-hidden">
     <TopBar />
-    <div class="flex flex-1 min-h-0">
+    <div class="flex flex-1 min-h-0 overflow-hidden">
       <UDashboardSidebar
         resizable
         :ui="{ root: 'min-w-72' }"
@@ -13,7 +13,9 @@ import AppSidebar from '~/components/AppSidebar.vue'
         <AppSidebar />
       </UDashboardSidebar>
 
-      <slot />
+      <div class="flex-1 overflow-hidden">
+        <slot />
+      </div>
     </div>
   </div>
 </template>
