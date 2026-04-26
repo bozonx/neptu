@@ -2,11 +2,6 @@
 import type { FileNode, Project, ProjectType } from '~/types'
 import ProjectTree from '~/components/ProjectTree.vue'
 
-interface Props {
-  collapsed?: boolean
-}
-defineProps<Props>()
-
 const projects = useProjectsStore()
 const toast = useToast()
 
@@ -96,33 +91,60 @@ function openFile(path: string) {
     toast.add({ title: 'Failed to open file', description: String(error), color: 'error' })
   })
 }
+
+// Per-project expansion state in the sidebar.
+// The main repository is expanded by default so the user can start editing immediately.
+const expandedProjects = ref<Record<string, boolean>>({})
+
+watchEffect(() => {
+  for (const project of projects.projects) {
+    if (expandedProjects.value[project.id] !== undefined) continue
+    expandedProjects.value[project.id] = project.path === projects.mainRepoPath
+  }
+})
+
+function toggleProject(project: Project) {
+  expandedProjects.value[project.id] = !expandedProjects.value[project.id]
+}
 </script>
 
 <template>
   <div class="flex flex-col h-full gap-3 p-2">
     <UButton
       icon="i-lucide-folder-plus"
-      :label="collapsed ? undefined : 'Add project'"
+      label="Add project"
       block
       @click="addProjectOpen = true"
     />
 
-    <div v-if="!collapsed" class="flex-1 overflow-auto">
+    <div class="flex-1 overflow-auto">
       <div v-if="projects.projects.length === 0" class="text-sm text-muted px-2 py-4">
         No projects yet. Add a folder to get started.
       </div>
 
-      <div v-for="project in projects.projects" :key="project.id" class="mb-3">
-        <div class="flex items-center gap-1 px-2 py-1 text-xs uppercase tracking-wide text-muted">
-          <UIcon name="i-lucide-folder" class="size-3.5" />
-          <span class="truncate flex-1">{{ project.name }}</span>
+      <div v-for="project in projects.projects" :key="project.id" class="mb-2">
+        <div
+          class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer hover:bg-elevated"
+          @click="toggleProject(project)"
+        >
+          <UIcon
+            :name="expandedProjects[project.id] ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+            class="size-4 text-muted shrink-0"
+          />
+          <UIcon
+            :name="project.path === projects.mainRepoPath ? 'i-lucide-folder-heart' : 'i-lucide-folder'"
+            class="size-4 shrink-0"
+            :class="project.path === projects.mainRepoPath ? 'text-primary' : 'text-muted'"
+          />
+          <span class="truncate flex-1 text-sm font-medium">{{ project.name }}</span>
           <UButton
             icon="i-lucide-file-plus"
             size="xs"
             color="neutral"
             variant="ghost"
             title="New note"
-            @click="openCreateNote(project)"
+            class="opacity-0 group-hover:opacity-100"
+            @click.stop="openCreateNote(project)"
           />
           <UButton
             v-if="project.path !== projects.mainRepoPath"
@@ -131,11 +153,13 @@ function openFile(path: string) {
             color="neutral"
             variant="ghost"
             title="Remove from list"
-            @click="handleRemoveProject(project)"
+            class="opacity-0 group-hover:opacity-100"
+            @click.stop="handleRemoveProject(project)"
           />
         </div>
 
         <ProjectTree
+          v-if="expandedProjects[project.id]"
           :project="project"
           :nodes="projects.trees[project.id] ?? []"
           :active-path="projects.currentFilePath"

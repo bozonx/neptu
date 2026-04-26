@@ -67,7 +67,7 @@ function fileNameFromPath(path: string | null): string {
     <template #header>
       <UDashboardNavbar :title="fileNameFromPath(projects.currentFilePath) || 'Neptu'">
         <template #leading>
-          <UDashboardSidebarCollapse />
+          <UDashboardSidebarToggle />
         </template>
         <template #right>
           <span class="text-xs" :class="statusColor">{{ statusLabel }}</span>
