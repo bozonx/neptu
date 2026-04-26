@@ -193,6 +193,7 @@ async function submitCreateFolder() {
 async function handleSync(vault: Vault) {
   if (vault.type !== 'git') return
   try {
+    await git.commit(vault.id)
     await useGit().pull(vault.path)
     await useGit().push(vault.path)
     toast.add({ title: 'Sync completed', color: 'success' })
@@ -250,7 +251,9 @@ function toggleVault(vault: Vault) {
 
 function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
   const groups: DropdownMenuItem[][] = []
-  const top: DropdownMenuItem[] = []
+  const top: DropdownMenuItem[] = [
+    { label: 'Edit vault', icon: 'i-lucide-pencil', onSelect: () => openEditVault(vault) },
+  ]
   if (vault.path !== settings.mainRepoPath) {
     top.push({
       label: 'Remove from app',
@@ -272,13 +275,6 @@ function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
 
 <template>
   <div class="flex flex-col h-full gap-3 p-2">
-    <UButton
-      icon="i-lucide-folder-plus"
-      label="Add vault"
-      block
-      @click="addVaultOpen = true"
-    />
-
     <SettingsDialog v-model:open="settingsOpen" />
 
     <div class="flex-1 overflow-auto">
@@ -306,25 +302,17 @@ function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
             />
             <span class="truncate text-sm font-medium">{{ vault.name }}</span>
             <UIcon
-              v-if="!expandedVaults[vault.id]"
               name="i-lucide-chevron-right"
-              class="size-4 text-muted shrink-0"
+              class="size-4 text-muted shrink-0 transition-transform"
+              :class="{ 'rotate-90': expandedVaults[vault.id] }"
             />
           </div>
 
           <div class="flex items-center justify-between gap-1 min-w-0 h-6">
-            <span class="text-xs text-muted capitalize hidden md:block md:opacity-100 md:group-hover:opacity-0 transition-opacity">
+            <span class="text-xs text-muted capitalize hidden md:block">
               {{ vault.type }}
             </span>
             <div class="flex items-center gap-1 md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity">
-              <UButton
-                icon="i-lucide-pencil"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                title="Edit vault"
-                @click.stop="openEditVault(vault)"
-              />
               <UButton
                 icon="i-lucide-file-plus"
                 size="xs"
@@ -381,14 +369,25 @@ function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
       </div>
     </div>
 
-    <UButton
-      icon="i-lucide-settings"
-      label="Settings"
-      color="neutral"
-      variant="ghost"
-      block
-      @click="settingsOpen = true"
-    />
+    <div class="flex items-center gap-1 pt-2 border-t border-default">
+      <div class="flex-1 flex items-center gap-1">
+        <UButton
+          icon="i-lucide-folder-plus"
+          label="Add vault"
+          size="xs"
+          variant="ghost"
+          @click="addVaultOpen = true"
+        />
+      </div>
+      <UButton
+        icon="i-lucide-settings"
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        title="Settings"
+        @click="settingsOpen = true"
+      />
+    </div>
 
     <UModal
       v-model:open="addVaultOpen"

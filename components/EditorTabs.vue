@@ -16,7 +16,7 @@ function vaultName(path: string): string | null {
 <template>
   <div
     v-if="tabs.tabs.length"
-    class="flex items-end gap-0.5 overflow-x-auto border-b border-default bg-muted px-1 pt-1"
+    class="flex items-end gap-0.5 overflow-x-auto px-1 pt-1"
   >
     <button
       v-for="tab in tabs.tabs"

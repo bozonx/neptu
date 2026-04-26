@@ -3,14 +3,17 @@ import AppSidebar from '~/components/AppSidebar.vue'
 </script>
 
 <template>
-  <UDashboardGroup class="h-screen">
-    <UDashboardSidebar
-      resizable
-      :ui="{ root: 'min-w-72' }"
-    >
-      <AppSidebar />
-    </UDashboardSidebar>
+  <div class="flex flex-col h-screen">
+    <TopBar />
+    <div class="flex flex-1 min-h-0">
+      <UDashboardSidebar
+        resizable
+        :ui="{ root: 'min-w-72' }"
+      >
+        <AppSidebar />
+      </UDashboardSidebar>
 
-    <slot />
-  </UDashboardGroup>
+      <slot />
+    </div>
+  </div>
 </template>
