@@ -15,7 +15,8 @@ const DEFAULT_CONFIG: AppConfig = {
 /**
  * Persistent configuration helpers.
  *
- * All config lives in the Tauri app config directory so the OS can back it up.
+ * Config lives in the Tauri app config directory by default so the OS can back
+ * it up. Override with `VITE_NEPTU_DEV_DIR` env variable for development.
  * Two JSON files are written:
  *   - config.json    → AppConfig (vaults, settings, groups, mainRepoPath)
  *   - ui-state.json  → UiState (active tab, etc.)
@@ -24,6 +25,10 @@ export function useConfig() {
   const fs = useFs()
 
   async function configDir(): Promise<string> {
+    const envDir = import.meta.env.VITE_NEPTU_DEV_DIR as string | undefined
+    if (envDir) {
+      return envDir
+    }
     return await appConfigDir()
   }
 

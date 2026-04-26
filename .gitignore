@@ -1,3 +1,5 @@
+.dev-files/
+
 # Nuxt / Node
 node_modules
 .nuxt
