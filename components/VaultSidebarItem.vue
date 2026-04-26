@@ -93,6 +93,12 @@ function openFile(path: string) {
   })
 }
 
+function openFileInNewPanel(path: string) {
+  tabs.openFileInNewPanel(path).catch((error: unknown) => {
+    toast.add({ title: 'Failed to open file in new panel', description: String(error), color: 'error' })
+  })
+}
+
 async function handleDelete(node: FileNode) {
   if (!confirm(`Delete "${node.name}"? This cannot be undone.`)) return
   try {
@@ -179,6 +185,7 @@ async function handleDelete(node: FileNode) {
       :active-path="activePath"
       :filters="filters"
       @open="openFile"
+      @open-in-new-panel="openFileInNewPanel"
       @delete="handleDelete"
       @create-in="(d) => emit('createNote', vault)"
     />

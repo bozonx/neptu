@@ -13,6 +13,7 @@ withDefaults(defineProps<Props>(), { level: 0 })
 
 const emit = defineEmits<{
   open: [path: string]
+  openInNewPanel: [path: string]
   delete: [node: FileNode]
   createIn: [dirPath: string]
 }>()
@@ -83,31 +84,36 @@ function toggle(node: FileNode) {
         :level="level + 1"
         :filters="filters"
         @open="(p) => emit('open', p)"
+        @open-in-new-panel="(p) => emit('openInNewPanel', p)"
         @delete="(n) => emit('delete', n)"
         @create-in="(d) => emit('createIn', d)"
       />
 
-      <div
+      <UContextMenu
         v-if="!node.isDir"
-        class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
-        :class="{ 'bg-elevated text-primary': activePath === node.path }"
-        :style="{ paddingLeft: `${1.25 + level * 0.75}rem` }"
-        @click="emit('open', node.path)"
+        :items="[[{ label: 'Open in new panel', icon: 'i-lucide-panel-right-open', onSelect: () => emit('openInNewPanel', node.path) }]]"
       >
-        <UIcon
-          :name="getFileIcon(node.name, filters)"
-          class="size-4 text-muted shrink-0"
-        />
-        <span class="truncate flex-1">{{ node.name }}</span>
-        <UButton
-          icon="i-lucide-trash-2"
-          size="xs"
-          color="error"
-          variant="ghost"
-          class="opacity-0 group-hover:opacity-100"
-          @click.stop="emit('delete', node)"
-        />
-      </div>
+        <div
+          class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
+          :class="{ 'bg-elevated text-primary': activePath === node.path }"
+          :style="{ paddingLeft: `${1.25 + level * 0.75}rem` }"
+          @click="emit('open', node.path)"
+        >
+          <UIcon
+            :name="getFileIcon(node.name, filters)"
+            class="size-4 text-muted shrink-0"
+          />
+          <span class="truncate flex-1">{{ node.name }}</span>
+          <UButton
+            icon="i-lucide-trash-2"
+            size="xs"
+            color="error"
+            variant="ghost"
+            class="opacity-0 group-hover:opacity-100"
+            @click.stop="emit('delete', node)"
+          />
+        </div>
+      </UContextMenu>
     </li>
   </ul>
 </template>

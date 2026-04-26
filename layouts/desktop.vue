@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PanelGroup, Panel, PanelResizeHandle } from 'vue-resizable-panels'
 import AppSidebar from '~/components/AppSidebar.vue'
 import FileSidebar from '~/components/FileSidebar.vue'
 import PanelContainer from '~/components/PanelContainer.vue'
@@ -61,42 +62,68 @@ async function handleCommit() {
     })
   }
 }
+
+function handleLayout(sizes: number[]) {
+  // sizes are [left, center, right]
+  tabsStore.updateSidebarSizes(sizes[0], sizes[2])
+}
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-default text-default">
-    <!-- Left Sidebar -->
-    <aside class="flex flex-col w-72 border-r border-default shrink-0 bg-default">
-      <div class="h-10 border-b border-default flex items-center px-3 gap-2 shrink-0">
-        <div class="flex items-center gap-2 flex-1 min-w-0">
-          <UIcon
-            name="i-lucide-book-marked"
-            class="size-5 text-primary shrink-0"
+  <div class="h-screen overflow-hidden bg-default text-default">
+    <PanelGroup
+      direction="horizontal"
+      @layout="handleLayout"
+    >
+      <!-- Left Sidebar -->
+      <Panel
+        :default-size="tabsStore.leftSidebarSize"
+        :min-size="15"
+        :max-size="40"
+        class="flex flex-col bg-default"
+      >
+        <div class="h-10 border-b border-default flex items-center px-3 gap-2 shrink-0">
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <UIcon
+              name="i-lucide-book-marked"
+              class="size-5 text-primary shrink-0"
+            />
+            <span class="font-semibold text-sm truncate">Neptu</span>
+          </div>
+          <UButton
+            v-if="showCommitButton"
+            icon="i-lucide-git-commit"
+            label="Commit"
+            size="xs"
+            :loading="committing"
+            @click="handleCommit"
           />
-          <span class="font-semibold text-sm truncate">Neptu</span>
         </div>
-        <UButton
-          v-if="showCommitButton"
-          icon="i-lucide-git-commit"
-          label="Commit"
-          size="xs"
-          :loading="committing"
-          @click="handleCommit"
-        />
-      </div>
-      <div class="flex-1 overflow-hidden">
-        <AppSidebar />
-      </div>
-    </aside>
+        <div class="flex-1 overflow-hidden">
+          <AppSidebar />
+        </div>
+      </Panel>
 
-    <!-- Central Content -->
-    <main class="flex-1 flex flex-col min-w-0 bg-default relative">
-      <slot />
-    </main>
+      <PanelResizeHandle class="w-1 hover:bg-primary/30 transition-colors cursor-col-resize z-50 border-r border-default" />
 
-    <!-- Right Sidebar -->
-    <aside class="flex flex-col w-64 border-l border-default shrink-0 bg-default">
-      <FileSidebar />
-    </aside>
+      <!-- Central Content -->
+      <Panel class="flex flex-col min-w-0 bg-default relative">
+        <main class="flex-1 flex flex-col min-w-0 bg-default relative">
+          <slot />
+        </main>
+      </Panel>
+
+      <PanelResizeHandle class="w-1 hover:bg-primary/30 transition-colors cursor-col-resize z-50 border-l border-default" />
+
+      <!-- Right Sidebar -->
+      <Panel
+        :default-size="tabsStore.rightSidebarSize"
+        :min-size="10"
+        :max-size="30"
+        class="flex flex-col bg-default"
+      >
+        <FileSidebar />
+      </Panel>
+    </PanelGroup>
   </div>
 </template>

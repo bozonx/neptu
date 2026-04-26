@@ -164,6 +164,8 @@ export interface UiState {
   activeDesktopPanelId?: string
   mobileTabs?: EditorTab[]
   mobileActiveId?: string | null
+  leftSidebarSize?: number
+  rightSidebarSize?: number
 }
 
 export const DEFAULT_UI_STATE: UiState = {

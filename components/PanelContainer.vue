@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PanelGroup, Panel as ResizablePanel, PanelResizeHandle } from 'vue-resizable-panels'
 import type { Panel } from '~/types'
 import Editor from '~/components/Editor.vue'
 
@@ -8,9 +9,10 @@ const props = defineProps<{
 
 const tabsStore = useTabsStore()
 
-function handleSplitterResize(event: MouseEvent, panel: any) {
-  // Simple resize logic could be added here
-  // For now we'll just keep it at 50/50 or whatever is set in ratio
+function handleLayout(sizes: number[]) {
+  if (props.panel.type === 'node') {
+    tabsStore.updatePanelRatio(props.panel.id, sizes[0] / 100)
+  }
 }
 </script>
 
@@ -25,33 +27,33 @@ function handleSplitterResize(event: MouseEvent, panel: any) {
     </template>
 
     <template v-else>
-      <div
+      <PanelGroup
+        :key="panel.id"
+        :direction="panel.direction"
         class="flex-1 flex min-w-0 min-h-0"
-        :class="panel.direction === 'horizontal' ? 'flex-row' : 'flex-col'"
+        @layout="handleLayout"
       >
-        <div
-          :style="{
-            flex: panel.ratio,
-          }"
+        <ResizablePanel
+          :id="panel.first.id"
+          :default-size="panel.ratio * 100"
           class="flex min-w-0 min-h-0"
         >
           <PanelContainer :panel="panel.first" />
-        </div>
+        </ResizablePanel>
 
-        <div
-          class="bg-default border-default z-20"
-          :class="panel.direction === 'horizontal' ? 'w-px cursor-col-resize h-full border-r' : 'h-px cursor-row-resize w-full border-b'"
+        <PanelResizeHandle
+          class="bg-default border-default z-20 transition-colors hover:bg-primary/30"
+          :class="panel.direction === 'horizontal' ? 'w-1 cursor-col-resize h-full border-r' : 'h-1 cursor-row-resize w-full border-b'"
         />
 
-        <div
-          :style="{
-            flex: 1 - panel.ratio,
-          }"
+        <ResizablePanel
+          :id="panel.second.id"
+          :default-size="(1 - panel.ratio) * 100"
           class="flex min-w-0 min-h-0"
         >
           <PanelContainer :panel="panel.second" />
-        </div>
-      </div>
+        </ResizablePanel>
+      </PanelGroup>
     </template>
   </div>
 </template>

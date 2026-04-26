@@ -201,6 +201,8 @@ export const useEditorStore = defineStore('editor', () => {
       activeDesktopPanelId: tabs.activeDesktopPanelId,
       mobileTabs: tabs.mobileTabs,
       mobileActiveId: tabs.mobileActiveId,
+      leftSidebarSize: tabs.leftSidebarSize,
+      rightSidebarSize: tabs.rightSidebarSize,
     })
   }
 

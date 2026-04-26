@@ -21,6 +21,9 @@ export const useTabsStore = defineStore('tabs', () => {
   const mobileTabs = ref<EditorTab[]>([])
   const mobileActiveId = ref<string | null>(null)
 
+  const leftSidebarSize = ref(20)
+  const rightSidebarSize = ref(15)
+
   const { isMobile } = useTauri()
 
   // Helpers to traverse the tree
@@ -331,6 +334,8 @@ export const useTabsStore = defineStore('tabs', () => {
     if (state.activeDesktopPanelId) activeDesktopPanelId.value = state.activeDesktopPanelId
     if (state.mobileTabs) mobileTabs.value = state.mobileTabs
     if (state.mobileActiveId) mobileActiveId.value = state.mobileActiveId
+    if (state.leftSidebarSize) leftSidebarSize.value = state.leftSidebarSize
+    if (state.rightSidebarSize) rightSidebarSize.value = state.rightSidebarSize
 
     // Ensure we have at least one leaf
     if (!desktopLayout.value) {
@@ -353,11 +358,40 @@ export const useTabsStore = defineStore('tabs', () => {
     }
   }
 
+  async function updatePanelRatio(panelId: string, ratio: number) {
+    const parent = findParent(desktopLayout.value, panelId)
+    if (parent) {
+      // ratio is applied to the first child usually, but we need to know if this panel is first or second
+      // Actually, it's easier to just find the node itself and update its ratio.
+    }
+
+    // Direct search for the node
+    const findNode = (p: Panel, id: string): PanelNode | null => {
+      if (p.type === 'leaf') return null
+      if (p.id === id) return p
+      return findNode(p.first, id) ?? findNode(p.second, id)
+    }
+
+    const node = findNode(desktopLayout.value, panelId)
+    if (node) {
+      node.ratio = ratio
+      await useEditorStore().saveUiState()
+    }
+  }
+
+  async function updateSidebarSizes(left: number, right: number) {
+    leftSidebarSize.value = left
+    rightSidebarSize.value = right
+    await useEditorStore().saveUiState()
+  }
+
   return {
     desktopLayout,
     activeDesktopPanelId,
     mobileTabs,
     mobileActiveId,
+    leftSidebarSize,
+    rightSidebarSize,
     openFile,
     activateTab,
     activateMobileTab,
@@ -370,5 +404,7 @@ export const useTabsStore = defineStore('tabs', () => {
     dropByPrefix,
     loadUiState,
     allLeaves,
+    updatePanelRatio,
+    updateSidebarSizes,
   }
 })
