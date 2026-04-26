@@ -1,0 +1,256 @@
+<script setup lang="ts">
+import { DEFAULT_FILE_FILTERS, type FileFilterGroup, type GitCommitMode, type Vault } from '~/types'
+
+const props = defineProps<{
+  vault: Vault | null
+}>()
+
+const open = defineModel<boolean>('open', { required: true })
+
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'remove', vault: Vault): void
+}>()
+
+const settings = useSettingsStore()
+const vaults = useVaultsStore()
+const toast = useToast()
+
+const editVaultName = ref('')
+const editVaultPath = ref<string | null>(null)
+const editCommitMode = ref<GitCommitMode>('auto')
+const editCommitDebounceSec = ref(5)
+const editShowHidden = ref(false)
+const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
+const newCustomExt = ref('')
+
+watch(
+  () => [open.value, props.vault] as const,
+  ([isOpen, vault]) => {
+    if (!isOpen || !vault) return
+    editVaultName.value = vault.name
+    editVaultPath.value = vault.path
+    editCommitMode.value = vault.git?.commitMode ?? 'auto'
+    editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? settings.settings.defaultCommitDebounceMs) / 1000
+    editShowHidden.value = vault.showHidden ?? false
+    editFilters.value = vault.filters
+      ? JSON.parse(JSON.stringify(vault.filters))
+      : JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
+    newCustomExt.value = ''
+  },
+  { immediate: true },
+)
+
+function addCustomExtension(group: FileFilterGroup) {
+  const raw = newCustomExt.value.trim().toLowerCase().replace(/^\.+/, '')
+  if (!raw) return
+  if (!group.extensions.some((e) => e.ext === raw)) {
+    group.extensions.push({ ext: raw, enabled: true })
+  }
+  newCustomExt.value = ''
+}
+
+async function browseEditFolder() {
+  try {
+    const path = await useFs().pickDirectory({ title: 'Select vault folder' })
+    if (path) editVaultPath.value = path
+  }
+  catch (error) {
+    toast.add({ title: 'Cannot open dialog', description: String(error), color: 'error' })
+  }
+}
+
+async function submitEditVault() {
+  if (!props.vault) return
+  try {
+    const isGit = props.vault.type === 'git'
+    await vaults.updateVault(props.vault.id, {
+      name: editVaultName.value,
+      path: editVaultPath.value ?? undefined,
+      git: isGit
+        ? {
+            commitMode: editCommitMode.value,
+            commitDebounceMs: Math.max(0, Math.round(editCommitDebounceSec.value * 1000)),
+          }
+        : undefined,
+      filters: editFilters.value,
+      showHidden: editShowHidden.value,
+    })
+    open.value = false
+    emit('close')
+  }
+  catch (error) {
+    toast.add({
+      title: 'Failed to update vault',
+      description: error instanceof Error ? error.message : String(error),
+      color: 'error',
+    })
+  }
+}
+
+const commitModeItems = [
+  { label: 'Auto-commit (debounced)', value: 'auto' as const },
+  { label: 'Manual (Commit button)', value: 'manual' as const },
+]
+</script>
+
+<template>
+  <USlideover
+    v-model:open="open"
+    title="Vault settings"
+    description="Configure name, path, git and filters for the selected vault"
+    side="right"
+    class="w-full sm:max-w-[480px]"
+  >
+    <template #body>
+      <div class="space-y-6">
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            General
+          </h3>
+          <UFormField label="Name">
+            <UInput
+              v-model="editVaultName"
+              placeholder="Vault name"
+            />
+          </UFormField>
+
+          <UFormField label="Folder">
+            <div class="flex items-center gap-2">
+              <UInput
+                :model-value="editVaultPath ?? ''"
+                readonly
+                placeholder="No folder selected"
+                class="flex-1"
+                :disabled="vault?.path === settings.mainRepoPath"
+              />
+              <UButton
+                icon="i-lucide-folder-search"
+                label="Browse"
+                :disabled="vault?.path === settings.mainRepoPath"
+                @click="browseEditFolder"
+              />
+            </div>
+          </UFormField>
+        </section>
+
+        <template v-if="vault?.type === 'git'">
+          <section class="space-y-3">
+            <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+              Git
+            </h3>
+            <UFormField label="Commit mode">
+              <URadioGroup
+                v-model="editCommitMode"
+                :items="commitModeItems"
+              />
+            </UFormField>
+            <UFormField
+              v-if="editCommitMode === 'auto'"
+              label="Commit debounce (seconds)"
+            >
+              <UInput
+                v-model="editCommitDebounceSec"
+                type="number"
+                :min="0"
+                :step="0.5"
+              />
+            </UFormField>
+          </section>
+        </template>
+
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            Visibility
+          </h3>
+          <UFormField label="Show hidden files and folders">
+            <USwitch v-model="editShowHidden" />
+          </UFormField>
+        </section>
+
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            File filters
+          </h3>
+          <div
+            v-for="group in editFilters.groups"
+            :key="group.label"
+            class="space-y-2"
+          >
+            <UCheckbox
+              :label="group.label"
+              :model-value="group.enabled"
+              @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') group.enabled = v }"
+            />
+            <div
+              v-if="group.enabled"
+              class="flex flex-wrap gap-2 ml-6"
+            >
+              <UCheckbox
+                v-for="ext in group.extensions"
+                :key="ext.ext"
+                :label="`.${ext.ext}`"
+                :model-value="ext.enabled"
+                @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') ext.enabled = v }"
+              />
+            </div>
+            <div
+              v-if="group.editable && group.enabled"
+              class="flex items-center gap-2 ml-6"
+            >
+              <UInput
+                v-model="newCustomExt"
+                placeholder="Add custom extension"
+                size="xs"
+                class="w-36"
+                @keydown.enter="addCustomExtension(group)"
+              />
+              <UButton
+                icon="i-lucide-plus"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                @click="addCustomExtension(group)"
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex flex-col gap-3 w-full">
+        <div
+          v-if="vault && vault.path !== settings.mainRepoPath"
+          class="rounded-md bg-error/5 border border-error/10 p-3"
+        >
+          <p class="text-xs text-muted mb-2">
+            The vault folder itself is <strong>not</strong> deleted. Only its settings are removed and it disappears from the app.
+          </p>
+          <UButton
+            icon="i-lucide-trash-2"
+            label="Remove from app"
+            color="error"
+            variant="soft"
+            size="sm"
+            block
+            @click="open = false; emit('remove', vault)"
+          />
+        </div>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="open = false"
+          />
+          <UButton
+            label="Save"
+            :disabled="!editVaultName.trim()"
+            @click="submitEditVault"
+          />
+        </div>
+      </div>
+    </template>
+  </USlideover>
+</template>
