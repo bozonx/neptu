@@ -3,7 +3,10 @@ import type { FileNode, GitCommitMode, Vault, VaultType } from '~/types'
 import VaultTree from '~/components/VaultTree.vue'
 import SettingsDialog from '~/components/SettingsDialog.vue'
 
+const settings = useSettingsStore()
 const vaults = useVaultsStore()
+const editor = useEditorStore()
+const git = useGitStore()
 const toast = useToast()
 
 const settingsOpen = ref(false)
@@ -48,7 +51,7 @@ function resetAddForm() {
   newVaultType.value = 'local'
   newGitMode.value = 'connect'
   newCommitMode.value = 'auto'
-  newCommitDebounceSec.value = vaults.settings.defaultCommitDebounceMs / 1000
+  newCommitDebounceSec.value = settings.settings.defaultCommitDebounceMs / 1000
 }
 
 watch(addVaultOpen, (value) => {
@@ -56,9 +59,8 @@ watch(addVaultOpen, (value) => {
 })
 
 async function browseFolder() {
-  const fs = useFs()
   try {
-    const path = await fs.pickDirectory({ title: 'Select vault folder' })
+    const path = await useFs().pickDirectory({ title: 'Select vault folder' })
     if (path) newVaultPath.value = path
   }
   catch (error) {
@@ -67,9 +69,8 @@ async function browseFolder() {
 }
 
 async function browseEditFolder() {
-  const fs = useFs()
   try {
-    const path = await fs.pickDirectory({ title: 'Select vault folder' })
+    const path = await useFs().pickDirectory({ title: 'Select vault folder' })
     if (path) editVaultPath.value = path
   }
   catch (error) {
@@ -82,7 +83,7 @@ async function submitNewVault() {
 
   // Block git vault creation until an author is configured (in app settings or git's global config)
   if (newVaultType.value === 'git') {
-    const author = await vaults.resolveAuthor()
+    const author = await git.resolveAuthor()
     if (!author) {
       toast.add({
         title: 'Configure git author first',
@@ -130,7 +131,7 @@ function openEditVault(vault: Vault) {
   editVaultName.value = vault.name
   editVaultPath.value = vault.path
   editCommitMode.value = vault.git?.commitMode ?? 'auto'
-  editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? vaults.settings.defaultCommitDebounceMs) / 1000
+  editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? settings.settings.defaultCommitDebounceMs) / 1000
   editVaultOpen.value = true
 }
 
@@ -165,7 +166,7 @@ async function submitEditVault() {
 async function submitCreateNote() {
   if (!newNoteCtx.value || !newNoteName.value.trim()) return
   try {
-    await vaults.createNote({
+    await editor.createNote({
       vault: newNoteCtx.value.vault,
       fileName: newNoteName.value.trim(),
       parentDir: newNoteCtx.value.dir,
@@ -180,7 +181,7 @@ async function submitCreateNote() {
 async function handleDelete(vault: Vault, node: FileNode) {
   if (!confirm(`Delete "${node.name}"? This cannot be undone.`)) return
   try {
-    await vaults.deleteNote({ vault, path: node.path })
+    await editor.deleteNote({ vault, path: node.path })
   }
   catch (error) {
     toast.add({ title: 'Failed to delete', description: String(error), color: 'error' })
@@ -193,7 +194,7 @@ async function handleRemoveVault(vault: Vault) {
 }
 
 function openFile(path: string) {
-  vaults.openFile(path).catch((error: unknown) => {
+  editor.openFile(path).catch((error: unknown) => {
     toast.add({ title: 'Failed to open file', description: String(error), color: 'error' })
   })
 }
@@ -203,9 +204,9 @@ function openFile(path: string) {
 const expandedVaults = ref<Record<string, boolean>>({})
 
 watchEffect(() => {
-  for (const vault of vaults.vaults) {
+  for (const vault of vaults.list) {
     if (expandedVaults.value[vault.id] !== undefined) continue
-    expandedVaults.value[vault.id] = vault.path === vaults.mainRepoPath
+    expandedVaults.value[vault.id] = vault.path === settings.mainRepoPath
   }
 })
 
@@ -226,11 +227,18 @@ function toggleVault(vault: Vault) {
     <SettingsDialog v-model:open="settingsOpen" />
 
     <div class="flex-1 overflow-auto">
-      <div v-if="vaults.vaults.length === 0" class="text-sm text-muted px-2 py-4">
+      <div
+        v-if="vaults.list.length === 0"
+        class="text-sm text-muted px-2 py-4"
+      >
         No vaults yet. Add a folder to get started.
       </div>
 
-      <div v-for="vault in vaults.vaults" :key="vault.id" class="mb-2">
+      <div
+        v-for="vault in vaults.list"
+        :key="vault.id"
+        class="mb-2"
+      >
         <div
           class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer hover:bg-elevated"
           @click="toggleVault(vault)"
@@ -240,9 +248,9 @@ function toggleVault(vault: Vault) {
             class="size-4 text-muted shrink-0"
           />
           <UIcon
-            :name="vault.path === vaults.mainRepoPath ? 'i-lucide-folder-heart' : 'i-lucide-folder'"
+            :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : 'i-lucide-folder'"
             class="size-4 shrink-0"
-            :class="vault.path === vaults.mainRepoPath ? 'text-primary' : 'text-muted'"
+            :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"
           />
           <span class="truncate flex-1 text-sm font-medium">{{ vault.name }}</span>
           <UButton
@@ -264,7 +272,7 @@ function toggleVault(vault: Vault) {
             @click.stop="openCreateNote(vault)"
           />
           <UButton
-            v-if="vault.path !== vaults.mainRepoPath"
+            v-if="vault.path !== settings.mainRepoPath"
             icon="i-lucide-x"
             size="xs"
             color="neutral"
@@ -279,7 +287,7 @@ function toggleVault(vault: Vault) {
           v-if="expandedVaults[vault.id]"
           :vault="vault"
           :nodes="vaults.trees[vault.id] ?? []"
-          :active-path="vaults.currentFilePath"
+          :active-path="editor.currentFilePath"
           @open="openFile"
           @delete="(n) => handleDelete(vault, n)"
           @create-in="(d) => openCreateNote(vault, d)"
@@ -296,15 +304,27 @@ function toggleVault(vault: Vault) {
       @click="settingsOpen = true"
     />
 
-    <UModal v-model:open="addVaultOpen" title="Add vault">
+    <UModal
+      v-model:open="addVaultOpen"
+      title="Add vault"
+    >
       <template #body>
         <div class="space-y-3">
-          <UFormField label="Name" hint="Optional, defaults to folder name">
-            <UInput v-model="newVaultName" placeholder="My notes" />
+          <UFormField
+            label="Name"
+            hint="Optional, defaults to folder name"
+          >
+            <UInput
+              v-model="newVaultName"
+              placeholder="My notes"
+            />
           </UFormField>
 
           <UFormField label="Type">
-            <URadioGroup v-model="newVaultType" :items="vaultTypeItems" />
+            <URadioGroup
+              v-model="newVaultType"
+              :items="vaultTypeItems"
+            />
           </UFormField>
 
           <UFormField label="Folder">
@@ -315,17 +335,27 @@ function toggleVault(vault: Vault) {
                 placeholder="No folder selected"
                 class="flex-1"
               />
-              <UButton icon="i-lucide-folder-search" label="Browse" @click="browseFolder" />
+              <UButton
+                icon="i-lucide-folder-search"
+                label="Browse"
+                @click="browseFolder"
+              />
             </div>
           </UFormField>
 
           <template v-if="newVaultType === 'git'">
             <UFormField label="Repository">
-              <URadioGroup v-model="newGitMode" :items="gitModeItems" />
+              <URadioGroup
+                v-model="newGitMode"
+                :items="gitModeItems"
+              />
             </UFormField>
 
             <UFormField label="Commit mode">
-              <URadioGroup v-model="newCommitMode" :items="commitModeItems" />
+              <URadioGroup
+                v-model="newCommitMode"
+                :items="commitModeItems"
+              />
             </UFormField>
 
             <UFormField
@@ -333,7 +363,12 @@ function toggleVault(vault: Vault) {
               label="Commit debounce (seconds)"
               hint="Counted from the last autosave; new edits reset it."
             >
-              <UInput v-model="newCommitDebounceSec" type="number" :min="0" :step="0.5" />
+              <UInput
+                v-model="newCommitDebounceSec"
+                type="number"
+                :min="0"
+                :step="0.5"
+              />
             </UFormField>
           </template>
         </div>
@@ -341,7 +376,12 @@ function toggleVault(vault: Vault) {
 
       <template #footer>
         <div class="flex justify-end gap-2 w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="addVaultOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="addVaultOpen = false"
+          />
           <UButton
             label="Add"
             :disabled="!newVaultPath"
@@ -351,11 +391,17 @@ function toggleVault(vault: Vault) {
       </template>
     </UModal>
 
-    <UModal v-model:open="editVaultOpen" title="Edit vault">
+    <UModal
+      v-model:open="editVaultOpen"
+      title="Edit vault"
+    >
       <template #body>
         <div class="space-y-3">
           <UFormField label="Name">
-            <UInput v-model="editVaultName" placeholder="Vault name" />
+            <UInput
+              v-model="editVaultName"
+              placeholder="Vault name"
+            />
           </UFormField>
 
           <UFormField label="Folder">
@@ -365,12 +411,12 @@ function toggleVault(vault: Vault) {
                 readonly
                 placeholder="No folder selected"
                 class="flex-1"
-                :disabled="editingVault?.path === vaults.mainRepoPath"
+                :disabled="editingVault?.path === settings.mainRepoPath"
               />
               <UButton
                 icon="i-lucide-folder-search"
                 label="Browse"
-                :disabled="editingVault?.path === vaults.mainRepoPath"
+                :disabled="editingVault?.path === settings.mainRepoPath"
                 @click="browseEditFolder"
               />
             </div>
@@ -378,13 +424,21 @@ function toggleVault(vault: Vault) {
 
           <template v-if="editingVault?.type === 'git'">
             <UFormField label="Commit mode">
-              <URadioGroup v-model="editCommitMode" :items="commitModeItems" />
+              <URadioGroup
+                v-model="editCommitMode"
+                :items="commitModeItems"
+              />
             </UFormField>
             <UFormField
               v-if="editCommitMode === 'auto'"
               label="Commit debounce (seconds)"
             >
-              <UInput v-model="editCommitDebounceSec" type="number" :min="0" :step="0.5" />
+              <UInput
+                v-model="editCommitDebounceSec"
+                type="number"
+                :min="0"
+                :step="0.5"
+              />
             </UFormField>
           </template>
         </div>
@@ -392,7 +446,12 @@ function toggleVault(vault: Vault) {
 
       <template #footer>
         <div class="flex justify-end gap-2 w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="editVaultOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="editVaultOpen = false"
+          />
           <UButton
             label="Save"
             :disabled="!editVaultName.trim()"
@@ -402,16 +461,31 @@ function toggleVault(vault: Vault) {
       </template>
     </UModal>
 
-    <UModal v-model:open="newNoteOpen" title="New note">
+    <UModal
+      v-model:open="newNoteOpen"
+      title="New note"
+    >
       <template #body>
-        <UFormField label="File name" hint="`.md` is added automatically">
-          <UInput v-model="newNoteName" placeholder="my-note" autofocus />
+        <UFormField
+          label="File name"
+          hint="`.md` is added automatically"
+        >
+          <UInput
+            v-model="newNoteName"
+            placeholder="my-note"
+            autofocus
+          />
         </UFormField>
       </template>
 
       <template #footer>
         <div class="flex justify-end gap-2 w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="newNoteOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="newNoteOpen = false"
+          />
           <UButton
             label="Create"
             :disabled="!newNoteName.trim()"

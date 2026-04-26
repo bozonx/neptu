@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const vaults = useVaultsStore()
+const settings = useSettingsStore()
 const toast = useToast()
 
 const open = ref(true)
@@ -11,7 +11,7 @@ async function chooseMainRepo() {
     const fs = useFs()
     const path = await fs.pickDirectory({ title: 'Select main repository folder' })
     if (!path) return
-    await vaults.setMainRepo(path)
+    await settings.setMainRepo(path)
     open.value = false
   }
   catch (error) {

@@ -9,8 +9,8 @@ export function useGit() {
     return invoke<boolean>('git_is_repo', { path })
   }
 
-  function initRepo(path: string): Promise<void> {
-    return invoke<void>('git_init_repo', { path })
+  async function initRepo(path: string): Promise<void> {
+    await invoke('git_init_repo', { path })
   }
 
   function status(path: string): Promise<GitStatusInfo> {

@@ -3,7 +3,7 @@ import type { GitAuthor } from '~/types'
 
 const open = defineModel<boolean>('open', { required: true })
 
-const vaults = useVaultsStore()
+const settingsStore = useSettingsStore()
 const toast = useToast()
 
 const autosaveSec = ref(0)
@@ -15,10 +15,11 @@ const detectedAuthor = ref<GitAuthor | null>(null)
 watch(open, async (value) => {
   if (!value) return
   // Snapshot current settings every time the dialog opens
-  autosaveSec.value = +(vaults.settings.autosaveDebounceMs / 1000).toFixed(2)
-  commitSec.value = +(vaults.settings.defaultCommitDebounceMs / 1000).toFixed(2)
-  authorName.value = vaults.settings.gitAuthorName
-  authorEmail.value = vaults.settings.gitAuthorEmail
+  const s = settingsStore.settings
+  autosaveSec.value = +(s.autosaveDebounceMs / 1000).toFixed(2)
+  commitSec.value = +(s.defaultCommitDebounceMs / 1000).toFixed(2)
+  authorName.value = s.gitAuthorName
+  authorEmail.value = s.gitAuthorEmail
   try {
     const git = useGit()
     detectedAuthor.value = await git.globalAuthor()
@@ -37,7 +38,7 @@ const detectedHint = computed(() => {
 
 async function save() {
   try {
-    await vaults.updateSettings({
+    await settingsStore.updateSettings({
       autosaveDebounceMs: Math.max(100, Math.round(autosaveSec.value * 1000)),
       defaultCommitDebounceMs: Math.max(0, Math.round(commitSec.value * 1000)),
       gitAuthorName: authorName.value.trim(),
@@ -57,7 +58,11 @@ async function save() {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Settings" description="Application-wide preferences (stored inside the main repository's `.neptu/`)">
+  <UModal
+    v-model:open="open"
+    title="Settings"
+    description="Application-wide preferences (stored inside the main repository's `.neptu/`)"
+  >
     <template #body>
       <div class="space-y-6">
         <section class="space-y-3">
@@ -68,7 +73,12 @@ async function save() {
             label="Autosave debounce (seconds)"
             hint="Applies to every vault — how long to wait after the last keystroke before writing the file to disk."
           >
-            <UInput v-model="autosaveSec" type="number" :min="0.1" :step="0.1" />
+            <UInput
+              v-model="autosaveSec"
+              type="number"
+              :min="0.1"
+              :step="0.1"
+            />
           </UFormField>
         </section>
 
@@ -80,15 +90,30 @@ async function save() {
             label="Default commit debounce (seconds)"
             hint="Used as the default for new git vaults in auto-commit mode. The timer starts after each autosave and resets on new edits."
           >
-            <UInput v-model="commitSec" type="number" :min="0" :step="0.5" />
+            <UInput
+              v-model="commitSec"
+              type="number"
+              :min="0"
+              :step="0.5"
+            />
           </UFormField>
 
-          <UFormField label="Author name" :hint="detectedHint">
-            <UInput v-model="authorName" placeholder="Leave empty to use git's global config" />
+          <UFormField
+            label="Author name"
+            :hint="detectedHint"
+          >
+            <UInput
+              v-model="authorName"
+              placeholder="Leave empty to use git's global config"
+            />
           </UFormField>
 
           <UFormField label="Author email">
-            <UInput v-model="authorEmail" type="email" placeholder="Leave empty to use git's global config" />
+            <UInput
+              v-model="authorEmail"
+              type="email"
+              placeholder="Leave empty to use git's global config"
+            />
           </UFormField>
         </section>
       </div>
@@ -96,8 +121,16 @@ async function save() {
 
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="open = false" />
-        <UButton label="Save" @click="save" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="open = false"
+        />
+        <UButton
+          label="Save"
+          @click="save"
+        />
       </div>
     </template>
   </UModal>

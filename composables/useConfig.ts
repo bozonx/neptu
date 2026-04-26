@@ -1,18 +1,11 @@
 import { load as loadStore } from '@tauri-apps/plugin-store'
 import { join } from '@tauri-apps/api/path'
-import type { AppConfig, AppSettings } from '~/types'
+import { DEFAULT_SETTINGS, type AppConfig } from '~/types'
 
 const SYSTEM_STORE_FILE = 'neptu.json'
 const MAIN_REPO_KEY = 'mainRepoPath'
 const NEPTU_DIR = '.neptu'
 const CONFIG_FILE = 'config.json'
-
-export const DEFAULT_SETTINGS: AppSettings = {
-  autosaveDebounceMs: 800,
-  defaultCommitDebounceMs: 5000,
-  gitAuthorName: '',
-  gitAuthorEmail: '',
-}
 
 const DEFAULT_CONFIG: AppConfig = {
   version: 1,
@@ -53,24 +46,24 @@ export function useConfig() {
     const configPath = await join(dir, CONFIG_FILE)
 
     try {
-      const raw = await fs.readMarkdown(configPath)
-      const parsed = JSON.parse(raw) as Partial<AppConfig> & { projects?: unknown[] }
+      const raw = await fs.readText(configPath)
+      const parsed = JSON.parse(raw) as Partial<AppConfig>
       return {
         version: 1,
-        vaults: parsed.vaults ?? (parsed.projects as AppConfig['vaults']) ?? [],
+        vaults: parsed.vaults ?? [],
         settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
       }
     }
     catch {
       // First run inside this repo: write defaults
-      await fs.writeMarkdown(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2))
+      await fs.writeText(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2))
       return { ...DEFAULT_CONFIG }
     }
   }
 
   async function saveAppConfig(repoPath: string, config: AppConfig): Promise<void> {
     const configPath = await getConfigFilePath(repoPath)
-    await fs.writeMarkdown(configPath, JSON.stringify(config, null, 2))
+    await fs.writeText(configPath, JSON.stringify(config, null, 2))
   }
 
   return {

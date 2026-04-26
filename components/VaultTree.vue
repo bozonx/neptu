@@ -8,7 +8,7 @@ interface Props {
   level?: number
 }
 
-const props = withDefaults(defineProps<Props>(), { level: 0 })
+withDefaults(defineProps<Props>(), { level: 0 })
 
 const emit = defineEmits<{
   open: [path: string]
@@ -25,7 +25,10 @@ function toggle(node: FileNode) {
 
 <template>
   <ul class="space-y-0.5">
-    <li v-for="node in nodes" :key="node.path">
+    <li
+      v-for="node in nodes"
+      :key="node.path"
+    >
       <div
         v-if="node.isDir"
         class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
@@ -36,7 +39,10 @@ function toggle(node: FileNode) {
           :name="expanded[node.path] ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
           class="size-4 text-muted shrink-0"
         />
-        <UIcon name="i-lucide-folder" class="size-4 text-muted shrink-0" />
+        <UIcon
+          name="i-lucide-folder"
+          class="size-4 text-muted shrink-0"
+        />
         <span class="truncate flex-1">{{ node.name }}</span>
         <UButton
           icon="i-lucide-file-plus"
@@ -66,7 +72,10 @@ function toggle(node: FileNode) {
         :style="{ paddingLeft: `${1.25 + level * 0.75}rem` }"
         @click="emit('open', node.path)"
       >
-        <UIcon name="i-lucide-file-text" class="size-4 text-muted shrink-0" />
+        <UIcon
+          name="i-lucide-file-text"
+          class="size-4 text-muted shrink-0"
+        />
         <span class="truncate flex-1">{{ node.name }}</span>
         <UButton
           icon="i-lucide-trash-2"

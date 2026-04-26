@@ -2,7 +2,7 @@
 import Editor from '~/components/Editor.vue'
 import FirstRunDialog from '~/components/FirstRunDialog.vue'
 
-const vaults = useVaultsStore()
+const settings = useSettingsStore()
 const { isTauri } = useTauri()
 
 const ready = ref(false)
@@ -14,7 +14,7 @@ onMounted(async () => {
     return
   }
   try {
-    await vaults.init()
+    await settings.init()
   }
   catch (error) {
     initError.value = error instanceof Error ? error.message : String(error)
@@ -26,22 +26,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Editor />
+  <div class="contents">
+    <Editor />
 
-  <FirstRunDialog v-if="ready && vaults.needsMainRepo" />
+    <FirstRunDialog v-if="ready && settings.needsMainRepo" />
 
-  <UModal
-    v-if="!isTauri && ready"
-    :open="true"
-    :dismissible="false"
-    title="Tauri runtime required"
-    description="Neptu needs the Tauri runtime to access the filesystem. Run `pnpm tauri:dev` instead of `pnpm dev`."
-  />
+    <UModal
+      v-if="!isTauri && ready"
+      :open="true"
+      :dismissible="false"
+      title="Tauri runtime required"
+      description="Neptu needs the Tauri runtime to access the filesystem. Run `pnpm tauri:dev` instead of `pnpm dev`."
+    />
 
-  <UModal
-    v-if="initError"
-    :open="true"
-    title="Initialization error"
-    :description="initError"
-  />
+    <UModal
+      v-if="initError"
+      :open="true"
+      title="Initialization error"
+      :description="initError"
+    />
+  </div>
 </template>

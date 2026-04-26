@@ -34,10 +34,26 @@ export interface AppSettings {
   gitAuthorEmail: string
 }
 
+export const DEFAULT_SETTINGS: AppSettings = {
+  autosaveDebounceMs: 800,
+  defaultCommitDebounceMs: 5000,
+  gitAuthorName: '',
+  gitAuthorEmail: '',
+}
+
 export interface AppConfig {
   version: 1
   vaults: Vault[]
   settings: AppSettings
+}
+
+export interface AddVaultPayload {
+  name?: string
+  type: VaultType
+  path: string
+  /** Required for git vaults */
+  gitMode?: 'init' | 'connect'
+  git?: GitVaultSettings
 }
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'

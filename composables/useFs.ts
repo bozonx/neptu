@@ -10,7 +10,9 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { join, sep } from '@tauri-apps/api/path'
 import type { FileNode } from '~/types'
 
-const HIDDEN_DIRS = new Set(['.git', '.neptu', 'node_modules', '.idea', '.vscode'])
+// Non-hidden directories we still want to skip while scanning vaults.
+// Dot-prefixed directories are filtered by `startsWith('.')`.
+const SKIP_DIRS = new Set(['node_modules'])
 
 /**
  * Native filesystem helpers backed by Tauri plugins.
@@ -34,11 +36,11 @@ export function useFs() {
     }
   }
 
-  async function readMarkdown(path: string) {
+  async function readText(path: string) {
     return await readTextFile(path)
   }
 
-  async function writeMarkdown(path: string, content: string) {
+  async function writeText(path: string, content: string) {
     await writeTextFile(path, content)
   }
 
@@ -55,7 +57,8 @@ export function useFs() {
 
   /**
    * Recursively scans a directory and returns a tree of folders and `.md` files.
-   * Hidden/system folders are skipped.
+   * Hidden (`.git`, `.neptu`, …) and system folders are skipped, but empty
+   * subdirectories are kept so the user can still create notes inside them.
    */
   async function scanMarkdownTree(rootPath: string): Promise<FileNode[]> {
     async function walk(dirPath: string): Promise<FileNode[]> {
@@ -66,11 +69,9 @@ export function useFs() {
         if (!entry.name) continue
 
         if (entry.isDirectory) {
-          if (HIDDEN_DIRS.has(entry.name) || entry.name.startsWith('.')) continue
+          if (entry.name.startsWith('.') || SKIP_DIRS.has(entry.name)) continue
           const childPath = await join(dirPath, entry.name)
           const children = await walk(childPath)
-          // Skip empty branches (no markdown anywhere inside)
-          if (children.length === 0) continue
           nodes.push({
             name: entry.name,
             path: childPath,
@@ -102,8 +103,8 @@ export function useFs() {
   return {
     pickDirectory,
     ensureDir,
-    readMarkdown,
-    writeMarkdown,
+    readText,
+    writeText,
     deleteFile,
     createMarkdown,
     scanMarkdownTree,

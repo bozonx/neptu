@@ -35,16 +35,24 @@ Cross-platform markdown notes editor for desktop and mobile, built on
 ```
 package.json          # Nuxt + Tauri scripts
 nuxt.config.ts        # ssr: false, modules, vite tweaks for Tauri
+eslint.config.mjs     # ESLint flat config (extends @nuxt/eslint)
+AGENTS.md             # Conventions for AI agents working on this repo
 app.config.ts         # Nuxt UI theme
 app.vue / pages/      # entry + index page
 layouts/default.vue   # UDashboardGroup + UDashboardSidebar
 components/           # AppSidebar, VaultTree, Editor, FirstRunDialog, SettingsDialog
 composables/          # useFs, useConfig, useTauri, useGit
-stores/vaults.ts      # main state (Pinia)
+stores/                # Pinia setup-stores
+  settings.ts         # main repo path + AppSettings + persist()
+  vaults.ts           # vault list and file trees
+  git.ts              # git status, commit timers, debounced auto-commit
+  editor.ts           # active file buffer + autosave
 types/index.ts        # shared types
 src-tauri/            # Rust shell (Cargo.toml, tauri.conf.json, capabilities)
   src/git.rs          # libgit2-backed git commands
 ```
+
+See [AGENTS.md](./AGENTS.md) for architecture rules and conventions.
 
 ## Prerequisites
 
@@ -85,6 +93,14 @@ pnpm tauri:dev
 
 Tauri starts the Nuxt dev server (`pnpm dev`) on the configured port and opens the native
 window. Edits hot-reload.
+
+## Lint & typecheck
+
+```bash
+pnpm lint        # ESLint flat config (Nuxt + stylistic)
+pnpm lint:fix    # autofix
+pnpm typecheck   # vue-tsc via `nuxt typecheck`
+```
 
 ## Build desktop bundle
 

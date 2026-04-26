@@ -4,7 +4,10 @@ import AppSidebar from '~/components/AppSidebar.vue'
 
 <template>
   <UDashboardGroup class="h-screen">
-    <UDashboardSidebar resizable :ui="{ root: 'min-w-72' }">
+    <UDashboardSidebar
+      resizable
+      :ui="{ root: 'min-w-72' }"
+    >
       <AppSidebar />
     </UDashboardSidebar>
 
