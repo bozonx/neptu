@@ -53,6 +53,15 @@ function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
     ],
   ]
 }
+
+function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
+  return [
+    [
+      { label: 'New note', icon: 'i-lucide-file-plus', onSelect: () => emit('createIn', node.path) },
+      { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
+    ],
+  ]
+}
 </script>
 
 <template>
@@ -61,30 +70,41 @@ function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
       v-for="node in nodes"
       :key="node.path"
     >
-      <div
+      <UContextMenu
         v-if="node.isDir"
-        class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
-        :style="{ paddingLeft: `${0.5 + level * 0.75}rem` }"
-        @click="toggle(node)"
+        :items="folderMenuItems(node)"
+        :modal="false"
       >
-        <UIcon
-          :name="expanded[node.path] ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-          class="size-4 text-muted shrink-0"
-        />
-        <UIcon
-          name="i-lucide-folder"
-          class="size-4 text-muted shrink-0"
-        />
-        <span class="truncate flex-1">{{ node.name }}</span>
-        <UButton
-          icon="i-lucide-file-plus"
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          class="opacity-0 group-hover:opacity-100"
-          @click.stop="emit('createIn', node.path)"
-        />
-      </div>
+        <div
+          class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
+          :style="{ paddingLeft: `${0.5 + level * 0.75}rem` }"
+          @click="toggle(node)"
+        >
+          <UIcon
+            :name="expanded[node.path] ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+            class="size-4 text-muted shrink-0"
+          />
+          <UIcon
+            name="i-lucide-folder"
+            class="size-4 text-muted shrink-0"
+          />
+          <span class="truncate flex-1">{{ node.name }}</span>
+          <UDropdownMenu
+            :items="folderMenuItems(node)"
+            :modal="false"
+            size="xs"
+          >
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              class="opacity-0 group-hover:opacity-100"
+              @click.stop
+            />
+          </UDropdownMenu>
+        </div>
+      </UContextMenu>
 
       <VaultTree
         v-if="node.isDir && expanded[node.path]"
