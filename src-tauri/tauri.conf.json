@@ -9,6 +9,11 @@
     "devUrl": "http://localhost:3000",
     "frontendDist": "../dist"
   },
+  "plugins": {
+    "fs": {
+      "requireLiteralLeadingDot": false
+    }
+  },
   "app": {
     "windows": [
       {
