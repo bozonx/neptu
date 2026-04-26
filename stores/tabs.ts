@@ -283,6 +283,49 @@ export const useTabsStore = defineStore('tabs', () => {
     }
   }
 
+  async function openFileInNewPanel(path: string) {
+    if (isMobile.value) {
+      await openFile(path)
+      return
+    }
+
+    const newTab: EditorTab = { id: generateId(), filePath: path }
+    const newLeaf = createLeaf([newTab], newTab.id)
+
+    const panelId = activeDesktopPanelId.value
+    const panel = findLeaf(desktopLayout.value, panelId) ?? allLeaves(desktopLayout.value)[0]
+    if (!panel) {
+      desktopLayout.value = newLeaf
+      activeDesktopPanelId.value = newLeaf.id
+      await useEditorStore().openFile(path)
+      await useEditorStore().saveUiState()
+      return
+    }
+
+    const parent = findParent(desktopLayout.value, panel.id)
+
+    const newNode: PanelNode = {
+      type: 'node',
+      id: generateId(),
+      direction: 'horizontal',
+      first: panel,
+      second: newLeaf,
+      ratio: 0.5,
+    }
+
+    if (parent) {
+      if (parent.first.id === panel.id) parent.first = newNode
+      else parent.second = newNode
+    }
+    else {
+      desktopLayout.value = newNode
+    }
+
+    activeDesktopPanelId.value = newLeaf.id
+    await useEditorStore().openFile(path)
+    await useEditorStore().saveUiState()
+  }
+
   async function loadUiState(state: UiState) {
     if (state.desktopLayout) desktopLayout.value = state.desktopLayout
     if (state.activeDesktopPanelId) activeDesktopPanelId.value = state.activeDesktopPanelId
@@ -322,6 +365,7 @@ export const useTabsStore = defineStore('tabs', () => {
     closeMobileTab,
     splitPanel,
     duplicateTo,
+    openFileInNewPanel,
     dropByPath,
     dropByPrefix,
     loadUiState,

@@ -58,29 +58,29 @@ function handleClose(tab: EditorTab) {
   }
 }
 
-const dropdownItems = (tab: EditorTab) => [
+const contextMenuItems = (tab: EditorTab) => [
   [
     {
       label: 'Duplicate to right',
       icon: 'i-lucide-panel-right-dashed',
-      click: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'right', tab),
+      onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'right', tab),
     },
     {
       label: 'Duplicate to left',
       icon: 'i-lucide-panel-left-dashed',
-      click: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'left', tab),
+      onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'left', tab),
     },
   ],
   [
     {
       label: 'Duplicate to top',
       icon: 'i-lucide-panel-top-dashed',
-      click: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'top', tab),
+      onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'top', tab),
     },
     {
       label: 'Duplicate to bottom',
       icon: 'i-lucide-panel-bottom-dashed',
-      click: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'bottom', tab),
+      onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'bottom', tab),
     },
   ],
 ]
@@ -89,14 +89,49 @@ const dropdownItems = (tab: EditorTab) => [
 <template>
   <div class="flex items-center gap-px h-full">
     <template v-if="tabs.length">
-      <UDropdown
-        v-for="tab in tabs"
-        :key="tab.id"
-        :items="props.isMobile ? [] : dropdownItems(tab)"
-        :trigger="['contextmenu']"
-        :popper="{ placement: 'bottom-start' }"
-      >
+      <template v-if="!props.isMobile">
+        <UContextMenu
+          v-for="tab in tabs"
+          :key="`ctx-${tab.id}`"
+          :items="contextMenuItems(tab)"
+        >
+          <button
+            type="button"
+            class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative"
+            :class="tab.id === activeId
+              ? 'bg-default text-default'
+              : 'bg-elevated/50 text-muted hover:text-default'"
+            :title="tab.filePath"
+            @click="handleTabClick(tab)"
+          >
+            <div
+              v-if="tab.id === activeId"
+              class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+            />
+            <span
+              v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
+              class="size-1.5 rounded-full bg-primary"
+            />
+            <span class="font-medium truncate max-w-[150px]">{{ fileName(tab.filePath) }}</span>
+            <span
+              v-if="vaultName(tab.filePath)"
+              class="text-[10px] text-muted opacity-70"
+            >{{ vaultName(tab.filePath) }}</span>
+            <UButton
+              icon="i-lucide-x"
+              size="xs"
+              variant="ghost"
+              color="neutral"
+              class="size-4 p-0 opacity-0 group-hover:opacity-100"
+              @click.stop="handleClose(tab)"
+            />
+          </button>
+        </UContextMenu>
+      </template>
+      <template v-else>
         <button
+          v-for="tab in tabs"
+          :key="`btn-${tab.id}`"
           type="button"
           class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative"
           :class="tab.id === activeId
@@ -127,7 +162,7 @@ const dropdownItems = (tab: EditorTab) => [
             @click.stop="handleClose(tab)"
           />
         </button>
-      </UDropdown>
+      </template>
     </template>
     <div
       v-else
