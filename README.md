@@ -6,13 +6,20 @@ Cross-platform markdown notes editor for desktop and mobile, built on
 ## Features (scaffold)
 
 - Sidebar with vault list (collapses on desktop, slides over on mobile).
-- Add a vault by picking a folder. Supported types: **local folder** (Git /
-  GitHub / GitLab are stubbed for later).
+- Add a vault by picking a folder. Supported types:
+  - **Local folder** — plain directory.
+  - **Git repository (local)** — connect an existing repo or initialize a new
+    one. Powered by `git2` (libgit2 vendored, no system git required).
 - Vault tree shows only `.md` files, hidden directories (`.git`, `.neptu`, …)
   are skipped.
 - Create / delete `.md` notes inside any vault.
-- Central `<textarea>` editor with **autosave** (800 ms debounce) and a status
-  indicator.
+- Central `<textarea>` editor with **autosave** (debounce configurable in
+  Settings) and a status indicator.
+- Per-vault git auto-commit with its own debounce — restarted by every new
+  edit, scheduled only after a successful autosave. Or switch to **manual**
+  mode and use the **Commit** button in the top bar.
+- App-wide **Settings** dialog (cog button in the sidebar) for autosave
+  debounce, default commit debounce and commit author overrides.
 - First-run wizard asks for a *main repository*; settings live inside
   `<mainRepo>/.neptu/config.json` so they can be synced between devices.
 
@@ -31,11 +38,12 @@ nuxt.config.ts        # ssr: false, modules, vite tweaks for Tauri
 app.config.ts         # Nuxt UI theme
 app.vue / pages/      # entry + index page
 layouts/default.vue   # UDashboardGroup + UDashboardSidebar
-components/           # AppSidebar, VaultTree, Editor, FirstRunDialog
-composables/          # useFs, useConfig, useTauri
+components/           # AppSidebar, VaultTree, Editor, FirstRunDialog, SettingsDialog
+composables/          # useFs, useConfig, useTauri, useGit
 stores/vaults.ts      # main state (Pinia)
 types/index.ts        # shared types
 src-tauri/            # Rust shell (Cargo.toml, tauri.conf.json, capabilities)
+  src/git.rs          # libgit2-backed git commands
 ```
 
 ## Prerequisites
@@ -125,10 +133,10 @@ your security needs.
 
 ## Roadmap
 
-- [ ] Git / GitHub / GitLab project types
+- [ ] Remote sync (push/pull) for git vaults
+- [ ] GitHub / GitLab integrations
 - [ ] Markdown preview & syntax highlighting
 - [ ] Search across notes
-- [ ] Conflict-aware autosave
 - [ ] App icons & branding
 
 ## License

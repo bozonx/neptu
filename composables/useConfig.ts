@@ -1,15 +1,23 @@
 import { load as loadStore } from '@tauri-apps/plugin-store'
 import { join } from '@tauri-apps/api/path'
-import type { AppConfig } from '~/types'
+import type { AppConfig, AppSettings } from '~/types'
 
 const SYSTEM_STORE_FILE = 'neptu.json'
 const MAIN_REPO_KEY = 'mainRepoPath'
 const NEPTU_DIR = '.neptu'
 const CONFIG_FILE = 'config.json'
 
+export const DEFAULT_SETTINGS: AppSettings = {
+  autosaveDebounceMs: 800,
+  defaultCommitDebounceMs: 5000,
+  gitAuthorName: '',
+  gitAuthorEmail: '',
+}
+
 const DEFAULT_CONFIG: AppConfig = {
   version: 1,
   vaults: [],
+  settings: { ...DEFAULT_SETTINGS },
 }
 
 /**
@@ -50,6 +58,7 @@ export function useConfig() {
       return {
         version: 1,
         vaults: parsed.vaults ?? (parsed.projects as AppConfig['vaults']) ?? [],
+        settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
       }
     }
     catch {

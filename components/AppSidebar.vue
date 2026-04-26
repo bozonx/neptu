@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import type { FileNode, Vault, VaultType } from '~/types'
+import type { FileNode, GitCommitMode, Vault, VaultType } from '~/types'
 import VaultTree from '~/components/VaultTree.vue'
+import SettingsDialog from '~/components/SettingsDialog.vue'
 
 const vaults = useVaultsStore()
 const toast = useToast()
+
+const settingsOpen = ref(false)
 
 const addVaultOpen = ref(false)
 const newVaultName = ref('')
 const newVaultType = ref<VaultType>('local')
 const newVaultPath = ref<string | null>(null)
+const newGitMode = ref<'connect' | 'init'>('connect')
+const newCommitMode = ref<GitCommitMode>('auto')
+const newCommitDebounceSec = ref(5)
 
 const newNoteOpen = ref(false)
 const newNoteName = ref('')
@@ -18,13 +24,36 @@ const editVaultOpen = ref(false)
 const editingVault = ref<Vault | null>(null)
 const editVaultName = ref('')
 const editVaultPath = ref<string | null>(null)
+const editCommitMode = ref<GitCommitMode>('auto')
+const editCommitDebounceSec = ref(5)
 
 const vaultTypeItems = [
   { label: 'Local folder', value: 'local' },
-  { label: 'Git repository', value: 'git', disabled: true },
-  { label: 'GitHub', value: 'github', disabled: true },
-  { label: 'GitLab', value: 'gitlab', disabled: true },
+  { label: 'Git repository (local)', value: 'git' },
 ] satisfies Array<{ label: string, value: VaultType, disabled?: boolean }>
+
+const gitModeItems = [
+  { label: 'Connect existing repository', value: 'connect' as const },
+  { label: 'Initialize new repository', value: 'init' as const },
+]
+
+const commitModeItems = [
+  { label: 'Auto-commit (debounced)', value: 'auto' as const },
+  { label: 'Manual (Commit button)', value: 'manual' as const },
+]
+
+function resetAddForm() {
+  newVaultName.value = ''
+  newVaultPath.value = null
+  newVaultType.value = 'local'
+  newGitMode.value = 'connect'
+  newCommitMode.value = 'auto'
+  newCommitDebounceSec.value = vaults.settings.defaultCommitDebounceMs / 1000
+}
+
+watch(addVaultOpen, (value) => {
+  if (value) resetAddForm()
+})
 
 async function browseFolder() {
   const fs = useFs()
@@ -50,19 +79,43 @@ async function browseEditFolder() {
 
 async function submitNewVault() {
   if (!newVaultPath.value) return
+
+  // Block git vault creation until an author is configured (in app settings or git's global config)
+  if (newVaultType.value === 'git') {
+    const author = await vaults.resolveAuthor()
+    if (!author) {
+      toast.add({
+        title: 'Configure git author first',
+        description: 'Set author name/email in Settings or run `git config --global user.name/email`.',
+        color: 'warning',
+      })
+      settingsOpen.value = true
+      return
+    }
+  }
+
   try {
     await vaults.addVault({
       name: newVaultName.value,
       type: newVaultType.value,
       path: newVaultPath.value,
+      gitMode: newVaultType.value === 'git' ? newGitMode.value : undefined,
+      git: newVaultType.value === 'git'
+        ? {
+            commitMode: newCommitMode.value,
+            commitDebounceMs: Math.max(0, Math.round(newCommitDebounceSec.value * 1000)),
+          }
+        : undefined,
     })
     addVaultOpen.value = false
-    newVaultName.value = ''
-    newVaultPath.value = null
-    newVaultType.value = 'local'
+    resetAddForm()
   }
   catch (error) {
-    toast.add({ title: 'Failed to add vault', description: String(error), color: 'error' })
+    toast.add({
+      title: 'Failed to add vault',
+      description: error instanceof Error ? error.message : String(error),
+      color: 'error',
+    })
   }
 }
 
@@ -76,15 +129,24 @@ function openEditVault(vault: Vault) {
   editingVault.value = vault
   editVaultName.value = vault.name
   editVaultPath.value = vault.path
+  editCommitMode.value = vault.git?.commitMode ?? 'auto'
+  editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? vaults.settings.defaultCommitDebounceMs) / 1000
   editVaultOpen.value = true
 }
 
 async function submitEditVault() {
   if (!editingVault.value) return
   try {
+    const isGit = editingVault.value.type === 'git'
     await vaults.updateVault(editingVault.value.id, {
       name: editVaultName.value,
       path: editVaultPath.value ?? undefined,
+      git: isGit
+        ? {
+            commitMode: editCommitMode.value,
+            commitDebounceMs: Math.max(0, Math.round(editCommitDebounceSec.value * 1000)),
+          }
+        : undefined,
     })
     editVaultOpen.value = false
     editingVault.value = null
@@ -92,7 +154,11 @@ async function submitEditVault() {
     editVaultPath.value = null
   }
   catch (error) {
-    toast.add({ title: 'Failed to update vault', description: String(error), color: 'error' })
+    toast.add({
+      title: 'Failed to update vault',
+      description: error instanceof Error ? error.message : String(error),
+      color: 'error',
+    })
   }
 }
 
@@ -157,6 +223,8 @@ function toggleVault(vault: Vault) {
       @click="addVaultOpen = true"
     />
 
+    <SettingsDialog v-model:open="settingsOpen" />
+
     <div class="flex-1 overflow-auto">
       <div v-if="vaults.vaults.length === 0" class="text-sm text-muted px-2 py-4">
         No vaults yet. Add a folder to get started.
@@ -219,6 +287,15 @@ function toggleVault(vault: Vault) {
       </div>
     </div>
 
+    <UButton
+      icon="i-lucide-settings"
+      label="Settings"
+      color="neutral"
+      variant="ghost"
+      block
+      @click="settingsOpen = true"
+    />
+
     <UModal v-model:open="addVaultOpen" title="Add vault">
       <template #body>
         <div class="space-y-3">
@@ -241,6 +318,24 @@ function toggleVault(vault: Vault) {
               <UButton icon="i-lucide-folder-search" label="Browse" @click="browseFolder" />
             </div>
           </UFormField>
+
+          <template v-if="newVaultType === 'git'">
+            <UFormField label="Repository">
+              <URadioGroup v-model="newGitMode" :items="gitModeItems" />
+            </UFormField>
+
+            <UFormField label="Commit mode">
+              <URadioGroup v-model="newCommitMode" :items="commitModeItems" />
+            </UFormField>
+
+            <UFormField
+              v-if="newCommitMode === 'auto'"
+              label="Commit debounce (seconds)"
+              hint="Counted from the last autosave; new edits reset it."
+            >
+              <UInput v-model="newCommitDebounceSec" type="number" :min="0" :step="0.5" />
+            </UFormField>
+          </template>
         </div>
       </template>
 
@@ -280,6 +375,18 @@ function toggleVault(vault: Vault) {
               />
             </div>
           </UFormField>
+
+          <template v-if="editingVault?.type === 'git'">
+            <UFormField label="Commit mode">
+              <URadioGroup v-model="editCommitMode" :items="commitModeItems" />
+            </UFormField>
+            <UFormField
+              v-if="editCommitMode === 'auto'"
+              label="Commit debounce (seconds)"
+            >
+              <UInput v-model="editCommitDebounceSec" type="number" :min="0" :step="0.5" />
+            </UFormField>
+          </template>
         </div>
       </template>
 

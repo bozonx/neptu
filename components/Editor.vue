@@ -17,6 +17,9 @@ watch(localContent, (value) => {
   }
 })
 
+// Autosave debounce is configurable in Settings; reactive ref keeps it live.
+const autosaveDebounce = computed(() => Math.max(100, vaults.settings.autosaveDebounceMs))
+
 watchDebounced(
   () => vaults.currentContent,
   async (value, prev) => {
@@ -34,8 +37,35 @@ watchDebounced(
       })
     }
   },
-  { debounce: 800, maxWait: 4000 },
+  { debounce: autosaveDebounce, maxWait: 8000 },
 )
+
+const currentVault = computed(() => vaults.currentVault)
+const showCommitButton = computed(() => {
+  const v = currentVault.value
+  if (!v || v.type !== 'git') return false
+  if (v.git?.commitMode !== 'manual') return false
+  return vaults.gitStatus[v.id]?.dirty ?? false
+})
+const committing = computed(() => {
+  const v = currentVault.value
+  return !!v && vaults.commitStatus[v.id] === 'committing'
+})
+
+async function handleCommit() {
+  const v = currentVault.value
+  if (!v) return
+  try {
+    await vaults.commitVault(v.id)
+  }
+  catch (error) {
+    toast.add({
+      title: 'Commit failed',
+      description: error instanceof Error ? error.message : String(error),
+      color: 'error',
+    })
+  }
+}
 
 const statusLabel = computed(() => {
   switch (vaults.saveStatus) {
@@ -70,7 +100,17 @@ function fileNameFromPath(path: string | null): string {
           <UDashboardSidebarToggle />
         </template>
         <template #right>
-          <span class="text-xs" :class="statusColor">{{ statusLabel }}</span>
+          <div class="flex items-center gap-3">
+            <UButton
+              v-if="showCommitButton"
+              icon="i-lucide-git-commit"
+              label="Commit"
+              size="xs"
+              :loading="committing"
+              @click="handleCommit"
+            />
+            <span class="text-xs" :class="statusColor">{{ statusLabel }}</span>
+          </div>
         </template>
       </UDashboardNavbar>
     </template>
