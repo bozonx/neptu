@@ -29,7 +29,7 @@ Flat Nuxt layout (`srcDir: '.'`). Auto-imports for `components/`,
 
 - **Setup stores only.** Each store owns one concern:
   - `useSettingsStore` — main repo path, `AppSettings`, persistence of
-    `<mainRepoPath>/.neptu/config.json`.
+    `config.json` in the Tauri app config directory.
   - `useVaultsStore` — vault list and per-vault file trees.
   - `useGitStore` — git status, commit status, debounced auto-commit timers.
   - `useEditorStore` — current file buffer, save status, autosave watcher,
@@ -79,8 +79,8 @@ pnpm tauri:build        # production bundle
 ## Things to know about gotchas
 
 - App requires Tauri runtime; `pnpm dev` alone shows a blocking modal.
-- `.neptu/` lives inside the user's main repo and is meant to be synced (Git,
-  Syncthing, etc.). Don't write absolute paths there that won't roam.
+- Config and UI state live in the Tauri app config directory (`config.json` and
+  `ui-state.json`). Don't write absolute paths there that won't roam.
 - Auto-commit timer is reset by every keystroke and started only after a
   successful autosave. See `useGitStore.scheduleCommit`.
 - Editor uses an `openEpoch` to ignore stale `readTextFile` results when the

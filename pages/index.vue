@@ -3,6 +3,7 @@ import Editor from '~/components/Editor.vue'
 import FirstRunDialog from '~/components/FirstRunDialog.vue'
 
 const settings = useSettingsStore()
+const editor = useEditorStore()
 const { isTauri } = useTauri()
 
 const ready = ref(false)
@@ -15,6 +16,7 @@ onMounted(async () => {
   }
   try {
     await settings.init()
+    await editor.loadUiState()
   }
   catch (error) {
     initError.value = error instanceof Error ? error.message : String(error)

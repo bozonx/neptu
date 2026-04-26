@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { watchDebounced } from '@vueuse/core'
-import type { SaveStatus, Vault } from '~/types'
+import type { SaveStatus, UiState, Vault } from '~/types'
 
 const SAVED_HINT_MS = 1500
 const AUTOSAVE_MAX_WAIT_MS = 8000
@@ -161,6 +161,21 @@ export const useEditorStore = defineStore('editor', () => {
     })
   }
 
+  async function loadUiState() {
+    const config = useConfig()
+    const state = await config.loadUiState()
+    activeRightTab.value = state.activeRightTab
+  }
+
+  async function saveUiState(state: UiState) {
+    const config = useConfig()
+    await config.saveUiState(state)
+  }
+
+  watch(activeRightTab, async (tab) => {
+    await saveUiState({ activeRightTab: tab })
+  })
+
   return {
     currentFilePath,
     currentContent,
@@ -177,5 +192,7 @@ export const useEditorStore = defineStore('editor', () => {
     deleteNote,
     reset,
     scrollToLine,
+    loadUiState,
+    saveUiState,
   }
 })

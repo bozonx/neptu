@@ -10,7 +10,7 @@ Cross-platform markdown notes editor for desktop and mobile, built on
   - **Local folder** — plain directory.
   - **Git repository (local)** — connect an existing repo or initialize a new
     one. Powered by `git2` (libgit2 vendored, no system git required).
-- Vault tree shows only `.md` files, hidden directories (`.git`, `.neptu`, …)
+- Vault tree shows only `.md` files, hidden directories (`.git`, …)
   are skipped.
 - Create / delete `.md` notes inside any vault.
 - Central `<textarea>` editor with **autosave** (debounce configurable in
@@ -23,14 +23,14 @@ Cross-platform markdown notes editor for desktop and mobile, built on
   mode and use the **Commit** button in the top bar.
 - App-wide **Settings** dialog (cog button in the sidebar) for autosave
   debounce, default commit debounce and commit author overrides.
-- First-run wizard asks for a *main repository*; settings live inside
-  `<mainRepo>/.neptu/config.json` so they can be synced between devices.
+- First-run wizard asks for a *main repository*; settings live in the
+  Tauri app config directory (`config.json`).
 
 ## Stack
 
 - **Frontend**: Nuxt 4 (SPA, `ssr: false`), Nuxt UI 4 (Tailwind v4), TypeScript,
   Pinia, VueUse.
-- **Shell**: Tauri 2 with plugins `fs`, `dialog`, `store`, `os`.
+- **Shell**: Tauri 2 with plugins `fs`, `dialog`, `os`.
 - **Build**: `nuxt generate` produces `dist/`, packaged by Tauri.
 
 ## Project layout
@@ -46,7 +46,7 @@ layouts/default.vue   # UDashboardGroup + UDashboardSidebar
 components/           # AppSidebar, VaultTree, Editor, FirstRunDialog, SettingsDialog
 composables/          # useFs, useConfig, useTauri, useGit
 stores/                # Pinia setup-stores
-  settings.ts         # main repo path + AppSettings + persist()
+  settings.ts         # main repo path + AppSettings + persist() to app config dir
   vaults.ts           # vault list and file trees
   git.ts              # git status, commit timers, debounced auto-commit
   editor.ts           # active file buffer + autosave
@@ -130,12 +130,11 @@ it.
 
 ## How it works
 
-1. On first launch the app reads its system store
-   (`@tauri-apps/plugin-store` → `neptu.json` in app data dir). If
-   `mainRepoPath` is missing, the **First-run dialog** asks the user to pick a
-   folder.
-2. The chosen folder gains a hidden `.neptu/config.json` that holds the list of
-   vaults (the main repo itself is added as the first vault).
+1. On first launch the app reads `config.json` from the Tauri app config
+   directory. If `mainRepoPath` is missing, the **First-run dialog** asks the
+   user to pick a folder.
+2. The chosen folder is added as the first vault; all vaults and settings are
+   stored in the same centralized `config.json`.
 3. Adding a vault opens a folder picker. The folder gets recursively scanned
    for `.md` files and rendered as a tree.
 4. Opening a file loads its content into the Pinia store. Typing in the

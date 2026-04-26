@@ -23,27 +23,23 @@ const outline = computed<Header[]>(() => {
   if (!editor.currentContent) return []
   const lines = editor.currentContent.split('\n')
   const headers: Header[] = []
-  
+
   lines.forEach((line, index) => {
     const match = line.match(/^(#{1,6})\s+(.+)$/)
-    if (match) {
+    if (match && match[1] && match[2]) {
       headers.push({
         level: match[1].length,
         text: match[2].trim(),
-        line: index
+        line: index,
       })
     }
   })
-  
+
   return headers
 })
 
 function scrollToHeader(header: Header) {
   editor.scrollToLine(header.line)
-}
-
-function handleProperties() {
-  // TODO: implement properties dialog
 }
 </script>
 
@@ -51,38 +47,66 @@ function handleProperties() {
   <div class="flex flex-col h-full bg-default">
     <!-- Right Sidebar Toolbar -->
     <div class="h-10 border-b border-default flex items-center px-2 shrink-0">
-      <FileSidebarToolbar class="flex-1" @properties="handleProperties" />
+      <FileSidebarToolbar class="flex-1" />
     </div>
 
     <!-- Right Sidebar Content -->
     <div class="flex-1 overflow-auto p-4">
       <div v-if="editor.currentFilePath">
         <!-- Info Tab -->
-        <div v-if="editor.activeRightTab === 'info'" class="space-y-6">
+        <div
+          v-if="editor.activeRightTab === 'info'"
+          class="space-y-6"
+        >
           <section>
-            <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">File Info</h3>
+            <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">
+              File Info
+            </h3>
             <div class="space-y-3">
               <div>
-                <div class="text-[10px] text-muted uppercase">Name</div>
-                <div class="text-sm font-medium truncate" :title="fileName ?? ''">{{ fileName }}</div>
+                <div class="text-[10px] text-muted uppercase">
+                  Name
+                </div>
+                <div
+                  class="text-sm font-medium truncate"
+                  :title="fileName ?? ''"
+                >
+                  {{ fileName }}
+                </div>
               </div>
               <div>
-                <div class="text-[10px] text-muted uppercase">Vault</div>
-                <div class="text-sm truncate">{{ vaultName }}</div>
+                <div class="text-[10px] text-muted uppercase">
+                  Vault
+                </div>
+                <div class="text-sm truncate">
+                  {{ vaultName }}
+                </div>
               </div>
               <div>
-                <div class="text-[10px] text-muted uppercase">Path</div>
-                <div class="text-[11px] text-muted break-all leading-relaxed">{{ editor.currentFilePath }}</div>
+                <div class="text-[10px] text-muted uppercase">
+                  Path
+                </div>
+                <div class="text-[11px] text-muted break-all leading-relaxed">
+                  {{ editor.currentFilePath }}
+                </div>
               </div>
             </div>
           </section>
         </div>
 
         <!-- Outline Tab -->
-        <div v-if="editor.activeRightTab === 'outline'" class="space-y-6">
+        <div
+          v-if="editor.activeRightTab === 'outline'"
+          class="space-y-6"
+        >
           <section>
-            <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">Outline</h3>
-            <div v-if="outline.length > 0" class="space-y-1">
+            <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">
+              Outline
+            </h3>
+            <div
+              v-if="outline.length > 0"
+              class="space-y-1"
+            >
               <button
                 v-for="(header, index) in outline"
                 :key="index"
@@ -94,15 +118,24 @@ function handleProperties() {
                 <span class="truncate">{{ header.text }}</span>
               </button>
             </div>
-            <div v-else class="text-xs text-muted italic px-2 py-8 text-center border-2 border-dashed border-default rounded-lg">
+            <div
+              v-else
+              class="text-xs text-muted italic px-2 py-8 text-center border-2 border-dashed border-default rounded-lg"
+            >
               No headers found in this file
             </div>
           </section>
         </div>
       </div>
-      
-      <div v-else class="h-full flex flex-col items-center justify-center text-muted text-sm italic space-y-2 opacity-50">
-        <UIcon name="i-lucide-file-question" class="size-8" />
+
+      <div
+        v-else
+        class="h-full flex flex-col items-center justify-center text-muted text-sm italic space-y-2 opacity-50"
+      >
+        <UIcon
+          name="i-lucide-file-question"
+          class="size-8"
+        />
         <span>No file selected</span>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS, type AppConfig, type AppSettings } from '~/types'
 /**
  * Owns the pointer to the user's main repository and application-wide
  * preferences. Also acts as the single seam for persisting `AppConfig` to
- * `<mainRepoPath>/.neptu/config.json`.
+ * the Tauri app config directory (`config.json`).
  *
  * Other stores call `persist()` after mutating data that lives in the config
  * (currently: `useVaultsStore` after vault changes). Persistence is centralized
@@ -21,27 +21,27 @@ export const useSettingsStore = defineStore('settings', () => {
 
   async function init() {
     const config = useConfig()
-    mainRepoPath.value = await config.getMainRepoPath()
+    const appConfig = await config.loadAppConfig()
+    mainRepoPath.value = appConfig.mainRepoPath ?? null
     initialized.value = true
     if (mainRepoPath.value) {
-      await loadFromRepo(mainRepoPath.value)
+      await applyConfig(appConfig)
     }
   }
 
   async function setMainRepo(path: string) {
-    const config = useConfig()
-    await config.setMainRepoPath(path)
     mainRepoPath.value = path
-    await loadFromRepo(path)
+    await persist()
+    const config = useConfig()
+    const appConfig = await config.loadAppConfig()
+    await applyConfig(appConfig)
   }
 
-  async function loadFromRepo(repoPath: string) {
-    const config = useConfig()
-    const appConfig = await config.loadAppConfig(repoPath)
+  async function applyConfig(appConfig: AppConfig) {
     settings.value = { ...DEFAULT_SETTINGS, ...appConfig.settings }
 
     const vaults = useVaultsStore()
-    await vaults.hydrate(appConfig.vaults ?? [], repoPath, appConfig.groups ?? [])
+    await vaults.hydrate(appConfig.vaults ?? [], mainRepoPath.value ?? '', appConfig.groups ?? [])
 
     const git = useGitStore()
     await git.refreshAllStatuses()
@@ -53,20 +53,19 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   /**
-   * Serializes current settings + vault list to disk. Safe no-op while no
-   * main repository is set (e.g. during the first-run wizard).
+   * Serializes current settings + vault list to disk.
    */
   async function persist() {
-    if (!mainRepoPath.value) return
     const config = useConfig()
     const vaults = useVaultsStore()
     const data: AppConfig = {
       version: 1,
+      mainRepoPath: mainRepoPath.value,
       settings: { ...settings.value },
       vaults: vaults.list,
       groups: vaults.groups,
     }
-    await config.saveAppConfig(mainRepoPath.value, data)
+    await config.saveAppConfig(data)
   }
 
   return {

@@ -127,9 +127,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export interface AppConfig {
   version: 1
+  mainRepoPath: string | null
   vaults: Vault[]
   settings: AppSettings
   groups: VaultGroup[]
+}
+
+export interface UiState {
+  activeRightTab: 'outline' | 'info'
+}
+
+export const DEFAULT_UI_STATE: UiState = {
+  activeRightTab: 'outline',
 }
 
 export interface AddVaultPayload {

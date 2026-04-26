@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { GitAuthor } from '~/types'
+import type { AppSettings, GitAuthor } from '~/types'
 
 const open = defineModel<boolean>('open', { required: true })
 
@@ -12,6 +12,7 @@ const authorName = ref('')
 const authorEmail = ref('')
 const layoutMode = ref<AppSettings['layoutMode']>('auto')
 const detectedAuthor = ref<GitAuthor | null>(null)
+const configPath = ref('')
 
 watch(open, async (value) => {
   if (!value) return
@@ -25,11 +26,25 @@ watch(open, async (value) => {
   try {
     const git = useGit()
     detectedAuthor.value = await git.globalAuthor()
+    const config = useConfig()
+    configPath.value = await config.getConfigPath()
   }
   catch {
     detectedAuthor.value = null
+    configPath.value = ''
   }
 }, { immediate: true })
+
+async function copyConfigPath() {
+  if (!configPath.value) return
+  try {
+    await navigator.clipboard.writeText(configPath.value)
+    toast.add({ title: 'Copied to clipboard', color: 'success' })
+  }
+  catch {
+    toast.add({ title: 'Failed to copy', color: 'error' })
+  }
+}
 
 const detectedHint = computed(() => {
   if (!detectedAuthor.value) return ''
@@ -64,7 +79,7 @@ async function save() {
   <UModal
     v-model:open="open"
     title="Settings"
-    description="Application-wide preferences (stored inside the main repository's `.neptu/`)"
+    description="Application-wide preferences (stored in the Tauri app config directory)"
   >
     <template #body>
       <div class="space-y-6">
@@ -81,7 +96,7 @@ async function save() {
               :items="[
                 { label: 'Automatic (Screen size)', value: 'auto' },
                 { label: 'Force Desktop', value: 'desktop' },
-                { label: 'Force Mobile', value: 'mobile' }
+                { label: 'Force Mobile', value: 'mobile' },
               ]"
             />
           </UFormField>
@@ -136,6 +151,28 @@ async function save() {
               type="email"
               placeholder="Leave empty to use git's global config"
             />
+          </UFormField>
+        </section>
+
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            Storage
+          </h3>
+          <UFormField label="Config path">
+            <div class="flex items-center gap-2">
+              <UInput
+                :model-value="configPath"
+                readonly
+                class="flex-1 text-xs"
+              />
+              <UButton
+                icon="i-lucide-copy"
+                size="xs"
+                variant="ghost"
+                :disabled="!configPath"
+                @click="copyConfigPath"
+              />
+            </div>
           </UFormField>
         </section>
       </div>

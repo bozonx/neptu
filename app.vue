@@ -14,7 +14,7 @@ const layoutName = computed(() => {
   const mode = settings.settings.layoutMode
   if (mode === 'desktop') return 'desktop'
   if (mode === 'mobile') return 'mobile'
-  
+
   // 'auto' mode
   return isDesktop.value ? 'desktop' : 'mobile'
 })
@@ -22,7 +22,10 @@ const layoutName = computed(() => {
 
 <template>
   <UApp class="h-full">
-    <NuxtLayout :name="layoutName" class="h-full">
+    <NuxtLayout
+      :name="layoutName"
+      class="h-full"
+    >
       <NuxtPage />
     </NuxtLayout>
   </UApp>

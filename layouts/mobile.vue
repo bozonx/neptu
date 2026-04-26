@@ -47,12 +47,6 @@ async function handleCommit() {
     })
   }
 }
-
-// When user clicks a tab in the top bar toolbar, open the drawer
-function openRightDrawer(tab: 'outline' | 'info') {
-  editor.activeRightTab = tab
-  rightDrawerOpen.value = true
-}
 </script>
 
 <template>
@@ -85,12 +79,11 @@ function openRightDrawer(tab: 'outline' | 'info') {
           :loading="committing"
           @click="handleCommit"
         />
-        
+
         <!-- Right Sidebar Toolbar moved to Top Bar -->
-        <FileSidebarToolbar 
-           class="bg-elevated/50 rounded-lg px-1 py-0.5" 
-           @properties="openRightDrawer('info')" 
-           @click.capture="rightDrawerOpen = true"
+        <FileSidebarToolbar
+          class="bg-elevated/50 rounded-lg px-1 py-0.5"
+          @click.capture="rightDrawerOpen = true"
         />
       </div>
     </header>

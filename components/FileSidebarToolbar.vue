@@ -1,9 +1,5 @@
 <script setup lang="ts">
 const editor = useEditorStore()
-
-defineEmits<{
-  (e: 'properties'): void
-}>()
 </script>
 
 <template>
@@ -26,15 +22,5 @@ defineEmits<{
         @click="editor.activeRightTab = 'info'"
       />
     </div>
-
-    <UButton
-      v-if="editor.currentFilePath"
-      icon="i-lucide-settings-2"
-      size="xs"
-      variant="ghost"
-      color="neutral"
-      title="File Properties"
-      @click="$emit('properties')"
-    />
   </div>
 </template>

@@ -15,12 +15,12 @@ watch(() => editor.scrollToLineTrigger, (line) => {
     const lines = text.split('\n')
     let charIndex = 0
     for (let i = 0; i < line; i++) {
-      charIndex += lines[i].length + 1
+      charIndex += (lines[i] ?? '').length + 1
     }
-    
+
     textareaRef.value.focus()
     textareaRef.value.setSelectionRange(charIndex, charIndex)
-    
+
     // Estimate line height for scrolling
     const lineHeight = 20 // Approx for text-sm
     textareaRef.value.scrollTop = line * lineHeight
@@ -65,11 +65,36 @@ watch(() => editor.scrollToLineTrigger, (line) => {
       <!-- Mobile Bottom Toolbar Placeholder -->
       <div class="lg:hidden h-10 border-t border-default bg-elevated/50 flex items-center px-4 shrink-0">
         <div class="flex items-center gap-4">
-           <UButton icon="i-lucide-bold" variant="ghost" size="xs" color="neutral" />
-           <UButton icon="i-lucide-italic" variant="ghost" size="xs" color="neutral" />
-           <UButton icon="i-lucide-list" variant="ghost" size="xs" color="neutral" />
-           <UButton icon="i-lucide-link" variant="ghost" size="xs" color="neutral" />
-           <UButton icon="i-lucide-image" variant="ghost" size="xs" color="neutral" />
+          <UButton
+            icon="i-lucide-bold"
+            variant="ghost"
+            size="xs"
+            color="neutral"
+          />
+          <UButton
+            icon="i-lucide-italic"
+            variant="ghost"
+            size="xs"
+            color="neutral"
+          />
+          <UButton
+            icon="i-lucide-list"
+            variant="ghost"
+            size="xs"
+            color="neutral"
+          />
+          <UButton
+            icon="i-lucide-link"
+            variant="ghost"
+            size="xs"
+            color="neutral"
+          />
+          <UButton
+            icon="i-lucide-image"
+            variant="ghost"
+            size="xs"
+            color="neutral"
+          />
         </div>
       </div>
     </div>

@@ -32,18 +32,16 @@ async function chooseMainRepo() {
     v-model:open="open"
     :dismissible="false"
     title="Welcome to Neptu"
-    description="Choose a main repository — a folder where your notes and the synced settings (.neptu) will live."
+    description="Choose a main repository — a folder where your notes will live."
   >
     <template #body>
       <div class="space-y-3 text-sm">
         <p>
           The main repository is just a regular folder on your computer.
-          A hidden <code>.neptu</code> directory will be created inside to store
-          your vaults list and preferences.
+          It will be added as your first vault.
         </p>
         <p class="text-muted">
-          You can sync this folder with any tool you like (Git, Syncthing, iCloud, Dropbox)
-          to share settings between devices.
+          App settings are stored in the Tauri app config directory.
         </p>
       </div>
     </template>
