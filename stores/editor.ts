@@ -150,6 +150,16 @@ export const useEditorStore = defineStore('editor', () => {
     { debounce: debounceMs, maxWait: AUTOSAVE_MAX_WAIT_MS },
   )
 
+  const scrollToLineTrigger = ref<number | null>(null)
+
+  function scrollToLine(line: number) {
+    scrollToLineTrigger.value = line
+    // Reset after a short delay so the same line can be triggered again
+    nextTick(() => {
+      scrollToLineTrigger.value = null
+    })
+  }
+
   return {
     currentFilePath,
     currentContent,
@@ -157,11 +167,13 @@ export const useEditorStore = defineStore('editor', () => {
     saveError,
     isDirty,
     currentVault,
+    scrollToLineTrigger,
     openFile,
     setContent,
     save,
     createNote,
     deleteNote,
     reset,
+    scrollToLine,
   }
 })

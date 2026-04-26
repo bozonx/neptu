@@ -13,21 +13,37 @@ const vaultName = computed(() => {
   return vaults.findVaultForPath(editor.currentFilePath)?.name
 })
 
-const fileStats = ref<{ size: number, mtime: string | null } | null>(null)
-
-async function refreshStats() {
-  if (!editor.currentFilePath) {
-    fileStats.value = null
-    return
-  }
-  // TODO: Implement file stats fetching if needed
-  // For now we just show path and basic info from store
+interface Header {
+  level: number
+  text: string
+  line: number
 }
 
-watch(() => editor.currentFilePath, refreshStats, { immediate: true })
+const outline = computed<Header[]>(() => {
+  if (!editor.currentContent) return []
+  const lines = editor.currentContent.split('\n')
+  const headers: Header[] = []
+  
+  lines.forEach((line, index) => {
+    const match = line.match(/^(#{1,6})\s+(.+)$/)
+    if (match) {
+      headers.push({
+        level: match[1].length,
+        text: match[2].trim(),
+        line: index
+      })
+    }
+  })
+  
+  return headers
+})
+
+function scrollToHeader(header: Header) {
+  editor.scrollToLine(header.line)
+}
 
 function handleProperties() {
-  // TODO: implement properties dialog or action
+  // TODO: implement properties dialog
 }
 </script>
 
@@ -36,7 +52,7 @@ function handleProperties() {
     <!-- Right Sidebar Toolbar -->
     <div class="h-10 border-b border-default flex items-center px-3 shrink-0">
       <UButton
-        icon="i-lucide-info"
+        icon="i-lucide-settings-2"
         label="Properties"
         size="xs"
         variant="ghost"
@@ -46,51 +62,53 @@ function handleProperties() {
     </div>
 
     <!-- Right Sidebar Content -->
-    <div class="flex-1 overflow-auto p-4">
-      <div
-        v-if="editor.currentFilePath"
-        class="space-y-4"
-      >
-        <div>
-          <h3 class="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-            File Info
-          </h3>
-          <div class="space-y-2">
+    <div class="flex-1 overflow-auto p-4 space-y-6">
+      <div v-if="editor.currentFilePath">
+        <!-- File Info Section -->
+        <section>
+          <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">File Info</h3>
+          <div class="space-y-3">
             <div>
-              <div class="text-[10px] text-muted uppercase">
-                Name
-              </div>
-              <div
-                class="text-sm truncate"
-                :title="fileName ?? ''"
-              >
-                {{ fileName }}
-              </div>
+              <div class="text-[10px] text-muted uppercase">Name</div>
+              <div class="text-sm font-medium truncate" :title="fileName ?? ''">{{ fileName }}</div>
             </div>
             <div>
-              <div class="text-[10px] text-muted uppercase">
-                Vault
-              </div>
-              <div class="text-sm truncate">
-                {{ vaultName }}
-              </div>
+              <div class="text-[10px] text-muted uppercase">Vault</div>
+              <div class="text-sm truncate">{{ vaultName }}</div>
             </div>
             <div>
-              <div class="text-[10px] text-muted uppercase">
-                Full Path
-              </div>
-              <div class="text-xs text-muted break-all">
-                {{ editor.currentFilePath }}
-              </div>
+              <div class="text-[10px] text-muted uppercase">Path</div>
+              <div class="text-[11px] text-muted break-all leading-relaxed">{{ editor.currentFilePath }}</div>
             </div>
           </div>
-        </div>
+        </section>
+
+        <UDivider class="my-4" />
+
+        <!-- Outline Section -->
+        <section>
+          <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">Outline</h3>
+          <div v-if="outline.length > 0" class="space-y-1">
+            <button
+              v-for="(header, index) in outline"
+              :key="index"
+              class="w-full text-left px-2 py-1 rounded hover:bg-elevated text-xs transition-colors truncate"
+              :style="{ paddingLeft: `${(header.level - 1) * 12 + 8}px` }"
+              @click="scrollToHeader(header)"
+            >
+              <span class="text-muted mr-1 opacity-50">#</span>
+              {{ header.text }}
+            </button>
+          </div>
+          <div v-else class="text-xs text-muted italic px-2">
+            No headers found
+          </div>
+        </section>
       </div>
-      <div
-        v-else
-        class="h-full flex items-center justify-center text-muted text-sm italic"
-      >
-        No file selected
+      
+      <div v-else class="h-full flex flex-col items-center justify-center text-muted text-sm italic space-y-2 opacity-50">
+        <UIcon name="i-lucide-file-question" class="size-8" />
+        <span>No file selected</span>
       </div>
     </div>
   </div>

@@ -2,11 +2,30 @@
 import EditorTabs from '~/components/EditorTabs.vue'
 
 const editor = useEditorStore()
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 function onInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   editor.setContent(target.value)
 }
+
+watch(() => editor.scrollToLineTrigger, (line) => {
+  if (line !== null && textareaRef.value) {
+    const text = textareaRef.value.value
+    const lines = text.split('\n')
+    let charIndex = 0
+    for (let i = 0; i < line; i++) {
+      charIndex += lines[i].length + 1
+    }
+    
+    textareaRef.value.focus()
+    textareaRef.value.setSelectionRange(charIndex, charIndex)
+    
+    // Estimate line height for scrolling
+    const lineHeight = 20 // Approx for text-sm
+    textareaRef.value.scrollTop = line * lineHeight
+  }
+})
 </script>
 
 <template>
@@ -35,6 +54,7 @@ function onInput(event: Event) {
 
       <textarea
         v-else
+        ref="textareaRef"
         :value="editor.currentContent"
         class="w-full flex-1 resize-none bg-transparent outline-none p-6 font-mono text-sm leading-relaxed text-default"
         spellcheck="false"
