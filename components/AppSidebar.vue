@@ -233,10 +233,10 @@ function toggleVault(vault: Vault) {
 </script>
 
 <template>
-  <div class="flex flex-col h-full gap-3 p-2">
+  <div class="flex flex-col h-full bg-default">
     <SettingsDialog v-model:open="settingsOpen" />
 
-    <div class="flex-1 overflow-auto">
+    <div class="flex-1 overflow-auto p-2">
       <div
         v-if="vaults.list.length === 0"
         class="text-sm text-muted px-2 py-4"
@@ -318,7 +318,7 @@ function toggleVault(vault: Vault) {
       </div>
     </div>
 
-    <div class="flex items-center gap-1 pt-2 border-t border-default">
+    <div class="flex items-center gap-1 p-2 border-t border-default shrink-0">
       <div class="flex-1 flex items-center gap-1">
         <UButton
           icon="i-lucide-folder-plus"
