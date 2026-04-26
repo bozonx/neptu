@@ -21,6 +21,14 @@ export function useGit() {
     return invoke<GitAuthor>('git_global_author')
   }
 
+  function pull(path: string): Promise<string> {
+    return invoke<string>('git_pull', { path })
+  }
+
+  function push(path: string): Promise<string> {
+    return invoke<string>('git_push', { path })
+  }
+
   function commitAll(payload: {
     path: string
     message: string
@@ -35,6 +43,8 @@ export function useGit() {
     initRepo,
     status,
     globalAuthor,
+    pull,
+    push,
     commitAll,
   }
 }

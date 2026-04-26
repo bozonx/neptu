@@ -191,6 +191,13 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (needsRefresh) await refreshTree(vault)
   }
 
+  async function createVaultFolder(vault: Vault, parentDir: string, folderName: string) {
+    const fs = useFs()
+    const fullPath = await fs.createFolder(parentDir, folderName)
+    await refreshTree(vault)
+    return fullPath
+  }
+
   async function refreshTree(vault: Vault) {
     const fs = useFs()
     try {
@@ -218,6 +225,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     addVault,
     removeVault,
     updateVault,
+    createVaultFolder,
     refreshTree,
     refreshAllTrees,
   }

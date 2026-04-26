@@ -13,6 +13,8 @@ pub fn run() {
             git::git_status,
             git::git_global_author,
             git::git_commit_all,
+            git::git_pull,
+            git::git_push,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

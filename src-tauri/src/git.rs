@@ -130,3 +130,35 @@ pub fn git_commit_all(
         changed_files,
     })
 }
+
+#[tauri::command]
+pub fn git_pull(path: String) -> Result<String, String> {
+    let output = std::process::Command::new("git")
+        .arg("pull")
+        .current_dir(&path)
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("git pull failed: {}", stderr));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+#[tauri::command]
+pub fn git_push(path: String) -> Result<String, String> {
+    let output = std::process::Command::new("git")
+        .arg("push")
+        .current_dir(&path)
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("git push failed: {}", stderr));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}

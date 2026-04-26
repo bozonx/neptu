@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_FILE_FILTERS, type FileFilterGroup, type FileFilterSettings, type FileNode, type GitCommitMode, type Vault, type VaultType } from '~/types'
+import type { DropdownMenuItem } from '@nuxt/ui'
 import VaultTree from '~/components/VaultTree.vue'
 import SettingsDialog from '~/components/SettingsDialog.vue'
 
@@ -24,6 +25,10 @@ const newNoteOpen = ref(false)
 const newNoteName = ref('')
 const newNoteCtx = ref<{ vault: Vault, dir: string } | null>(null)
 
+const newFolderOpen = ref(false)
+const newFolderName = ref('')
+const newFolderCtx = ref<{ vault: Vault, dir: string } | null>(null)
+
 const editVaultOpen = ref(false)
 const editingVault = ref<Vault | null>(null)
 const editVaultName = ref('')
@@ -33,6 +38,9 @@ const editCommitDebounceSec = ref(5)
 const editShowHidden = ref(false)
 const editFilters = ref<FileFilterSettings>({ groups: [] })
 const newCustomExt = ref('')
+
+const removeVaultConfirmOpen = ref(false)
+const removeVaultConfirmTarget = ref<Vault | null>(null)
 
 const vaultTypeItems = [
   { label: 'Local folder', value: 'local' },
@@ -207,9 +215,80 @@ async function handleDelete(vault: Vault, node: FileNode) {
   }
 }
 
-async function handleRemoveVault(vault: Vault) {
-  if (!confirm(`Remove "${vault.name}" from the list? Files on disk are kept intact.`)) return
-  await vaults.removeVault(vault.id)
+function openRemoveVaultConfirm(vault: Vault) {
+  removeVaultConfirmTarget.value = vault
+  removeVaultConfirmOpen.value = true
+}
+
+async function submitRemoveVault() {
+  if (!removeVaultConfirmTarget.value) return
+  try {
+    await vaults.removeVault(removeVaultConfirmTarget.value.id)
+    removeVaultConfirmOpen.value = false
+    removeVaultConfirmTarget.value = null
+    // If the edit modal is open for the same vault, close it
+    if (editingVault.value && !vaults.findById(editingVault.value.id)) {
+      editVaultOpen.value = false
+      editingVault.value = null
+    }
+  }
+  catch (error) {
+    toast.add({ title: 'Failed to remove vault', description: String(error), color: 'error' })
+  }
+}
+
+function openCreateFolder(vault: Vault, dir?: string) {
+  newFolderCtx.value = { vault, dir: dir ?? vault.path }
+  newFolderName.value = ''
+  newFolderOpen.value = true
+}
+
+async function submitCreateFolder() {
+  if (!newFolderCtx.value || !newFolderName.value.trim()) return
+  try {
+    await vaults.createVaultFolder(newFolderCtx.value.vault, newFolderCtx.value.dir, newFolderName.value.trim())
+    newFolderOpen.value = false
+  }
+  catch (error) {
+    toast.add({ title: 'Failed to create folder', description: String(error), color: 'error' })
+  }
+}
+
+async function handleSync(vault: Vault) {
+  if (vault.type !== 'git') return
+  try {
+    await useGit().pull(vault.path)
+    await useGit().push(vault.path)
+    toast.add({ title: 'Sync completed', color: 'success' })
+    await git.refreshStatus(vault.id)
+  }
+  catch (error) {
+    toast.add({ title: 'Sync failed', description: String(error), color: 'error' })
+  }
+}
+
+async function handlePull(vault: Vault) {
+  if (vault.type !== 'git') return
+  try {
+    const output = await useGit().pull(vault.path)
+    toast.add({ title: 'Pull completed', description: output || undefined, color: 'success' })
+    await git.refreshStatus(vault.id)
+  }
+  catch (error) {
+    toast.add({ title: 'Pull failed', description: String(error), color: 'error' })
+  }
+}
+
+async function handlePush(vault: Vault) {
+  if (vault.type !== 'git') return
+  try {
+    const output = await useGit().push(vault.path)
+    toast.add({ title: 'Push completed', description: output || undefined, color: 'success' })
+    await git.refreshStatus(vault.id)
+  }
+  catch (error) {
+    toast.add({ title: 'Push failed', description: String(error), color: 'error' })
+  }
 }
 
 function openFile(path: string) {
@@ -231,6 +310,27 @@ watchEffect(() => {
 
 function toggleVault(vault: Vault) {
   expandedVaults.value[vault.id] = !expandedVaults.value[vault.id]
+}
+
+function vaultMenuItems(vault: Vault): DropdownMenuItem[][] {
+  const groups: DropdownMenuItem[][] = []
+  const top: DropdownMenuItem[] = []
+  if (vault.path !== settings.mainRepoPath) {
+    top.push({
+      label: 'Remove from app',
+      icon: 'i-lucide-trash-2',
+      color: 'error',
+      onSelect: () => openRemoveVaultConfirm(vault),
+    })
+  }
+  if (top.length) groups.push(top)
+  if (vault.type === 'git') {
+    groups.push([
+      { label: 'Pull', icon: 'i-lucide-git-pull-request', onSelect: () => handlePull(vault) },
+      { label: 'Push', icon: 'i-lucide-git-pull-request-arrow', onSelect: () => handlePush(vault) },
+    ])
+  }
+  return groups
 }
 </script>
 
@@ -276,7 +376,7 @@ function toggleVault(vault: Vault) {
             />
           </div>
 
-          <div class="flex items-center justify-end gap-1 min-w-0 h-6">
+          <div class="flex items-center justify-between gap-1 min-w-0 h-6">
             <span class="text-xs text-muted capitalize hidden md:block md:opacity-100 md:group-hover:opacity-0 transition-opacity">
               {{ vault.type }}
             </span>
@@ -298,14 +398,36 @@ function toggleVault(vault: Vault) {
                 @click.stop="openCreateNote(vault)"
               />
               <UButton
-                v-if="vault.path !== settings.mainRepoPath"
-                icon="i-lucide-x"
+                icon="i-lucide-folder-plus"
                 size="xs"
                 color="neutral"
                 variant="ghost"
-                title="Remove from list"
-                @click.stop="handleRemoveVault(vault)"
+                title="New folder"
+                @click.stop="openCreateFolder(vault)"
               />
+              <UButton
+                v-if="vault.type === 'git'"
+                icon="i-lucide-refresh-cw"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                title="Sync (pull & push)"
+                @click.stop="handleSync(vault)"
+              />
+              <UDropdownMenu
+                :items="vaultMenuItems(vault)"
+                :modal="false"
+                size="xs"
+              >
+                <UButton
+                  icon="i-lucide-ellipsis-vertical"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  title="More"
+                  @click.stop
+                />
+              </UDropdownMenu>
             </div>
           </div>
         </div>
@@ -527,17 +649,97 @@ function toggleVault(vault: Vault) {
       </template>
 
       <template #footer>
+        <div class="flex flex-col gap-3 w-full">
+          <div
+            v-if="editingVault && editingVault.path !== settings.mainRepoPath"
+            class="rounded-md bg-error/5 border border-error/10 p-3"
+          >
+            <p class="text-xs text-muted mb-2">
+              The vault folder itself is <strong>not</strong> deleted. Only its settings are removed and it disappears from the app.
+            </p>
+            <UButton
+              icon="i-lucide-trash-2"
+              label="Remove from app"
+              color="error"
+              variant="soft"
+              size="sm"
+              block
+              @click="editVaultOpen = false; openRemoveVaultConfirm(editingVault)"
+            />
+          </div>
+          <div class="flex justify-end gap-2 w-full">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              label="Cancel"
+              @click="editVaultOpen = false"
+            />
+            <UButton
+              label="Save"
+              :disabled="!editVaultName.trim()"
+              @click="submitEditVault"
+            />
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="newFolderOpen"
+      title="New folder"
+    >
+      <template #body>
+        <UFormField label="Folder name">
+          <UInput
+            v-model="newFolderName"
+            placeholder="my-folder"
+            autofocus
+          />
+        </UFormField>
+      </template>
+
+      <template #footer>
         <div class="flex justify-end gap-2 w-full">
           <UButton
             color="neutral"
             variant="ghost"
             label="Cancel"
-            @click="editVaultOpen = false"
+            @click="newFolderOpen = false"
           />
           <UButton
-            label="Save"
-            :disabled="!editVaultName.trim()"
-            @click="submitEditVault"
+            label="Create"
+            :disabled="!newFolderName.trim()"
+            @click="submitCreateFolder"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="removeVaultConfirmOpen"
+      title="Remove vault"
+    >
+      <template #body>
+        <p class="text-sm">
+          Remove "<strong>{{ removeVaultConfirmTarget?.name }}</strong>" from the app?
+        </p>
+        <p class="text-xs text-muted mt-1">
+          The folder and all its files on disk will remain intact. Only the app settings are removed.
+        </p>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="removeVaultConfirmOpen = false"
+          />
+          <UButton
+            color="error"
+            label="Remove"
+            @click="submitRemoveVault"
           />
         </div>
       </template>

@@ -55,6 +55,14 @@ export function useFs() {
     return fullPath
   }
 
+  async function createFolder(dirPath: string, folderName: string) {
+    const safe = folderName.trim()
+    if (!safe) throw new Error('Folder name cannot be empty')
+    const fullPath = await join(dirPath, safe)
+    await ensureDir(fullPath)
+    return fullPath
+  }
+
   /**
    * Recursively scans a directory and returns a tree of folders and files
    * matching the vault's enabled extension groups. Empty subdirectories
@@ -136,6 +144,7 @@ export function useFs() {
     writeText,
     deleteFile,
     createMarkdown,
+    createFolder,
     scanMarkdownTree,
     sep,
   }
