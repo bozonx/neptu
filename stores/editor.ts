@@ -151,6 +151,7 @@ export const useEditorStore = defineStore('editor', () => {
   )
 
   const scrollToLineTrigger = ref<number | null>(null)
+  const activeRightTab = ref<'info' | 'outline'>('outline')
 
   function scrollToLine(line: number) {
     scrollToLineTrigger.value = line
@@ -168,6 +169,7 @@ export const useEditorStore = defineStore('editor', () => {
     isDirty,
     currentVault,
     scrollToLineTrigger,
+    activeRightTab,
     openFile,
     setContent,
     save,

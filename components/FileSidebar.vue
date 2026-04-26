@@ -50,60 +50,82 @@ function handleProperties() {
 <template>
   <div class="flex flex-col h-full bg-default">
     <!-- Right Sidebar Toolbar -->
-    <div class="h-10 border-b border-default flex items-center px-3 shrink-0">
+    <div class="h-10 border-b border-default flex items-center px-2 gap-1 shrink-0">
+      <div class="flex-1 flex items-center gap-1">
+        <UButton
+          icon="i-lucide-list-tree"
+          size="xs"
+          :variant="editor.activeRightTab === 'outline' ? 'subtle' : 'ghost'"
+          :color="editor.activeRightTab === 'outline' ? 'primary' : 'neutral'"
+          title="Outline"
+          @click="editor.activeRightTab = 'outline'"
+        />
+        <UButton
+          icon="i-lucide-info"
+          size="xs"
+          :variant="editor.activeRightTab === 'info' ? 'subtle' : 'ghost'"
+          :color="editor.activeRightTab === 'info' ? 'primary' : 'neutral'"
+          title="File Info"
+          @click="editor.activeRightTab = 'info'"
+        />
+      </div>
+      
       <UButton
+        v-if="editor.currentFilePath"
         icon="i-lucide-settings-2"
-        label="Properties"
         size="xs"
         variant="ghost"
         color="neutral"
+        title="File Properties"
         @click="handleProperties"
       />
     </div>
 
     <!-- Right Sidebar Content -->
-    <div class="flex-1 overflow-auto p-4 space-y-6">
+    <div class="flex-1 overflow-auto p-4">
       <div v-if="editor.currentFilePath">
-        <!-- File Info Section -->
-        <section>
-          <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">File Info</h3>
-          <div class="space-y-3">
-            <div>
-              <div class="text-[10px] text-muted uppercase">Name</div>
-              <div class="text-sm font-medium truncate" :title="fileName ?? ''">{{ fileName }}</div>
+        <!-- Info Tab -->
+        <div v-if="editor.activeRightTab === 'info'" class="space-y-6">
+          <section>
+            <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">File Info</h3>
+            <div class="space-y-3">
+              <div>
+                <div class="text-[10px] text-muted uppercase">Name</div>
+                <div class="text-sm font-medium truncate" :title="fileName ?? ''">{{ fileName }}</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-muted uppercase">Vault</div>
+                <div class="text-sm truncate">{{ vaultName }}</div>
+              </div>
+              <div>
+                <div class="text-[10px] text-muted uppercase">Path</div>
+                <div class="text-[11px] text-muted break-all leading-relaxed">{{ editor.currentFilePath }}</div>
+              </div>
             </div>
-            <div>
-              <div class="text-[10px] text-muted uppercase">Vault</div>
-              <div class="text-sm truncate">{{ vaultName }}</div>
-            </div>
-            <div>
-              <div class="text-[10px] text-muted uppercase">Path</div>
-              <div class="text-[11px] text-muted break-all leading-relaxed">{{ editor.currentFilePath }}</div>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
-        <UDivider class="my-4" />
-
-        <!-- Outline Section -->
-        <section>
-          <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">Outline</h3>
-          <div v-if="outline.length > 0" class="space-y-1">
-            <button
-              v-for="(header, index) in outline"
-              :key="index"
-              class="w-full text-left px-2 py-1 rounded hover:bg-elevated text-xs transition-colors truncate"
-              :style="{ paddingLeft: `${(header.level - 1) * 12 + 8}px` }"
-              @click="scrollToHeader(header)"
-            >
-              <span class="text-muted mr-1 opacity-50">#</span>
-              {{ header.text }}
-            </button>
-          </div>
-          <div v-else class="text-xs text-muted italic px-2">
-            No headers found
-          </div>
-        </section>
+        <!-- Outline Tab -->
+        <div v-if="editor.activeRightTab === 'outline'" class="space-y-6">
+          <section>
+            <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">Outline</h3>
+            <div v-if="outline.length > 0" class="space-y-1">
+              <button
+                v-for="(header, index) in outline"
+                :key="index"
+                class="w-full text-left px-2 py-1.5 rounded hover:bg-elevated text-xs transition-colors truncate flex items-baseline gap-2 group"
+                :style="{ paddingLeft: `${(header.level - 1) * 12 + 8}px` }"
+                @click="scrollToHeader(header)"
+              >
+                <span class="text-muted text-[10px] opacity-40 group-hover:opacity-100 transition-opacity font-mono">H{{ header.level }}</span>
+                <span class="truncate">{{ header.text }}</span>
+              </button>
+            </div>
+            <div v-else class="text-xs text-muted italic px-2 py-8 text-center border-2 border-dashed border-default rounded-lg">
+              No headers found in this file
+            </div>
+          </section>
+        </div>
       </div>
       
       <div v-else class="h-full flex flex-col items-center justify-center text-muted text-sm italic space-y-2 opacity-50">

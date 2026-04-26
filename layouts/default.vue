@@ -79,11 +79,18 @@ async function handleCommit() {
           @click="handleCommit"
         />
         <UButton
+          icon="i-lucide-list-tree"
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          @click="editor.activeRightTab = 'outline'; rightDrawerOpen = true"
+        />
+        <UButton
           icon="i-lucide-info"
           variant="ghost"
           color="neutral"
           size="sm"
-          @click="rightDrawerOpen = true"
+          @click="editor.activeRightTab = 'info'; rightDrawerOpen = true"
         />
       </div>
     </div>
