@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { VueDraggable } from 'vue-draggable-plus'
 import type { EditorTab, Panel, PanelLeaf } from '~/types'
 
 const props = defineProps<{
@@ -10,20 +11,34 @@ const tabsStore = useTabsStore()
 const editorStore = useEditorStore()
 const vaults = useVaultsStore()
 
-const tabs = computed(() => {
-  if (props.isMobile) return tabsStore.mobileTabs
-  if (!props.panelId) return []
-  const leaf = tabsStore.desktopLayout.type === 'leaf' && tabsStore.desktopLayout.id === props.panelId
+const leaf = computed(() => {
+  if (props.isMobile) return null
+  if (!props.panelId) return null
+  return tabsStore.desktopLayout.type === 'leaf' && tabsStore.desktopLayout.id === props.panelId
     ? tabsStore.desktopLayout
     : findLeaf(tabsStore.desktopLayout, props.panelId)
-  return leaf?.tabs ?? []
+})
+
+const tabs = computed(() => {
+  if (props.isMobile) return tabsStore.mobileTabs
+  return leaf.value?.tabs ?? []
+})
+
+const draggableTabs = computed({
+  get: () => tabs.value,
+  set: (val) => {
+    if (props.isMobile) {
+      tabsStore.mobileTabs = val
+    }
+    else if (leaf.value) {
+      leaf.value.tabs = val
+    }
+  },
 })
 
 const activeId = computed(() => {
   if (props.isMobile) return tabsStore.mobileActiveId
-  if (!props.panelId) return null
-  const leaf = findLeaf(tabsStore.desktopLayout, props.panelId)
-  return leaf?.activeId ?? null
+  return leaf.value?.activeId ?? null
 })
 
 function findLeaf(panel: Panel, id: string): PanelLeaf | null {
@@ -58,6 +73,18 @@ function handleClose(tab: EditorTab) {
   }
 }
 
+function onAdd(event: { data: EditorTab }) {
+  if (!props.isMobile && props.panelId) {
+    tabsStore.handleTabAdd(props.panelId, event.data)
+  }
+}
+
+function onRemove(event: { data: EditorTab }) {
+  if (!props.isMobile && props.panelId) {
+    tabsStore.handleTabRemove(props.panelId, event.data)
+  }
+}
+
 const contextMenuItems = (tab: EditorTab) => [
   [
     {
@@ -87,17 +114,27 @@ const contextMenuItems = (tab: EditorTab) => [
 </script>
 
 <template>
-  <div class="flex items-center gap-px h-full">
-    <template v-if="tabs.length">
-      <template v-if="!props.isMobile">
+  <div class="flex items-center h-full w-full overflow-hidden">
+    <VueDraggable
+      v-model="draggableTabs"
+      group="editor-tabs"
+      :animation="150"
+      class="flex items-center h-full min-w-4 flex-1"
+      :ghost-class="'opacity-50'"
+      @add="onAdd"
+      @remove="onRemove"
+    >
+      <template
+        v-for="tab in tabs"
+        :key="tab.id"
+      >
         <UContextMenu
-          v-for="tab in tabs"
-          :key="`ctx-${tab.id}`"
+          v-if="!props.isMobile"
           :items="contextMenuItems(tab)"
         >
           <button
             type="button"
-            class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative"
+            class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
             :class="tab.id === activeId
               ? 'bg-default text-default'
               : 'bg-elevated/50 text-muted hover:text-default'"
@@ -127,11 +164,8 @@ const contextMenuItems = (tab: EditorTab) => [
             />
           </button>
         </UContextMenu>
-      </template>
-      <template v-else>
         <button
-          v-for="tab in tabs"
-          :key="`btn-${tab.id}`"
+          v-else
           type="button"
           class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative"
           :class="tab.id === activeId
@@ -163,10 +197,10 @@ const contextMenuItems = (tab: EditorTab) => [
           />
         </button>
       </template>
-    </template>
+    </VueDraggable>
     <div
-      v-else
-      class="px-4 text-[10px] text-muted uppercase tracking-widest opacity-30 select-none"
+      v-if="tabs.length === 0"
+      class="px-4 text-[10px] text-muted uppercase tracking-widest opacity-30 select-none whitespace-nowrap"
     >
       No open files
     </div>

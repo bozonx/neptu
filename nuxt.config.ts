@@ -32,6 +32,14 @@ export default defineNuxtConfig({
       // Tauri requires a consistent port
       strictPort: true,
     },
+    optimizeDeps: {
+      include: [
+        '@tauri-apps/api/path',
+        '@tauri-apps/plugin-fs',
+        '@tauri-apps/plugin-dialog',
+        '@tauri-apps/api/core',
+      ],
+    },
   },
 
   typescript: {

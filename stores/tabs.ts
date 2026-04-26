@@ -390,6 +390,53 @@ export const useTabsStore = defineStore('tabs', () => {
     await useEditorStore().saveUiState()
   }
 
+  async function handleTabAdd(panelId: string, tab: EditorTab) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+
+    panel.activeId = tab.id
+    activeDesktopPanelId.value = panelId
+    await useEditorStore().openFile(tab.filePath)
+    await useEditorStore().saveUiState()
+  }
+
+  async function handleTabRemove(panelId: string, tab: EditorTab) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+
+    if (panel.activeId === tab.id) {
+      panel.activeId = panel.tabs[0]?.id ?? null
+      if (panel.activeId) {
+        const activeTab = panel.tabs.find((t) => t.id === panel.activeId)
+        if (activeTab) await useEditorStore().openFile(activeTab.filePath)
+      }
+    }
+
+    // If panel becomes empty and it's not the only one, it will be handled by the layout logic
+    // vue-draggable-plus already removed the element from the array.
+    // We might need to trigger the same cleanup logic as in closeTab.
+    if (panel.tabs.length === 0) {
+      const parent = findParent(desktopLayout.value, panelId)
+      if (parent) {
+        const other = parent.first.id === panelId ? parent.second : parent.first
+        const grandParent = findParent(desktopLayout.value, parent.id)
+        if (grandParent) {
+          if (grandParent.first.id === parent.id) grandParent.first = other
+          else grandParent.second = other
+        }
+        else {
+          desktopLayout.value = other
+        }
+        if (activeDesktopPanelId.value === panelId) {
+          const leaves = allLeaves(desktopLayout.value)
+          activeDesktopPanelId.value = leaves.length > 0 ? leaves[0]!.id : (desktopLayout.value as PanelLeaf).id
+        }
+      }
+    }
+
+    await useEditorStore().saveUiState()
+  }
+
   return {
     desktopLayout,
     activeDesktopPanelId,
@@ -411,5 +458,7 @@ export const useTabsStore = defineStore('tabs', () => {
     allLeaves,
     updatePanelRatio,
     updateSidebarSizes,
+    handleTabAdd,
+    handleTabRemove,
   }
 })
