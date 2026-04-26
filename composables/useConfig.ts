@@ -1,4 +1,4 @@
-import { appConfigDir, join } from '@tauri-apps/api/path'
+import { appConfigDir, join, resolve } from '@tauri-apps/api/path'
 import { DEFAULT_SETTINGS, DEFAULT_UI_STATE, type AppConfig, type UiState } from '~/types'
 
 const CONFIG_FILE = 'config.json'
@@ -27,7 +27,7 @@ export function useConfig() {
   async function configDir(): Promise<string> {
     const envDir = import.meta.env.VITE_NEPTU_DEV_DIR as string | undefined
     if (envDir) {
-      return envDir
+      return await resolve(envDir)
     }
     return await appConfigDir()
   }
@@ -72,7 +72,8 @@ export function useConfig() {
       const raw = await fs.readText(path)
       const parsed = JSON.parse(raw) as Partial<UiState>
       return {
-        activeRightTab: parsed.activeRightTab ?? DEFAULT_UI_STATE.activeRightTab,
+        ...DEFAULT_UI_STATE,
+        ...parsed,
       }
     }
     catch {

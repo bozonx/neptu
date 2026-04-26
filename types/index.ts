@@ -133,8 +133,37 @@ export interface AppConfig {
   groups: VaultGroup[]
 }
 
+export type SplitDirection = 'horizontal' | 'vertical'
+
+export interface EditorTab {
+  id: string
+  filePath: string
+}
+
+export interface PanelLeaf {
+  type: 'leaf'
+  id: string
+  tabs: EditorTab[]
+  activeId: string | null
+}
+
+export interface PanelNode {
+  type: 'node'
+  id: string
+  direction: SplitDirection
+  first: Panel
+  second: Panel
+  ratio: number
+}
+
+export type Panel = PanelLeaf | PanelNode
+
 export interface UiState {
   activeRightTab: 'outline' | 'info'
+  desktopLayout?: Panel
+  activeDesktopPanelId?: string
+  mobileTabs?: EditorTab[]
+  mobileActiveId?: string | null
 }
 
 export const DEFAULT_UI_STATE: UiState = {

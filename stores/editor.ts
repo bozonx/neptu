@@ -1,78 +1,105 @@
 import { defineStore } from 'pinia'
-import { watchDebounced } from '@vueuse/core'
-import type { SaveStatus, UiState, Vault } from '~/types'
+import type { SaveStatus, Vault } from '~/types'
 
 const SAVED_HINT_MS = 1500
-const AUTOSAVE_MAX_WAIT_MS = 8000
+
+interface EditorBuffer {
+  content: string
+  isDirty: boolean
+  saveStatus: SaveStatus
+  saveError: string | null
+  openEpoch: number
+  lastEditTimestamp: number
+}
 
 /**
- * Owns the editor buffer and autosave pipeline. The store mounts an internal
- * debounced watcher so components only have to bind `currentContent` and
- * surface `saveError`.
+ * Owns the editor buffers and autosave pipeline.
  */
 export const useEditorStore = defineStore('editor', () => {
-  const currentFilePath = ref<string | null>(null)
-  const currentContent = ref('')
-  const saveStatus = ref<SaveStatus>('idle')
-  const saveError = ref<string | null>(null)
-  const isDirty = ref(false)
+  const buffers = ref<Record<string, EditorBuffer>>({})
 
-  let savedHintHandle: ReturnType<typeof setTimeout> | null = null
+  const currentFilePath = computed(() => {
+    const tabs = useTabsStore()
+    const { isMobile } = useTauri()
+    if (isMobile.value) {
+      const active = tabs.mobileTabs.find((t) => t.id === tabs.mobileActiveId)
+      return active?.filePath ?? null
+    }
+    else {
+      const leaf = tabs.allLeaves(tabs.desktopLayout).find((l) => l.id === tabs.activeDesktopPanelId)
+      const active = leaf?.tabs.find((t) => t.id === leaf.activeId)
+      return active?.filePath ?? null
+    }
+  })
 
-  // Monotonic token used to discard stale `readTextFile` results when the
-  // user switches files quickly.
-  let openEpoch = 0
+  const currentContent = computed(() => {
+    const path = currentFilePath.value
+    return path ? buffers.value[path]?.content ?? '' : ''
+  })
 
-  const currentVault = computed<Vault | null>(() => {
+  const currentVault = computed(() => {
     if (!currentFilePath.value) return null
     return useVaultsStore().findVaultForPath(currentFilePath.value)
   })
 
-  function setSaveStatus(next: SaveStatus, error: string | null = null) {
-    if (savedHintHandle) {
-      clearTimeout(savedHintHandle)
-      savedHintHandle = null
-    }
-    saveStatus.value = next
-    saveError.value = error
+  function findVaultForPath(path: string | null): Vault | null {
+    if (!path) return null
+    return useVaultsStore().findVaultForPath(path)
+  }
+
+  function setSaveStatus(path: string, next: SaveStatus, error: string | null = null) {
+    const buffer = buffers.value[path]
+    if (!buffer) return
+    buffer.saveStatus = next
+    buffer.saveError = error
     if (next === 'saved') {
-      savedHintHandle = setTimeout(() => {
-        if (saveStatus.value === 'saved') saveStatus.value = 'idle'
+      setTimeout(() => {
+        if (buffers.value[path]?.saveStatus === 'saved') {
+          buffers.value[path].saveStatus = 'idle'
+        }
       }, SAVED_HINT_MS)
     }
   }
 
   async function openFile(path: string) {
-    openEpoch += 1
-    const epoch = openEpoch
+    if (buffers.value[path]) return buffers.value[path]
+
     const fs = useFs()
     const content = await fs.readText(path)
-    // Discard stale read if the user has already moved to another file.
-    if (epoch !== openEpoch) return
-    currentFilePath.value = path
-    currentContent.value = content
-    isDirty.value = false
-    setSaveStatus('idle')
+
+    buffers.value[path] = {
+      content,
+      isDirty: false,
+      saveStatus: 'idle',
+      saveError: null,
+      openEpoch: Date.now(),
+      lastEditTimestamp: Date.now(),
+    }
+    return buffers.value[path]
   }
 
-  function setContent(content: string) {
-    if (content === currentContent.value) return
-    currentContent.value = content
-    isDirty.value = true
-    // Any new edit must restart the commit debounce
-    const vault = currentVault.value
+  function setContent(path: string, content: string) {
+    const buffer = buffers.value[path]
+    if (!buffer || buffer.content === content) return
+    buffer.content = content
+    buffer.isDirty = true
+    buffer.lastEditTimestamp = Date.now()
+
+    const vault = findVaultForPath(path)
     if (vault?.type === 'git') useGitStore().cancelCommit(vault.id)
   }
 
-  async function save() {
-    if (!currentFilePath.value || !isDirty.value) return
+  async function save(path: string) {
+    const buffer = buffers.value[path]
+    if (!buffer || !buffer.isDirty) return
+
     const fs = useFs()
-    setSaveStatus('saving')
+    setSaveStatus(path, 'saving')
     try {
-      await fs.writeText(currentFilePath.value, currentContent.value)
-      isDirty.value = false
-      setSaveStatus('saved')
-      const vault = currentVault.value
+      await fs.writeText(path, buffer.content)
+      buffer.isDirty = false
+      setSaveStatus(path, 'saved')
+      const vault = findVaultForPath(path)
       if (vault?.type === 'git') {
         const git = useGitStore()
         await git.refreshStatus(vault.id)
@@ -80,7 +107,7 @@ export const useEditorStore = defineStore('editor', () => {
       }
     }
     catch (error) {
-      setSaveStatus('error', error instanceof Error ? error.message : String(error))
+      setSaveStatus(path, 'error', error instanceof Error ? error.message : String(error))
       throw error
     }
   }
@@ -104,13 +131,9 @@ export const useEditorStore = defineStore('editor', () => {
 
   async function deleteNote(payload: { vault: Vault, path: string }) {
     const fs = useFs()
-    const isActive = currentFilePath.value === payload.path
-    if (isActive) {
-      // Cancel pending autosave/commit and clear the buffer before unlink so
-      // the debounced watcher cannot resurrect the file on disk.
-      if (payload.vault.type === 'git') useGitStore().cancelCommit(payload.vault.id)
-      reset()
-    }
+    if (payload.vault.type === 'git') useGitStore().cancelCommit(payload.vault.id)
+    delete buffers.value[payload.path]
+
     await useTabsStore().dropByPath(payload.path)
     await fs.deleteFile(payload.path)
     const vaults = useVaultsStore()
@@ -120,44 +143,45 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
-  /** Drops the active buffer, e.g. when its file is deleted or the vault path moves. */
-  function reset() {
-    openEpoch += 1
-    currentFilePath.value = null
-    currentContent.value = ''
-    isDirty.value = false
-    setSaveStatus('idle')
+  function reset(path?: string) {
+    if (path) {
+      delete buffers.value[path]
+    }
+    else {
+      buffers.value = {}
+    }
   }
 
-  // Autosave watcher. Lives inside the store so components don't duplicate
-  // debounce logic. The delay is reactive to settings changes.
   const settings = useSettingsStore()
   const debounceMs = computed(
     () => Math.max(100, settings.settings.autosaveDebounceMs),
   )
 
-  watchDebounced(
-    currentContent,
-    async () => {
-      if (!isDirty.value || !currentFilePath.value) return
-      try {
-        await save()
+  // Autosave ticker
+  setInterval(async () => {
+    const now = Date.now()
+    const entries = Object.entries(buffers.value)
+    for (const [path, buffer] of entries) {
+      if (buffer.isDirty && buffer.saveStatus !== 'saving' && now - buffer.lastEditTimestamp >= debounceMs.value) {
+        try {
+          await save(path)
+        }
+        catch {
+          // Error already handled in save()
+        }
       }
-      catch {
-        // saveError already populated; UI surfaces it via watch.
-      }
-    },
-    { debounce: debounceMs, maxWait: AUTOSAVE_MAX_WAIT_MS },
-  )
+    }
+  }, 500)
 
-  const scrollToLineTrigger = ref<number | null>(null)
+  const scrollToLineTrigger = ref<Record<string, number | null>>({})
   const activeRightTab = ref<'info' | 'outline'>('outline')
 
-  function scrollToLine(line: number) {
-    scrollToLineTrigger.value = line
-    // Reset after a short delay so the same line can be triggered again
+  function scrollToLine(line: number, path?: string) {
+    const p = path ?? currentFilePath.value
+    if (!p) return
+    scrollToLineTrigger.value[p] = line
     nextTick(() => {
-      scrollToLineTrigger.value = null
+      scrollToLineTrigger.value[p] = null
     })
   }
 
@@ -165,26 +189,32 @@ export const useEditorStore = defineStore('editor', () => {
     const config = useConfig()
     const state = await config.loadUiState()
     activeRightTab.value = state.activeRightTab
+    await useTabsStore().loadUiState(state)
   }
 
-  async function saveUiState(state: UiState) {
+  async function saveUiState() {
     const config = useConfig()
-    await config.saveUiState(state)
+    const tabs = useTabsStore()
+    await config.saveUiState({
+      activeRightTab: activeRightTab.value,
+      desktopLayout: tabs.desktopLayout,
+      activeDesktopPanelId: tabs.activeDesktopPanelId,
+      mobileTabs: tabs.mobileTabs,
+      mobileActiveId: tabs.mobileActiveId,
+    })
   }
 
-  watch(activeRightTab, async (tab) => {
-    await saveUiState({ activeRightTab: tab })
+  watch(activeRightTab, async () => {
+    await saveUiState()
   })
 
   return {
+    buffers,
     currentFilePath,
     currentContent,
-    saveStatus,
-    saveError,
-    isDirty,
     currentVault,
-    scrollToLineTrigger,
     activeRightTab,
+    scrollToLineTrigger,
     openFile,
     setContent,
     save,

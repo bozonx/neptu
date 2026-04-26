@@ -2,16 +2,32 @@
 import AppSidebar from '~/components/AppSidebar.vue'
 import FileSidebar from '~/components/FileSidebar.vue'
 import FileSidebarToolbar from '~/components/FileSidebarToolbar.vue'
+import Editor from '~/components/Editor.vue'
 
 const editor = useEditorStore()
+const tabsStore = useTabsStore()
 const git = useGitStore()
+const vaults = useVaultsStore()
 const toast = useToast()
 
 const leftDrawerOpen = ref(false)
 const rightDrawerOpen = ref(false)
 
+const activeTab = computed(() => {
+  return tabsStore.mobileTabs.find((t) => t.id === tabsStore.mobileActiveId)
+})
+
+const currentVault = computed(() => {
+  const path = activeTab.value?.filePath
+  if (!path) return null
+  return vaults.findVaultForPath(path)
+})
+
 // Global save error notification
-watch(() => editor.saveError, (error) => {
+watch(() => {
+  const path = activeTab.value?.filePath
+  return path ? editor.buffers[path]?.saveError : null
+}, (error) => {
   if (error) {
     toast.add({
       title: 'Save failed',
@@ -22,19 +38,19 @@ watch(() => editor.saveError, (error) => {
 })
 
 const showCommitButton = computed(() => {
-  const v = editor.currentVault
+  const v = currentVault.value
   if (!v || v.type !== 'git') return false
   if (v.git?.commitMode !== 'manual') return false
   return git.status[v.id]?.dirty ?? false
 })
 
 const committing = computed(() => {
-  const v = editor.currentVault
+  const v = currentVault.value
   return !!v && git.commitStatus[v.id] === 'committing'
 })
 
 async function handleCommit() {
-  const v = editor.currentVault
+  const v = currentVault.value
   if (!v) return
   try {
     await git.commit(v.id)

@@ -1,153 +1,330 @@
 import { defineStore } from 'pinia'
-
-export interface EditorTab {
-  id: string
-  filePath: string
-}
+import type { EditorTab, Panel, PanelLeaf, PanelNode, SplitDirection, UiState } from '~/types'
 
 function generateId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-/**
- * Owns the list of open editor tabs. A tab is a pointer to a file path on
- * disk; the actual buffer of the *active* tab lives in `useEditorStore`.
- * Switching tabs flushes the current buffer to disk (respecting autosave
- * semantics) and loads the target file into the editor.
- *
- * Tabs may reference files from different vaults.
- */
+function createLeaf(tabs: EditorTab[] = [], activeId: string | null = null): PanelLeaf {
+  return {
+    type: 'leaf',
+    id: generateId(),
+    tabs,
+    activeId,
+  }
+}
+
 export const useTabsStore = defineStore('tabs', () => {
-  const tabs = ref<EditorTab[]>([])
-  const activeId = ref<string | null>(null)
+  const desktopLayout = ref<Panel>(createLeaf())
+  const activeDesktopPanelId = ref<string>((desktopLayout.value as PanelLeaf).id)
 
-  const activeTab = computed<EditorTab | null>(() =>
-    tabs.value.find((t) => t.id === activeId.value) ?? null,
-  )
+  const mobileTabs = ref<EditorTab[]>([])
+  const mobileActiveId = ref<string | null>(null)
 
-  function findByPath(path: string): EditorTab | null {
-    return tabs.value.find((t) => t.filePath === path) ?? null
+  const { isMobile } = useTauri()
+
+  // Helpers to traverse the tree
+  function findLeaf(panel: Panel, id: string): PanelLeaf | null {
+    if (panel.type === 'leaf') {
+      return panel.id === id ? panel : null
+    }
+    return findLeaf(panel.first, id) ?? findLeaf(panel.second, id)
   }
 
-  async function flushActive() {
-    const editor = useEditorStore()
-    if (!editor.isDirty) return
-    try {
-      await editor.save()
-    }
-    catch {
-      // The editor store surfaces the error via `saveError`; swallow here so
-      // tab navigation keeps working.
-    }
+  function findParent(panel: Panel, id: string): PanelNode | null {
+    if (panel.type === 'leaf') return null
+    if (panel.first.id === id || panel.second.id === id) return panel
+    return findParent(panel.first, id) ?? findParent(panel.second, id)
   }
 
-  /**
-   * Opens `path` in a new tab, or activates an existing tab pointing to it.
-   * This is the entry point used by the sidebar and note-creation flow.
-   */
+  function allLeaves(panel: Panel): PanelLeaf[] {
+    if (panel.type === 'leaf') return [panel]
+    return [...allLeaves(panel.first), ...allLeaves(panel.second)]
+  }
+
+  function findLeafForPath(panel: Panel, path: string): PanelLeaf | null {
+    if (panel.type === 'leaf') {
+      return panel.tabs.some((t) => t.filePath === path) ? panel : null
+    }
+    return findLeafForPath(panel.first, path) ?? findLeafForPath(panel.second, path)
+  }
+
+  const activePanel = computed(() => findLeaf(desktopLayout.value, activeDesktopPanelId.value))
+
   async function openFile(path: string) {
-    const existing = findByPath(path)
-    if (existing) {
-      if (activeId.value !== existing.id) await activate(existing.id)
-      return
+    const editor = useEditorStore()
+    if (isMobile.value) {
+      const existing = mobileTabs.value.find((t) => t.filePath === path)
+      if (existing) {
+        mobileActiveId.value = existing.id
+      }
+      else {
+        const tab: EditorTab = { id: generateId(), filePath: path }
+        mobileTabs.value.push(tab)
+        mobileActiveId.value = tab.id
+      }
+      await editor.openFile(path)
     }
-    await flushActive()
-    const tab: EditorTab = { id: generateId(), filePath: path }
-    tabs.value.push(tab)
-    activeId.value = tab.id
-    await useEditorStore().openFile(path)
+    else {
+      let panel = activePanel.value
+      if (!panel) {
+        panel = allLeaves(desktopLayout.value)[0]
+        activeDesktopPanelId.value = panel.id
+      }
+
+      const existing = panel.tabs.find((t) => t.filePath === path)
+      if (existing) {
+        panel.activeId = existing.id
+      }
+      else {
+        const tab: EditorTab = { id: generateId(), filePath: path }
+        panel.tabs.push(tab)
+        panel.activeId = tab.id
+      }
+      await editor.openFile(path)
+    }
+    await editor.saveUiState()
   }
 
-  async function activate(id: string) {
-    if (activeId.value === id) return
-    const tab = tabs.value.find((t) => t.id === id)
+  async function activateTab(panelId: string, tabId: string) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+    const tab = panel.tabs.find((t) => t.id === tabId)
     if (!tab) return
-    await flushActive()
-    activeId.value = id
+
+    panel.activeId = tabId
+    activeDesktopPanelId.value = panelId
     await useEditorStore().openFile(tab.filePath)
+    await useEditorStore().saveUiState()
   }
 
-  /**
-   * Closes a tab. If it was active, the previous sibling (or next, when
-   * closing the first tab) becomes active. When no tabs remain the editor
-   * is reset to an empty state.
-   */
-  async function close(id: string) {
-    const idx = tabs.value.findIndex((t) => t.id === id)
-    if (idx === -1) return
-    const wasActive = activeId.value === id
-    if (wasActive) await flushActive()
-    tabs.value.splice(idx, 1)
-    if (!wasActive) return
-    const next = tabs.value[idx] ?? tabs.value[idx - 1] ?? null
-    const editor = useEditorStore()
-    if (next) {
-      activeId.value = next.id
-      await editor.openFile(next.filePath)
-    }
-    else {
-      activeId.value = null
-      editor.reset()
-    }
-  }
-
-  /**
-   * Drops the tab for `path` without flushing the buffer. Intended for
-   * callers that have already invalidated the underlying file (e.g. delete).
-   */
-  async function dropByPath(path: string) {
-    const tab = findByPath(path)
+  async function activateMobileTab(tabId: string) {
+    const tab = mobileTabs.value.find((t) => t.id === tabId)
     if (!tab) return
-    const idx = tabs.value.indexOf(tab)
-    const wasActive = activeId.value === tab.id
-    tabs.value.splice(idx, 1)
-    if (!wasActive) return
-    const next = tabs.value[idx] ?? tabs.value[idx - 1] ?? null
-    const editor = useEditorStore()
-    if (next) {
-      activeId.value = next.id
-      await editor.openFile(next.filePath)
+    mobileActiveId.value = tabId
+    await useEditorStore().openFile(tab.filePath)
+    await useEditorStore().saveUiState()
+  }
+
+  async function closeTab(panelId: string, tabId: string) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+
+    const idx = panel.tabs.findIndex((t) => t.id === tabId)
+    if (idx === -1) return
+
+    const wasActive = panel.activeId === tabId
+    panel.tabs.splice(idx, 1)
+
+    if (wasActive) {
+      const next = panel.tabs[idx] ?? panel.tabs[idx - 1] ?? null
+      if (next) {
+        panel.activeId = next.id
+        await useEditorStore().openFile(next.filePath)
+      }
+      else {
+        panel.activeId = null
+        // If it was the last tab in the panel, we might want to close the panel
+        // but for now let's just keep it empty.
+      }
+    }
+
+    // Cleanup empty panels (except if it's the last one)
+    if (panel.tabs.length === 0) {
+      const parent = findParent(desktopLayout.value, panelId)
+      if (parent) {
+        const other = parent.first.id === panelId ? parent.second : parent.first
+        const grandParent = findParent(desktopLayout.value, parent.id)
+
+        if (grandParent) {
+          if (grandParent.first.id === parent.id) grandParent.first = other
+          else grandParent.second = other
+        }
+        else {
+          desktopLayout.value = other
+        }
+        // Ensure active panel ID is still valid
+        if (activeDesktopPanelId.value === panelId) {
+          activeDesktopPanelId.value = allLeaves(desktopLayout.value)[0].id
+        }
+      }
+    }
+    await useEditorStore().saveUiState()
+  }
+
+  async function closeMobileTab(tabId: string) {
+    const idx = mobileTabs.value.findIndex((t) => t.id === tabId)
+    if (idx === -1) return
+
+    const wasActive = mobileActiveId.value === tabId
+    mobileTabs.value.splice(idx, 1)
+
+    if (wasActive) {
+      const next = mobileTabs.value[idx] ?? mobileTabs.value[idx - 1] ?? null
+      if (next) {
+        mobileActiveId.value = next.id
+        await useEditorStore().openFile(next.filePath)
+      }
+      else {
+        mobileActiveId.value = null
+      }
+    }
+    await useEditorStore().saveUiState()
+  }
+
+  async function splitPanel(panelId: string, direction: SplitDirection, tabToDuplicate?: EditorTab) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+
+    const newTab: EditorTab = tabToDuplicate
+      ? { ...tabToDuplicate, id: generateId() }
+      : panel.tabs.find((t) => t.id === panel.activeId)
+        ? { ...panel.tabs.find((t) => t.id === panel.activeId)!, id: generateId() }
+        : { id: generateId(), filePath: '' } // Should not happen
+
+    if (!newTab.filePath) return
+
+    const newLeaf = createLeaf([newTab], newTab.id)
+    const parent = findParent(desktopLayout.value, panelId)
+
+    const newNode: PanelNode = {
+      type: 'node',
+      id: generateId(),
+      direction,
+      first: panel,
+      second: newLeaf,
+      ratio: 0.5,
+    }
+
+    // If duplicating to 'left' or 'top', we swap first and second
+    // Actually, let's keep it simple: splitRight/splitBottom always adds second.
+    // The direction and order can be handled by the caller or UI.
+    // For now: 'horizontal' means side-by-side, 'vertical' means stacked.
+
+    if (parent) {
+      if (parent.first.id === panelId) parent.first = newNode
+      else parent.second = newNode
     }
     else {
-      activeId.value = null
-      editor.reset()
+      desktopLayout.value = newNode
     }
+
+    activeDesktopPanelId.value = newLeaf.id
+    await useEditorStore().openFile(newTab.filePath)
+    await useEditorStore().saveUiState()
   }
 
   /**
-   * Removes all tabs whose file path is inside `prefix` (a vault path). Used
-   * when a vault is removed or its path changes. Does not flush buffers.
+   * More specific split methods for the context menu
    */
+  async function duplicateTo(panelId: string, side: 'left' | 'right' | 'top' | 'bottom', tab: EditorTab) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+
+    const newTab: EditorTab = { ...tab, id: generateId() }
+    const newLeaf = createLeaf([newTab], newTab.id)
+
+    const parent = findParent(desktopLayout.value, panelId)
+    const direction: SplitDirection = (side === 'left' || side === 'right') ? 'horizontal' : 'vertical'
+
+    const newNode: PanelNode = {
+      type: 'node',
+      id: generateId(),
+      direction,
+      first: (side === 'right' || side === 'bottom') ? panel : newLeaf,
+      second: (side === 'right' || side === 'bottom') ? newLeaf : panel,
+      ratio: 0.5,
+    }
+
+    if (parent) {
+      if (parent.first.id === panelId) parent.first = newNode
+      else parent.second = newNode
+    }
+    else {
+      desktopLayout.value = newNode
+    }
+
+    activeDesktopPanelId.value = newLeaf.id
+    await useEditorStore().openFile(newTab.filePath)
+    await useEditorStore().saveUiState()
+  }
+
+  async function dropByPath(path: string) {
+    // Remove from all desktop panels
+    const leaves = allLeaves(desktopLayout.value)
+    for (const leaf of leaves) {
+      const idx = leaf.tabs.findIndex((t) => t.filePath === path)
+      if (idx !== -1) {
+        await closeTab(leaf.id, leaf.tabs[idx].id)
+      }
+    }
+    // Remove from mobile
+    const mIdx = mobileTabs.value.findIndex((t) => t.filePath === path)
+    if (mIdx !== -1) {
+      await closeMobileTab(mobileTabs.value[mIdx].id)
+    }
+  }
+
   async function dropByPrefix(prefix: string) {
     const sep = prefix.endsWith('/') || prefix.endsWith('\\') ? prefix : prefix + '/'
     const match = (p: string) => p === prefix || p.startsWith(sep)
-    const activePath = activeTab.value?.filePath ?? null
-    const remaining = tabs.value.filter((t) => !match(t.filePath))
-    if (remaining.length === tabs.value.length) return
-    tabs.value = remaining
-    if (activePath && match(activePath)) {
-      const next = remaining[0] ?? null
-      const editor = useEditorStore()
-      if (next) {
-        activeId.value = next.id
-        await editor.openFile(next.filePath)
+
+    const leaves = allLeaves(desktopLayout.value)
+    for (const leaf of leaves) {
+      const toDrop = leaf.tabs.filter((t) => match(t.filePath))
+      for (const tab of toDrop) {
+        await closeTab(leaf.id, tab.id)
       }
-      else {
-        activeId.value = null
-        editor.reset()
+    }
+
+    const mToDrop = mobileTabs.value.filter((t) => match(t.filePath))
+    for (const tab of mToDrop) {
+      await closeMobileTab(tab.id)
+    }
+  }
+
+  async function loadUiState(state: UiState) {
+    if (state.desktopLayout) desktopLayout.value = state.desktopLayout
+    if (state.activeDesktopPanelId) activeDesktopPanelId.value = state.activeDesktopPanelId
+    if (state.mobileTabs) mobileTabs.value = state.mobileTabs
+    if (state.mobileActiveId) mobileActiveId.value = state.mobileActiveId
+
+    // Ensure we have at least one leaf
+    if (!desktopLayout.value) {
+      desktopLayout.value = createLeaf()
+      activeDesktopPanelId.value = (desktopLayout.value as PanelLeaf).id
+    }
+
+    // Open active files in buffers
+    const editor = useEditorStore()
+    if (isMobile.value) {
+      const active = mobileTabs.value.find((t) => t.id === mobileActiveId.value)
+      if (active) await editor.openFile(active.filePath)
+    }
+    else {
+      const leaves = allLeaves(desktopLayout.value)
+      for (const leaf of leaves) {
+        const active = leaf.tabs.find((t) => t.id === leaf.activeId)
+        if (active) await editor.openFile(active.filePath)
       }
     }
   }
 
   return {
-    tabs,
-    activeId,
-    activeTab,
-    findByPath,
+    desktopLayout,
+    activeDesktopPanelId,
+    mobileTabs,
+    mobileActiveId,
     openFile,
-    activate,
-    close,
+    activateTab,
+    activateMobileTab,
+    closeTab,
+    closeMobileTab,
+    splitPanel,
+    duplicateTo,
     dropByPath,
     dropByPrefix,
+    loadUiState,
+    allLeaves,
   }
 })
