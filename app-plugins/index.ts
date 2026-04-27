@@ -2,10 +2,12 @@ import type { Plugin } from '~/types/plugin'
 import { loadPlugins } from './api'
 import { outlinePlugin } from './builtin/outline'
 import { fileInfoPlugin } from './builtin/file-info'
+import { historyPlugin } from './builtin/history'
 
 export const builtinPlugins: Plugin[] = [
   outlinePlugin,
   fileInfoPlugin,
+  historyPlugin,
 ]
 
 /**

@@ -226,6 +226,9 @@ export const useEditorStore = defineStore('editor', () => {
     await useTabsStore().loadUiState(state)
     // Migrate legacy activeRightTab to plugin FQID
     const plugins = usePluginsStore()
+    if (state.activeLeftSidebarView) {
+      plugins.setActiveLeftSidebarView(state.activeLeftSidebarView)
+    }
     if (state.activeRightSidebarView) {
       plugins.setActiveRightSidebarView(state.activeRightSidebarView)
     }
@@ -243,6 +246,7 @@ export const useEditorStore = defineStore('editor', () => {
     const config = useConfig()
     const tabs = useTabsStore()
     await config.saveUiState({
+      activeLeftSidebarView: usePluginsStore().activeLeftSidebarView,
       activeRightSidebarView: usePluginsStore().activeRightSidebarView,
       desktopLayout: tabs.desktopLayout,
       activeDesktopPanelId: tabs.activeDesktopPanelId,
@@ -255,6 +259,10 @@ export const useEditorStore = defineStore('editor', () => {
       cursorPositions: cursorPositions.value,
     })
   }
+
+  watch(() => usePluginsStore().activeLeftSidebarView, () => {
+    void saveUiState()
+  })
 
   watch(() => usePluginsStore().activeRightSidebarView, () => {
     void saveUiState()

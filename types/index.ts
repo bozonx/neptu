@@ -145,7 +145,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
   locale: 'auto',
   fileSortMode: 'nameAsc',
-  enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info'],
+  enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
 }
 
 export interface AppConfig {
@@ -191,6 +191,8 @@ export interface CursorPosition {
 export interface UiState {
   /** Legacy field — migrated on load to activeRightSidebarView */
   activeRightTab?: 'outline' | 'info'
+  /** FQID of the active left-sidebar view, e.g. `com.neptu.history:main`. */
+  activeLeftSidebarView?: string | null
   /** FQID of the active right-sidebar view, e.g. `com.neptu.outline:main`. */
   activeRightSidebarView?: string | null
   desktopLayout?: Panel

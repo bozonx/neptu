@@ -3,6 +3,7 @@ import { shallowRef, ref, computed } from 'vue'
 import type {
   Plugin,
   PluginManifest,
+  RegisteredLeftSidebarView,
   RegisteredModal,
   RegisteredRightSidebarView,
   RegisteredSettingsTab,
@@ -31,9 +32,11 @@ function sortByOrder<T extends { order?: number, fqid: string }>(items: T[]): T[
  */
 export const usePluginsStore = defineStore('plugins', () => {
   const sidebarButtons = shallowRef<RegisteredSidebarButton[]>([])
+  const leftSidebarViews = shallowRef<RegisteredLeftSidebarView[]>([])
   const rightSidebarViews = shallowRef<RegisteredRightSidebarView[]>([])
   const settingsTabs = shallowRef<RegisteredSettingsTab[]>([])
   const modals = shallowRef<RegisteredModal[]>([])
+  const activeLeftSidebarView = ref<string | null>(null)
   const activeRightSidebarView = ref<string | null>(null)
   const loaded = ref<Map<string, LoadedPlugin>>(new Map())
 
@@ -41,8 +44,15 @@ export const usePluginsStore = defineStore('plugins', () => {
     return computed(() => sortByOrder(sidebarButtons.value.filter((b) => b.location === location)))
   }
 
+  const sortedLeftSidebarViews = computed(() => sortByOrder(leftSidebarViews.value))
   const sortedRightSidebarViews = computed(() => sortByOrder(rightSidebarViews.value))
   const sortedSettingsTabs = computed(() => sortByOrder(settingsTabs.value))
+
+  /** Currently active left-sidebar view. Null means the built-in Files panel. */
+  const resolvedActiveLeftSidebarView = computed(() => {
+    if (!activeLeftSidebarView.value) return null
+    return sortedLeftSidebarViews.value.find((v) => v.fqid === activeLeftSidebarView.value) ?? null
+  })
 
   /** Currently active right-sidebar view, with fallback to the first one. */
   const resolvedActiveRightSidebarView = computed(() => {
@@ -52,23 +62,35 @@ export const usePluginsStore = defineStore('plugins', () => {
     return match ?? views[0] ?? null
   })
 
+  function setActiveLeftSidebarView(fqid: string | null) {
+    activeLeftSidebarView.value = fqid
+  }
+
   function setActiveRightSidebarView(fqid: string | null) {
     activeRightSidebarView.value = fqid
   }
 
   function registerSidebarButton(button: RegisteredSidebarButton) {
-    sidebarButtons.value.push(button)
+    sidebarButtons.value = [...sidebarButtons.value, button]
     return () => {
-      const idx = sidebarButtons.value.findIndex((b) => b.fqid === button.fqid)
-      if (idx !== -1) sidebarButtons.value.splice(idx, 1)
+      sidebarButtons.value = sidebarButtons.value.filter((b) => b.fqid !== button.fqid)
+    }
+  }
+
+  function registerLeftSidebarView(view: RegisteredLeftSidebarView) {
+    leftSidebarViews.value = [...leftSidebarViews.value, view]
+    return () => {
+      leftSidebarViews.value = leftSidebarViews.value.filter((v) => v.fqid !== view.fqid)
+      if (activeLeftSidebarView.value === view.fqid) {
+        activeLeftSidebarView.value = null
+      }
     }
   }
 
   function registerRightSidebarView(view: RegisteredRightSidebarView) {
-    rightSidebarViews.value.push(view)
+    rightSidebarViews.value = [...rightSidebarViews.value, view]
     return () => {
-      const idx = rightSidebarViews.value.findIndex((v) => v.fqid === view.fqid)
-      if (idx !== -1) rightSidebarViews.value.splice(idx, 1)
+      rightSidebarViews.value = rightSidebarViews.value.filter((v) => v.fqid !== view.fqid)
       if (activeRightSidebarView.value === view.fqid) {
         activeRightSidebarView.value = null
       }
@@ -76,22 +98,21 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   function registerSettingsTab(tab: RegisteredSettingsTab) {
-    settingsTabs.value.push(tab)
+    settingsTabs.value = [...settingsTabs.value, tab]
     return () => {
-      const idx = settingsTabs.value.findIndex((t) => t.fqid === tab.fqid)
-      if (idx !== -1) settingsTabs.value.splice(idx, 1)
+      settingsTabs.value = settingsTabs.value.filter((t) => t.fqid !== tab.fqid)
     }
   }
 
   function pushModal(modal: RegisteredModal) {
-    modals.value.push(modal)
+    modals.value = [...modals.value, modal]
   }
 
   function closeModal(fqid: string) {
-    const idx = modals.value.findIndex((m) => m.fqid === fqid)
-    if (idx === -1) return
-    const [removed] = modals.value.splice(idx, 1)
-    removed?.onClose?.()
+    const modal = modals.value.find((m) => m.fqid === fqid)
+    if (!modal) return
+    modals.value = modals.value.filter((m) => m.fqid !== fqid)
+    modal.onClose?.()
   }
 
   async function load(plugin: Plugin) {
@@ -131,21 +152,35 @@ export const usePluginsStore = defineStore('plugins', () => {
     loaded.value.delete(pluginId)
     // Drop any modals still owned by this plugin.
     modals.value = modals.value.filter((m) => m.pluginId !== pluginId)
+    // Drop any left sidebar views still owned by this plugin.
+    const removedLsView = leftSidebarViews.value.find((v) => v.pluginId === pluginId)
+    if (removedLsView) {
+      leftSidebarViews.value = leftSidebarViews.value.filter((v) => v.pluginId !== pluginId)
+      if (activeLeftSidebarView.value === removedLsView.fqid) {
+        activeLeftSidebarView.value = null
+      }
+    }
   }
 
   return {
     sidebarButtons,
+    leftSidebarViews,
     rightSidebarViews,
     settingsTabs,
     modals,
+    activeLeftSidebarView,
     activeRightSidebarView,
     loaded,
     buttonsFor,
+    sortedLeftSidebarViews,
     sortedRightSidebarViews,
     sortedSettingsTabs,
+    resolvedActiveLeftSidebarView,
     resolvedActiveRightSidebarView,
+    setActiveLeftSidebarView,
     setActiveRightSidebarView,
     registerSidebarButton,
+    registerLeftSidebarView,
     registerRightSidebarView,
     registerSettingsTab,
     pushModal,

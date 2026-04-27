@@ -29,7 +29,9 @@
     "sortMtimeDesc": "Modified time (new to old)",
     "sortMtimeAsc": "Modified time (old to new)",
     "sortBirthtimeDesc": "Created time (new to old)",
-    "sortBirthtimeAsc": "Created time (old to new)"
+    "sortBirthtimeAsc": "Created time (old to new)",
+    "files": "Files",
+    "noRecentChanges": "No recent changes"
   },
   "vault": {
     "name": "Name",

@@ -35,6 +35,16 @@ export interface SidebarButtonSpec {
   active?: () => boolean
 }
 
+export interface LeftSidebarViewSpec {
+  /** Id unique within the plugin. */
+  id: string
+  icon: string
+  title: string
+  order?: number
+  /** View body; rendered when this view is active in the left sidebar. */
+  component: Component
+}
+
 export interface RightSidebarViewSpec {
   /** Id unique within the plugin. */
   id: string
@@ -75,6 +85,11 @@ export interface RegisteredSidebarButton extends SidebarButtonSpec {
   fqid: string
 }
 
+export interface RegisteredLeftSidebarView extends LeftSidebarViewSpec {
+  pluginId: string
+  fqid: string
+}
+
 export interface RegisteredRightSidebarView extends RightSidebarViewSpec {
   pluginId: string
   fqid: string
@@ -94,6 +109,8 @@ export interface PluginAPI {
   ui: {
     /** Register a toolbar button. Returns a dispose fn. */
     addSidebarButton: (spec: SidebarButtonSpec) => () => void
+    /** Register a left-sidebar view. Returns a dispose fn. */
+    addLeftSidebarView: (spec: LeftSidebarViewSpec) => () => void
     /** Register a right-sidebar view. Returns a dispose fn. */
     addRightSidebarView: (spec: RightSidebarViewSpec) => () => void
     /** Register a tab inside the settings dialog. Returns a dispose fn. */

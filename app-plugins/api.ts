@@ -1,4 +1,5 @@
 import type {
+  LeftSidebarViewSpec,
   ModalSpec,
   Plugin,
   PluginAPI,
@@ -30,6 +31,13 @@ export function createPluginAPI(manifest: PluginManifest): PluginAPI {
     ui: {
       addSidebarButton(spec: SidebarButtonSpec) {
         return store.registerSidebarButton({
+          ...spec,
+          pluginId,
+          fqid: fqid(pluginId, spec.id),
+        })
+      },
+      addLeftSidebarView(spec: LeftSidebarViewSpec) {
+        return store.registerLeftSidebarView({
           ...spec,
           pluginId,
           fqid: fqid(pluginId, spec.id),

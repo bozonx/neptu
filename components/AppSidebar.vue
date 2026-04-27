@@ -10,6 +10,7 @@ const vaults = useVaultsStore()
 const editor = useEditorStore()
 const git = useGitStore()
 const tabs = useTabsStore()
+const plugins = usePluginsStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -291,112 +292,78 @@ function toggleVault(vault: Vault) {
   <div class="flex flex-col h-full bg-default">
     <SettingsDialog v-model:open="settings.settingsDialogOpen" />
 
-    <UContextMenu
-      :items="[
-        [
-          { label: $t('sidebar.addLocalVault'), icon: 'i-lucide-folder-plus', onSelect: () => addLocalVaultOpen = true },
-          { label: $t('sidebar.addGitVault'), icon: 'i-lucide-git-branch', onSelect: () => addGitVaultOpen = true },
-          { label: $t('sidebar.createGroup'), icon: 'i-lucide-folder-plus', onSelect: () => openCreateGroup() },
-        ],
-      ]"
-      :modal="false"
-      class="flex-1 overflow-hidden flex flex-col min-h-0"
-    >
-      <div class="flex-1 flex flex-col min-h-0 w-full relative">
-        <div
-          v-if="tabs.leftSidebarMode === 'single'"
-          class="flex-1 overflow-auto p-2"
+    <!-- Panel switcher toolbar -->
+    <div class="flex items-center gap-0.5 px-1 py-1 border-b border-default shrink-0">
+      <UButton
+        icon="i-lucide-files"
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        :class="{ 'bg-primary/10 text-primary': !plugins.resolvedActiveLeftSidebarView }"
+        :title="$t('sidebar.files')"
+        @click="plugins.setActiveLeftSidebarView(null)"
+      />
+      <UButton
+        v-for="view in plugins.sortedLeftSidebarViews"
+        :key="view.fqid"
+        :icon="view.icon"
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        :class="{ 'bg-primary/10 text-primary': plugins.activeLeftSidebarView === view.fqid }"
+        :title="view.title"
+        @click="plugins.setActiveLeftSidebarView(view.fqid)"
+      />
+    </div>
+
+    <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+      <template v-if="!plugins.resolvedActiveLeftSidebarView">
+        <UContextMenu
+          :items="[
+            [
+              { label: $t('sidebar.addLocalVault'), icon: 'i-lucide-folder-plus', onSelect: () => addLocalVaultOpen = true },
+              { label: $t('sidebar.addGitVault'), icon: 'i-lucide-git-branch', onSelect: () => addGitVaultOpen = true },
+              { label: $t('sidebar.createGroup'), icon: 'i-lucide-folder-plus', onSelect: () => openCreateGroup() },
+            ],
+          ]"
+          :modal="false"
+          class="flex-1 overflow-hidden flex flex-col min-h-0"
         >
-          <div
-            v-if="vaults.list.length === 0"
-            class="text-sm text-muted px-2 py-4"
-          >
-            {{ $t('sidebar.noVaults') }}
-          </div>
-
-          <VaultSidebarItem
-            v-if="mainVault"
-            :key="mainVault.id"
-            class="mb-2"
-            :vault="mainVault"
-            :expanded="expandedVaults[mainVault.id] ?? false"
-            :nodes="vaults.trees[mainVault.id] ?? []"
-            :active-path="editor.currentFilePath"
-            :filters="mainVault.filters"
-            @toggle="toggleVault(mainVault)"
-            @create-note="(v, d) => openCreateNote(v, d)"
-            @create-folder="(v, d) => openCreateFolder(v, d)"
-            @edit-vault="(v) => openEditVault(v)"
-            @remove-vault="(v) => openRemoveVaultConfirm(v)"
-          />
-
-          <div
-            v-if="mainVault && otherUngroupedVaults.length"
-            class="my-2 border-t border-default"
-          />
-
-          <VaultSidebarItem
-            v-for="vault in otherUngroupedVaults"
-            :key="vault.id"
-            class="mb-2"
-            :vault="vault"
-            :expanded="expandedVaults[vault.id] ?? false"
-            :nodes="vaults.trees[vault.id] ?? []"
-            :active-path="editor.currentFilePath"
-            :filters="vault.filters"
-            @toggle="toggleVault(vault)"
-            @create-note="(v, d) => openCreateNote(v, d)"
-            @create-folder="(v, d) => openCreateFolder(v, d)"
-            @edit-vault="(v) => openEditVault(v)"
-            @remove-vault="(v) => openRemoveVaultConfirm(v)"
-          />
-
-          <div
-            v-for="group in vaults.groups"
-            :key="group.id"
-            class="mb-2"
-          >
-            <UContextMenu
-              :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
-              :modal="false"
+          <div class="flex-1 flex flex-col min-h-0 w-full relative">
+            <div
+              v-if="tabs.leftSidebarMode === 'single'"
+              class="flex-1 overflow-auto p-2"
             >
               <div
-                class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/50 hover:ring-1 hover:ring-inset hover:ring-border/50"
-                @click="toggleGroup(group)"
+                v-if="vaults.list.length === 0"
+                class="text-sm text-muted px-2 py-4"
               >
-                <UIcon
-                  name="i-lucide-chevron-right"
-                  class="size-4 text-muted shrink-0 transition-transform"
-                  :class="{ 'rotate-90': expandedGroups[group.id] }"
-                />
-                <UIcon
-                  name="i-lucide-folder-closed"
-                  class="size-4 text-muted shrink-0"
-                />
-                <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
-                <UDropdownMenu
-                  :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
-                  :modal="false"
-                  size="xs"
-                >
-                  <UButton
-                    icon="i-lucide-ellipsis-vertical"
-                    size="xs"
-                    color="neutral"
-                    variant="ghost"
-                    :title="$t('vault.more')"
-                    @click.stop
-                  />
-                </UDropdownMenu>
+                {{ $t('sidebar.noVaults') }}
               </div>
-            </UContextMenu>
 
-            <div
-              v-if="expandedGroups[group.id]"
-              class="pl-3 mt-1 space-y-1"
-            >
               <VaultSidebarItem
-                v-for="vault in vaultsInGroup(group.id)"
+                v-if="mainVault"
+                :key="mainVault.id"
+                class="mb-2"
+                :vault="mainVault"
+                :expanded="expandedVaults[mainVault.id] ?? false"
+                :nodes="vaults.trees[mainVault.id] ?? []"
+                :active-path="editor.currentFilePath"
+                :filters="mainVault.filters"
+                @toggle="toggleVault(mainVault)"
+                @create-note="(v, d) => openCreateNote(v, d)"
+                @create-folder="(v, d) => openCreateFolder(v, d)"
+                @edit-vault="(v) => openEditVault(v)"
+                @remove-vault="(v) => openRemoveVaultConfirm(v)"
+              />
+
+              <div
+                v-if="mainVault && otherUngroupedVaults.length"
+                class="my-2 border-t border-default"
+              />
+
+              <VaultSidebarItem
+                v-for="vault in otherUngroupedVaults"
                 :key="vault.id"
                 class="mb-2"
                 :vault="vault"
@@ -410,81 +377,107 @@ function toggleVault(vault: Vault) {
                 @edit-vault="(v) => openEditVault(v)"
                 @remove-vault="(v) => openRemoveVaultConfirm(v)"
               />
-            </div>
-          </div>
-        </div>
 
-        <Splitpanes
-          v-else
-          class="flex-1"
-          @resized="handleDualResize"
-        >
-          <Pane
-            :size="tabs.leftSidebarDualFirstColumnSize"
-            min-size="10"
-            max-size="60"
-            class="flex flex-col bg-default overflow-y-auto p-1 gap-1 border-r border-default"
-          >
-            <!-- Main Vault -->
-            <div
-              v-if="mainVault"
-              class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
-              :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === mainVault.id }"
-              :title="mainVault.name"
-              @click="selectedVaultId = mainVault.id"
-            >
-              <UIcon
-                name="i-lucide-folder-heart"
-                class="size-4 shrink-0"
-                :class="selectedVaultId === mainVault.id ? 'text-primary' : 'text-primary/70'"
-              />
-              <span class="truncate text-xs font-medium">{{ mainVault.name }}</span>
-            </div>
-
-            <div
-              v-if="mainVault && otherUngroupedVaults.length"
-              class="my-1 mx-2 border-t border-default shrink-0"
-            />
-
-            <!-- Ungrouped Vaults -->
-            <div
-              v-for="vault in otherUngroupedVaults"
-              :key="vault.id"
-              class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
-              :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
-              :title="vault.name"
-              @click="selectedVaultId = vault.id"
-            >
-              <UIcon
-                :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
-                class="size-4 shrink-0"
-                :class="selectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
-              />
-              <span class="truncate text-xs">{{ vault.name }}</span>
-            </div>
-
-            <!-- Groups -->
-            <template
-              v-for="group in vaults.groups"
-              :key="group.id"
-            >
               <div
-                class="flex items-center gap-1 px-1 mt-2 mb-0.5 cursor-pointer group hover:opacity-100 opacity-70"
-                @click="toggleGroup(group)"
+                v-for="group in vaults.groups"
+                :key="group.id"
+                class="mb-2"
               >
-                <UIcon
-                  name="i-lucide-chevron-right"
-                  class="size-3 text-muted shrink-0 transition-transform"
-                  :class="{ 'rotate-90': expandedGroups[group.id] }"
-                />
-                <span class="text-[10px] font-semibold text-muted uppercase tracking-wider truncate flex-1">{{ group.name }}</span>
-              </div>
+                <UContextMenu
+                  :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
+                  :modal="false"
+                >
+                  <div
+                    class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/50 hover:ring-1 hover:ring-inset hover:ring-border/50"
+                    @click="toggleGroup(group)"
+                  >
+                    <UIcon
+                      name="i-lucide-chevron-right"
+                      class="size-4 text-muted shrink-0 transition-transform"
+                      :class="{ 'rotate-90': expandedGroups[group.id] }"
+                    />
+                    <UIcon
+                      name="i-lucide-folder-closed"
+                      class="size-4 text-muted shrink-0"
+                    />
+                    <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
+                    <UDropdownMenu
+                      :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
+                      :modal="false"
+                      size="xs"
+                    >
+                      <UButton
+                        icon="i-lucide-ellipsis-vertical"
+                        size="xs"
+                        color="neutral"
+                        variant="ghost"
+                        :title="$t('vault.more')"
+                        @click.stop
+                      />
+                    </UDropdownMenu>
+                  </div>
+                </UContextMenu>
 
-              <template v-if="expandedGroups[group.id]">
                 <div
-                  v-for="vault in vaultsInGroup(group.id)"
+                  v-if="expandedGroups[group.id]"
+                  class="pl-3 mt-1 space-y-1"
+                >
+                  <VaultSidebarItem
+                    v-for="vault in vaultsInGroup(group.id)"
+                    :key="vault.id"
+                    class="mb-2"
+                    :vault="vault"
+                    :expanded="expandedVaults[vault.id] ?? false"
+                    :nodes="vaults.trees[vault.id] ?? []"
+                    :active-path="editor.currentFilePath"
+                    :filters="vault.filters"
+                    @toggle="toggleVault(vault)"
+                    @create-note="(v, d) => openCreateNote(v, d)"
+                    @create-folder="(v, d) => openCreateFolder(v, d)"
+                    @edit-vault="(v) => openEditVault(v)"
+                    @remove-vault="(v) => openRemoveVaultConfirm(v)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Splitpanes
+              v-else
+              class="flex-1"
+              @resized="handleDualResize"
+            >
+              <Pane
+                :size="tabs.leftSidebarDualFirstColumnSize"
+                min-size="10"
+                max-size="60"
+                class="flex flex-col bg-default overflow-y-auto p-1 gap-1 border-r border-default"
+              >
+                <!-- Main Vault -->
+                <div
+                  v-if="mainVault"
+                  class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
+                  :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === mainVault.id }"
+                  :title="mainVault.name"
+                  @click="selectedVaultId = mainVault.id"
+                >
+                  <UIcon
+                    name="i-lucide-folder-heart"
+                    class="size-4 shrink-0"
+                    :class="selectedVaultId === mainVault.id ? 'text-primary' : 'text-primary/70'"
+                  />
+                  <span class="truncate text-xs font-medium">{{ mainVault.name }}</span>
+                </div>
+
+                <div
+                  v-if="mainVault && otherUngroupedVaults.length"
+                  class="my-1 mx-2 border-t border-default shrink-0"
+                />
+
+                <!-- Ungrouped Vaults -->
+                <div
+                  v-for="vault in otherUngroupedVaults"
                   :key="vault.id"
-                  class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors ml-2"
+                  class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
                   :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
                   :title="vault.name"
                   @click="selectedVaultId = vault.id"
@@ -496,36 +489,77 @@ function toggleVault(vault: Vault) {
                   />
                   <span class="truncate text-xs">{{ vault.name }}</span>
                 </div>
-              </template>
-            </template>
-          </Pane>
 
-          <Pane class="flex flex-col min-w-0 bg-default relative p-2 overflow-y-auto">
-            <template v-if="selectedVaultId && vaults.findById(selectedVaultId)">
-              <VaultSidebarItem
-                :key="selectedVaultId"
-                :vault="vaults.findById(selectedVaultId)!"
-                :expanded="true"
-                :nodes="vaults.trees[selectedVaultId] ?? []"
-                :active-path="editor.currentFilePath"
-                :filters="vaults.findById(selectedVaultId)!.filters"
-                @toggle="() => {}"
-                @create-note="(v, d) => openCreateNote(v, d)"
-                @create-folder="(v, d) => openCreateFolder(v, d)"
-                @edit-vault="(v) => openEditVault(v)"
-                @remove-vault="(v) => openRemoveVaultConfirm(v)"
-              />
-            </template>
-            <div
-              v-else
-              class="flex h-full items-center justify-center text-muted text-sm px-2 text-center"
-            >
-              {{ $t('sidebar.noVaultSelected', 'Select a vault to view contents') }}
-            </div>
-          </Pane>
-        </Splitpanes>
-      </div>
-    </UContextMenu>
+                <!-- Groups -->
+                <template
+                  v-for="group in vaults.groups"
+                  :key="group.id"
+                >
+                  <div
+                    class="flex items-center gap-1 px-1 mt-2 mb-0.5 cursor-pointer group hover:opacity-100 opacity-70"
+                    @click="toggleGroup(group)"
+                  >
+                    <UIcon
+                      name="i-lucide-chevron-right"
+                      class="size-3 text-muted shrink-0 transition-transform"
+                      :class="{ 'rotate-90': expandedGroups[group.id] }"
+                    />
+                    <span class="text-[10px] font-semibold text-muted uppercase tracking-wider truncate flex-1">{{ group.name }}</span>
+                  </div>
+
+                  <template v-if="expandedGroups[group.id]">
+                    <div
+                      v-for="vault in vaultsInGroup(group.id)"
+                      :key="vault.id"
+                      class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors ml-2"
+                      :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
+                      :title="vault.name"
+                      @click="selectedVaultId = vault.id"
+                    >
+                      <UIcon
+                        :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
+                        class="size-4 shrink-0"
+                        :class="selectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
+                      />
+                      <span class="truncate text-xs">{{ vault.name }}</span>
+                    </div>
+                  </template>
+                </template>
+              </Pane>
+
+              <Pane class="flex flex-col min-w-0 bg-default relative p-2 overflow-y-auto">
+                <template v-if="selectedVaultId && vaults.findById(selectedVaultId)">
+                  <VaultSidebarItem
+                    :key="selectedVaultId"
+                    :vault="vaults.findById(selectedVaultId)!"
+                    :expanded="true"
+                    :nodes="vaults.trees[selectedVaultId] ?? []"
+                    :active-path="editor.currentFilePath"
+                    :filters="vaults.findById(selectedVaultId)!.filters"
+                    @toggle="() => {}"
+                    @create-note="(v, d) => openCreateNote(v, d)"
+                    @create-folder="(v, d) => openCreateFolder(v, d)"
+                    @edit-vault="(v) => openEditVault(v)"
+                    @remove-vault="(v) => openRemoveVaultConfirm(v)"
+                  />
+                </template>
+                <div
+                  v-else
+                  class="flex h-full items-center justify-center text-muted text-sm px-2 text-center"
+                >
+                  {{ $t('sidebar.noVaultSelected', 'Select a vault to view contents') }}
+                </div>
+              </Pane>
+            </Splitpanes>
+          </div>
+        </UContextMenu>
+      </template>
+      <component
+        :is="plugins.resolvedActiveLeftSidebarView.component"
+        v-else
+        class="flex-1 overflow-hidden"
+      />
+    </div>
 
     <div class="flex items-center gap-1 p-2 border-t border-default shrink-0 z-10 bg-default">
       <div class="flex-1 flex items-center gap-1">
