@@ -111,6 +111,18 @@ const { t } = useI18n()
 const contextMenuItems = (tab: EditorTab) => [
   [
     {
+      label: t('editor.close'),
+      icon: 'i-lucide-x',
+      onSelect: () => handleClose(tab),
+    },
+    {
+      label: tab.pinned ? t('editor.unpin') : t('editor.pin'),
+      icon: tab.pinned ? 'i-lucide-pin-off' : 'i-lucide-pin',
+      onSelect: () => props.panelId && tabsStore.togglePin(props.panelId, tab.id),
+    },
+  ],
+  [
+    {
       label: t('editor.closeAllRight'),
       icon: 'i-lucide-arrow-right-to-line',
       onSelect: () => props.panelId && tabsStore.closeAllRight(props.panelId, tab.id),
@@ -194,12 +206,18 @@ const contextMenuItems = (tab: EditorTab) => [
               v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
               class="size-1.5 rounded-full bg-primary"
             />
+            <UIcon
+              v-if="tab.pinned"
+              name="i-lucide-pin"
+              class="size-3 text-primary"
+            />
             <span class="font-medium truncate max-w-[150px]">{{ fileName(tab.filePath) }}</span>
             <span
               v-if="vaultName(tab.filePath)"
               class="text-[10px] text-muted opacity-70"
             >{{ vaultName(tab.filePath) }}</span>
             <UButton
+              v-if="!tab.pinned"
               icon="i-lucide-x"
               size="xs"
               variant="ghost"
@@ -228,12 +246,18 @@ const contextMenuItems = (tab: EditorTab) => [
             v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
             class="size-1.5 rounded-full bg-primary"
           />
+          <UIcon
+            v-if="tab.pinned"
+            name="i-lucide-pin"
+            class="size-3 text-primary"
+          />
           <span class="font-medium truncate max-w-[150px]">{{ fileName(tab.filePath) }}</span>
           <span
             v-if="vaultName(tab.filePath)"
             class="text-[10px] text-muted opacity-70"
           >{{ vaultName(tab.filePath) }}</span>
           <UButton
+            v-if="!tab.pinned"
             icon="i-lucide-x"
             size="xs"
             variant="ghost"

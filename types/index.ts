@@ -161,6 +161,7 @@ export type SplitDirection = 'horizontal' | 'vertical'
 export interface EditorTab {
   id: string
   filePath: string
+  pinned?: boolean
 }
 
 export interface PanelLeaf {

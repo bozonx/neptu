@@ -204,6 +204,16 @@ export const useTabsStore = defineStore('tabs', () => {
     await useEditorStore().saveUiState()
   }
 
+  async function togglePin(panelId: string, tabId: string) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+    const tab = panel.tabs.find((t) => t.id === tabId)
+    if (!tab) return
+
+    tab.pinned = !tab.pinned
+    await useEditorStore().saveUiState()
+  }
+
   async function closeAllRight(panelId: string, tabId: string) {
     const panel = findLeaf(desktopLayout.value, panelId)
     if (!panel) return
@@ -211,7 +221,7 @@ export const useTabsStore = defineStore('tabs', () => {
     const idx = panel.tabs.findIndex((t) => t.id === tabId)
     if (idx === -1) return
 
-    const toClose = panel.tabs.slice(idx + 1)
+    const toClose = panel.tabs.slice(idx + 1).filter((t) => !t.pinned)
     for (const tab of toClose) {
       await closeTab(panelId, tab.id)
     }
@@ -221,7 +231,7 @@ export const useTabsStore = defineStore('tabs', () => {
     const panel = findLeaf(desktopLayout.value, panelId)
     if (!panel) return
 
-    const toClose = panel.tabs.filter((t) => t.id !== tabId)
+    const toClose = panel.tabs.filter((t) => t.id !== tabId && !t.pinned)
     for (const tab of toClose) {
       await closeTab(panelId, tab.id)
     }
@@ -231,7 +241,7 @@ export const useTabsStore = defineStore('tabs', () => {
     const panel = findLeaf(desktopLayout.value, panelId)
     if (!panel) return
 
-    const toClose = [...panel.tabs]
+    const toClose = panel.tabs.filter((t) => !t.pinned)
     for (const tab of toClose) {
       await closeTab(panelId, tab.id)
     }
@@ -525,6 +535,7 @@ export const useTabsStore = defineStore('tabs', () => {
     closeAllRight,
     closeOthers,
     closeAll,
+    togglePin,
     splitPanel,
     duplicateTo,
     openFileInNewPanel,
