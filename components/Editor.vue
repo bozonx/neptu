@@ -116,7 +116,7 @@ watch(currentFilePath, () => {
             class="size-10 mx-auto"
           />
           <p class="text-sm px-4">
-            Select or create a markdown file to start editing
+            {{ $t('editor.noFileSelected') }}
           </p>
         </div>
       </div>
@@ -128,7 +128,7 @@ watch(currentFilePath, () => {
         :value="buffer?.content ?? ''"
         class="w-full flex-1 resize-none bg-transparent outline-none p-6 font-mono text-sm leading-relaxed text-default"
         spellcheck="false"
-        placeholder="Start writing markdown…"
+        :placeholder="$t('editor.startWriting')"
         @input="onInput"
         @blur="saveCursorState"
       />

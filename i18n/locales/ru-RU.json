@@ -7,7 +7,16 @@
     "createGroup": "Создать группу",
     "noVaults": "Пока нет хранилищ. Добавьте папку, чтобы начать.",
     "deleteGroup": "Удалить группу",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "outline": "Структура",
+    "fileInfo": "Информация о файле",
+    "name": "Имя",
+    "vault": "Хранилище",
+    "path": "Путь",
+    "noHeaders": "В этом файле нет заголовков",
+    "noFileSelected": "Файл не выбран",
+    "navigation": "Навигация",
+    "fileDetails": "Сведения о файле"
   },
   "vault": {
     "name": "Название",
@@ -43,8 +52,20 @@
     "newNote": "Новая заметка",
     "fileName": "Имя файла",
     "fileNameHint": ".md добавляется автоматически",
+    "myNotesPlaceholder": "Мои заметки",
+    "myFolderPlaceholder": "моя-папка",
+    "workVaultsPlaceholder": "Рабочие хранилища",
+    "myNotePlaceholder": "моя-заметка",
     "editVault": "Изменить хранилище",
+    "editVaultDesc": "Настройка имени, пути, git и фильтров для выбранного хранилища",
+    "vaultNamePlaceholder": "Имя хранилища",
     "removeFromApp": "Удалить из приложения",
+    "dangerZone": "Опасная зона",
+    "removeHint": "Папка хранилища не удаляется. Удаляются только его настройки, и оно пропадает из приложения.",
+    "visibility": "Видимость",
+    "showHidden": "Показывать скрытые файлы и папки",
+    "fileFilters": "Фильтры файлов",
+    "addCustomExtension": "Добавить расширение",
     "pull": "Pull",
     "push": "Push",
     "sync": "Синхронизация (pull & push)",
@@ -63,9 +84,10 @@
     "system": "Системная",
     "light": "Светлая",
     "dark": "Тёмная",
+    "general": "Главное",
     "layoutMode": "Режим раскладки",
     "layoutModeHint": "Переключение между десктопным и мобильным интерфейсами.",
-    "auto": "Автоматически (по размеру экрана)",
+    "auto": "Авто",
     "desktop": "Десктоп",
     "mobile": "Мобильный",
     "editor": "Редактор",
@@ -82,6 +104,10 @@
     "storage": "Хранилище",
     "configPath": "Путь конфигурации",
     "close": "Закрыть",
+    "mainVault": "Основное хранилище",
+    "currentFolder": "Текущая папка",
+    "currentFolderHint": "Изменение перемещает папку .neptu в новое место.",
+    "change": "Изменить",
     "language": "Язык"
   },
   "welcome": {
@@ -110,9 +136,34 @@
     "pullFailed": "Pull не удался",
     "pushCompleted": "Push завершён",
     "pushFailed": "Push не удался",
+    "saveFailed": "Сохранение не удалось",
+    "commitFailed": "Коммит не удался",
     "openFileFailed": "Не удалось открыть файл",
     "openFilePanelFailed": "Не удалось открыть файл в новой панели",
     "deleteFailed": "Не удалось удалить"
+  },
+  "git": {
+    "commit": "Коммит"
+  },
+  "editor": {
+    "noFileSelected": "Выберите или создайте markdown-файл, чтобы начать редактирование",
+    "startWriting": "Начните писать markdown…",
+    "noOpenFiles": "Нет открытых файлов",
+    "duplicateRight": "Дублировать вправо",
+    "duplicateLeft": "Дублировать влево",
+    "duplicateTop": "Дублировать вверх",
+    "duplicateBottom": "Дублировать вниз"
+  },
+  "error": {
+    "tauriRequired": "Требуется Tauri",
+    "tauriRequiredDesc": "Neptu нуждается в среде выполнения Tauri для доступа к файловой системе. Запустите `pnpm tauri:dev` вместо `pnpm dev`.",
+    "initialization": "Ошибка инициализации"
+  },
+  "filters": {
+    "Text": "Текст",
+    "Image": "Изображение",
+    "Video": "Видео",
+    "Audio": "Аудио"
   },
   "confirm": {
     "deleteFile": "Удалить \"{name}\"? Это действие нельзя отменить."

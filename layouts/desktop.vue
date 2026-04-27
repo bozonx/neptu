@@ -7,6 +7,7 @@ const editor = useEditorStore()
 const tabsStore = useTabsStore()
 const git = useGitStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const activeFilePath = computed(() => {
   const leaf = tabsStore.allLeaves(tabsStore.desktopLayout).find((l) => l.id === tabsStore.activeDesktopPanelId)
@@ -28,7 +29,7 @@ watch(() => {
 }, (error) => {
   if (error) {
     toast.add({
-      title: 'Save failed',
+      title: t('toast.saveFailed'),
       description: error,
       color: 'error',
     })
@@ -55,7 +56,7 @@ async function handleCommit() {
   }
   catch (error) {
     toast.add({
-      title: 'Commit failed',
+      title: t('toast.commitFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
@@ -94,7 +95,7 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
           <UButton
             v-if="showCommitButton"
             icon="i-lucide-git-commit"
-            label="Commit"
+            :label="$t('git.commit')"
             size="xs"
             :loading="committing"
             @click="handleCommit"

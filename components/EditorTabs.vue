@@ -85,27 +85,29 @@ function onRemove(event: { data: EditorTab }) {
   }
 }
 
+const { t } = useI18n()
+
 const contextMenuItems = (tab: EditorTab) => [
   [
     {
-      label: 'Duplicate to right',
+      label: t('editor.duplicateRight'),
       icon: 'i-lucide-panel-right-dashed',
       onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'right', tab),
     },
     {
-      label: 'Duplicate to left',
+      label: t('editor.duplicateLeft'),
       icon: 'i-lucide-panel-left-dashed',
       onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'left', tab),
     },
   ],
   [
     {
-      label: 'Duplicate to top',
+      label: t('editor.duplicateTop'),
       icon: 'i-lucide-panel-top-dashed',
       onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'top', tab),
     },
     {
-      label: 'Duplicate to bottom',
+      label: t('editor.duplicateBottom'),
       icon: 'i-lucide-panel-bottom-dashed',
       onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'bottom', tab),
     },
@@ -202,7 +204,7 @@ const contextMenuItems = (tab: EditorTab) => [
       v-if="tabs.length === 0"
       class="px-4 text-[10px] text-muted uppercase tracking-widest opacity-30 select-none whitespace-nowrap"
     >
-      No open files
+      {{ $t('editor.noOpenFiles') }}
     </div>
   </div>
 </template>

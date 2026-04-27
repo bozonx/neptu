@@ -8,6 +8,7 @@ const tabsStore = useTabsStore()
 const git = useGitStore()
 const vaults = useVaultsStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const leftDrawerOpen = ref(false)
 const rightDrawerOpen = ref(false)
@@ -29,7 +30,7 @@ watch(() => {
 }, (error) => {
   if (error) {
     toast.add({
-      title: 'Save failed',
+      title: t('toast.saveFailed'),
       description: error,
       color: 'error',
     })
@@ -56,7 +57,7 @@ async function handleCommit() {
   }
   catch (error) {
     toast.add({
-      title: 'Commit failed',
+      title: t('toast.commitFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
@@ -112,7 +113,7 @@ async function handleCommit() {
     <USlideover
       v-model:open="leftDrawerOpen"
       side="left"
-      title="Navigation"
+      :title="$t('sidebar.navigation')"
     >
       <template #content>
         <div class="flex-1 overflow-hidden">
@@ -125,7 +126,7 @@ async function handleCommit() {
     <USlideover
       v-model:open="rightDrawerOpen"
       side="right"
-      title="File Details"
+      :title="$t('sidebar.fileDetails')"
     >
       <template #content>
         <div class="flex-1 overflow-hidden">

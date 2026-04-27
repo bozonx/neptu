@@ -119,7 +119,7 @@ export interface AppSettings {
   /** UI Theme */
   theme: Theme
   /** UI language locale */
-  locale: string
+  locale: 'auto' | 'en-US' | 'ru-RU'
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -129,7 +129,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   gitAuthorEmail: '',
   layoutMode: 'auto',
   theme: 'system',
-  locale: 'en-US',
+  locale: 'auto',
 }
 
 export interface AppConfig {

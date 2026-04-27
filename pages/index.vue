@@ -48,14 +48,14 @@ onMounted(async () => {
       v-if="!isTauri && ready"
       :open="true"
       :dismissible="false"
-      title="Tauri runtime required"
-      description="Neptu needs the Tauri runtime to access the filesystem. Run `pnpm tauri:dev` instead of `pnpm dev`."
+      :title="$t('error.tauriRequired')"
+      :description="$t('error.tauriRequiredDesc')"
     />
 
     <UModal
       v-if="initError"
       :open="true"
-      title="Initialization error"
+      :title="$t('error.initialization')"
       :description="initError"
     />
   </div>

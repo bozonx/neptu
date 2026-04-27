@@ -397,7 +397,7 @@ function toggleVault(vault: Vault) {
           >
             <UInput
               v-model="newVaultName"
-              placeholder="My notes"
+              :placeholder="$t('vault.myNotesPlaceholder')"
             />
           </UFormField>
 
@@ -487,7 +487,7 @@ function toggleVault(vault: Vault) {
         <UFormField :label="$t('vault.folderName')">
           <UInput
             v-model="newFolderName"
-            placeholder="my-folder"
+            :placeholder="$t('vault.myFolderPlaceholder')"
             autofocus
           />
         </UFormField>
@@ -548,7 +548,7 @@ function toggleVault(vault: Vault) {
         <UFormField :label="$t('vault.groupName')">
           <UInput
             v-model="newGroupName"
-            placeholder="Work vaults"
+            :placeholder="$t('vault.workVaultsPlaceholder')"
             autofocus
           />
         </UFormField>
@@ -612,7 +612,7 @@ function toggleVault(vault: Vault) {
         >
           <UInput
             v-model="newNoteName"
-            placeholder="my-note"
+            :placeholder="$t('vault.myNotePlaceholder')"
             autofocus
           />
         </UFormField>

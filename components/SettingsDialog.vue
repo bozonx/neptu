@@ -9,8 +9,8 @@ const { t } = useI18n()
 
 const activeTab = ref('general')
 const tabs = [
-  { label: 'Главное', value: 'general', icon: 'i-lucide-settings' },
-  { label: 'Git', value: 'git', icon: 'i-lucide-git-branch' },
+  { label: t('settings.general'), value: 'general', icon: 'i-lucide-settings' },
+  { label: t('settings.git'), value: 'git', icon: 'i-lucide-git-branch' },
 ]
 
 const autosaveSec = ref(0)
@@ -19,7 +19,7 @@ const authorName = ref('')
 const authorEmail = ref('')
 const layoutMode = ref<AppSettings['layoutMode']>('auto')
 const theme = ref<AppSettings['theme']>('system')
-const locale = ref<AppSettings['locale']>('en-US')
+const locale = ref<AppSettings['locale']>('auto')
 const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
 const newMainPath = ref('')
@@ -137,8 +137,8 @@ watch(
 <template>
   <UModal
     v-model:open="open"
-    title="Settings"
-    description="Application-wide preferences"
+    :title="$t('settings.title')"
+    :description="$t('settings.description')"
     :ui="{
       content: 'sm:max-w-3xl',
       body: 'p-0',
@@ -170,7 +170,7 @@ watch(
           >
             <section class="space-y-4">
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
-                Interface
+                {{ $t('settings.interface') }}
               </h3>
               <UFormField
                 :label="$t('settings.language')"
@@ -178,6 +178,7 @@ watch(
                 <URadioGroup
                   v-model="locale"
                   :items="[
+                    { label: $t('settings.auto'), value: 'auto' },
                     { label: 'English', value: 'en-US' },
                     { label: 'Русский', value: 'ru-RU' },
                   ]"
@@ -233,11 +234,11 @@ watch(
 
             <section class="space-y-4">
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
-                Main vault
+                {{ $t('settings.mainVault') }}
               </h3>
               <UFormField
-                label="Current folder"
-                hint="Changing this moves the .neptu folder to the new location."
+                :label="$t('settings.currentFolder')"
+                :hint="$t('settings.currentFolderHint')"
               >
                 <div class="flex items-center gap-2">
                   <UInput
@@ -247,12 +248,12 @@ watch(
                   />
                   <UButton
                     icon="i-lucide-folder-search"
-                    label="Browse"
+                    :label="$t('vault.browse')"
                     size="sm"
                     @click="browseMainFolder"
                   />
                   <UButton
-                    label="Change"
+                    :label="$t('settings.change')"
                     size="sm"
                     :disabled="!newMainPath"
                     @click="submitChangeMainRepo"

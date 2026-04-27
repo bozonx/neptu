@@ -10,7 +10,7 @@ const editor = useEditorStore()
         size="xs"
         :variant="editor.activeRightTab === 'outline' ? 'subtle' : 'ghost'"
         :color="editor.activeRightTab === 'outline' ? 'primary' : 'neutral'"
-        title="Outline"
+        :title="$t('sidebar.outline')"
         @click="editor.activeRightTab = 'outline'"
       />
       <UButton
@@ -18,7 +18,7 @@ const editor = useEditorStore()
         size="xs"
         :variant="editor.activeRightTab === 'info' ? 'subtle' : 'ghost'"
         :color="editor.activeRightTab === 'info' ? 'primary' : 'neutral'"
-        title="File Info"
+        :title="$t('sidebar.fileInfo')"
         @click="editor.activeRightTab = 'info'"
       />
     </div>

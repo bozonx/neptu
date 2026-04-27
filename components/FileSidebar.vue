@@ -60,12 +60,12 @@ function scrollToHeader(header: Header) {
         >
           <section>
             <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">
-              File Info
+              {{ $t('sidebar.fileInfo') }}
             </h3>
             <div class="space-y-3">
               <div>
                 <div class="text-[10px] text-muted uppercase">
-                  Name
+                  {{ $t('sidebar.name') }}
                 </div>
                 <div
                   class="text-sm font-medium truncate"
@@ -76,7 +76,7 @@ function scrollToHeader(header: Header) {
               </div>
               <div>
                 <div class="text-[10px] text-muted uppercase">
-                  Vault
+                  {{ $t('sidebar.vault') }}
                 </div>
                 <div class="text-sm truncate">
                   {{ vaultName }}
@@ -84,7 +84,7 @@ function scrollToHeader(header: Header) {
               </div>
               <div>
                 <div class="text-[10px] text-muted uppercase">
-                  Path
+                  {{ $t('sidebar.path') }}
                 </div>
                 <div class="text-[11px] text-muted break-all leading-relaxed">
                   {{ editor.currentFilePath }}
@@ -101,7 +101,7 @@ function scrollToHeader(header: Header) {
         >
           <section>
             <h3 class="text-[10px] font-bold text-muted uppercase tracking-widest mb-3">
-              Outline
+              {{ $t('sidebar.outline') }}
             </h3>
             <div
               v-if="outline.length > 0"
@@ -122,7 +122,7 @@ function scrollToHeader(header: Header) {
               v-else
               class="text-xs text-muted italic px-2 py-8 text-center border-2 border-dashed border-default rounded-lg"
             >
-              No headers found in this file
+              {{ $t('sidebar.noHeaders') }}
             </div>
           </section>
         </div>
@@ -136,7 +136,7 @@ function scrollToHeader(header: Header) {
           name="i-lucide-file-question"
           class="size-8"
         />
-        <span>No file selected</span>
+        <span>{{ $t('sidebar.noFileSelected') }}</span>
       </div>
     </div>
   </div>

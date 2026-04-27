@@ -118,7 +118,7 @@ const commitModeItems = [
   <USlideover
     v-model:open="open"
     :title="$t('vault.editVault')"
-    description="Configure name, path, git and filters for the selected vault"
+    :description="$t('vault.editVaultDesc')"
     side="right"
     class="w-full sm:max-w-[480px]"
   >
@@ -131,7 +131,7 @@ const commitModeItems = [
           <UFormField :label="$t('vault.name')">
             <UInput
               v-model="editVaultName"
-              placeholder="Vault name"
+              :placeholder="$t('vault.vaultNamePlaceholder')"
             />
           </UFormField>
 
@@ -181,16 +181,16 @@ const commitModeItems = [
 
         <section class="space-y-3">
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-            Visibility
+            {{ $t('vault.visibility') }}
           </h3>
-          <UFormField label="Show hidden files and folders">
+          <UFormField :label="$t('vault.showHidden')">
             <USwitch v-model="editShowHidden" />
           </UFormField>
         </section>
 
         <section class="space-y-3">
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-            File filters
+            {{ $t('vault.fileFilters') }}
           </h3>
           <div
             v-for="group in editFilters.groups"
@@ -198,7 +198,7 @@ const commitModeItems = [
             class="space-y-2"
           >
             <UCheckbox
-              :label="group.label"
+              :label="$t(`filters.${group.label}`)"
               :model-value="group.enabled"
               @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') group.enabled = v }"
             />
@@ -220,7 +220,7 @@ const commitModeItems = [
             >
               <UInput
                 v-model="newCustomExt"
-                placeholder="Add custom extension"
+                :placeholder="$t('vault.addCustomExtension')"
                 size="xs"
                 class="w-36"
                 @keydown.enter="addCustomExtension(group)"
@@ -241,11 +241,11 @@ const commitModeItems = [
           class="space-y-3 pt-6 border-t border-error/10"
         >
           <h3 class="text-sm font-semibold text-error uppercase tracking-wide">
-            Danger Zone
+            {{ $t('vault.dangerZone') }}
           </h3>
           <div class="rounded-md bg-error/5 border border-error/10 p-3">
             <p class="text-xs text-muted mb-2">
-              The vault folder itself is <strong>not</strong> deleted. Only its settings are removed and it disappears from the app.
+              {{ $t('vault.removeHint') }}
             </p>
             <UButton
               icon="i-lucide-trash-2"

@@ -7,7 +7,16 @@
     "createGroup": "Create group",
     "noVaults": "No vaults yet. Add a folder to get started.",
     "deleteGroup": "Delete group",
-    "settings": "Settings"
+    "settings": "Settings",
+    "outline": "Outline",
+    "fileInfo": "File Info",
+    "name": "Name",
+    "vault": "Vault",
+    "path": "Path",
+    "noHeaders": "No headers found in this file",
+    "noFileSelected": "No file selected",
+    "navigation": "Navigation",
+    "fileDetails": "File Details"
   },
   "vault": {
     "name": "Name",
@@ -43,8 +52,20 @@
     "newNote": "New note",
     "fileName": "File name",
     "fileNameHint": ".md is added automatically",
+    "myNotesPlaceholder": "My notes",
+    "myFolderPlaceholder": "my-folder",
+    "workVaultsPlaceholder": "Work vaults",
+    "myNotePlaceholder": "my-note",
     "editVault": "Edit vault",
+    "editVaultDesc": "Configure name, path, git and filters for the selected vault",
+    "vaultNamePlaceholder": "Vault name",
     "removeFromApp": "Remove from app",
+    "dangerZone": "Danger Zone",
+    "removeHint": "The vault folder itself is not deleted. Only its settings are removed and it disappears from the app.",
+    "visibility": "Visibility",
+    "showHidden": "Show hidden files and folders",
+    "fileFilters": "File filters",
+    "addCustomExtension": "Add custom extension",
     "pull": "Pull",
     "push": "Push",
     "sync": "Sync (pull & push)",
@@ -63,9 +84,10 @@
     "system": "System",
     "light": "Light",
     "dark": "Dark",
+    "general": "General",
     "layoutMode": "Layout Mode",
     "layoutModeHint": "Switch between desktop and mobile interfaces.",
-    "auto": "Automatic (Screen size)",
+    "auto": "Auto",
     "desktop": "Force Desktop",
     "mobile": "Force Mobile",
     "editor": "Editor",
@@ -82,6 +104,10 @@
     "storage": "Storage",
     "configPath": "Config path",
     "close": "Close",
+    "mainVault": "Main vault",
+    "currentFolder": "Current folder",
+    "currentFolderHint": "Changing this moves the .neptu folder to the new location.",
+    "change": "Change",
     "language": "Language"
   },
   "welcome": {
@@ -110,9 +136,34 @@
     "pullFailed": "Pull failed",
     "pushCompleted": "Push completed",
     "pushFailed": "Push failed",
+    "saveFailed": "Save failed",
+    "commitFailed": "Commit failed",
     "openFileFailed": "Failed to open file",
     "openFilePanelFailed": "Failed to open file in new panel",
     "deleteFailed": "Failed to delete"
+  },
+  "git": {
+    "commit": "Commit"
+  },
+  "editor": {
+    "noFileSelected": "Select or create a markdown file to start editing",
+    "startWriting": "Start writing markdown…",
+    "noOpenFiles": "No open files",
+    "duplicateRight": "Duplicate to right",
+    "duplicateLeft": "Duplicate to left",
+    "duplicateTop": "Duplicate to top",
+    "duplicateBottom": "Duplicate to bottom"
+  },
+  "error": {
+    "tauriRequired": "Tauri runtime required",
+    "tauriRequiredDesc": "Neptu needs the Tauri runtime to access the filesystem. Run `pnpm tauri:dev` instead of `pnpm dev`.",
+    "initialization": "Initialization error"
+  },
+  "filters": {
+    "Text": "Text",
+    "Image": "Image",
+    "Video": "Video",
+    "Audio": "Audio"
   },
   "confirm": {
     "deleteFile": "Delete \"{name}\"? This cannot be undone."
