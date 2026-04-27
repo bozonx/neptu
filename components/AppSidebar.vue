@@ -10,8 +10,6 @@ const git = useGitStore()
 const toast = useToast()
 const { t } = useI18n()
 
-const settingsOpen = ref(false)
-
 const addVaultOpen = ref(false)
 const newVaultName = ref('')
 const newVaultType = ref<VaultType>('local')
@@ -98,7 +96,7 @@ async function submitNewVault() {
         description: t('toast.gitAuthorHint'),
         color: 'warning',
       })
-      settingsOpen.value = true
+      settings.openSettingsDialog()
       return
     }
   }
@@ -238,7 +236,7 @@ function toggleVault(vault: Vault) {
 
 <template>
   <div class="flex flex-col h-full bg-default">
-    <SettingsDialog v-model:open="settingsOpen" />
+    <SettingsDialog v-model:open="settings.settingsDialogOpen" />
 
     <UContextMenu
       :items="[
@@ -382,7 +380,7 @@ function toggleVault(vault: Vault) {
         color="neutral"
         variant="ghost"
         :title="$t('sidebar.settings')"
-        @click="settingsOpen = true"
+        @click="settings.openSettingsDialog()"
       />
     </div>
 

@@ -9,6 +9,10 @@ const git = useGitStore()
 const toast = useToast()
 const { t } = useI18n()
 const { isTauri } = useTauri()
+const plugins = usePluginsStore()
+const settingsStore = useSettingsStore()
+
+const leftHeaderButtons = plugins.buttonsFor('left-sidebar-header')
 // In Tauri we wait for ui-state.json to be loaded so Splitpanes mounts with
 // the persisted sizes; outside Tauri there's no persisted state and a blocking
 // modal is shown over the layout anyway.
@@ -122,6 +126,13 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
           <PluginButtons
             location="left-sidebar-header"
             size="xs"
+          />
+          <UButton
+            v-if="leftHeaderButtons.length === 0"
+            size="xs"
+            variant="link"
+            :label="$t('plugins.addPlugins')"
+            @click="settingsStore.openSettingsDialog('plugins')"
           />
         </div>
         <div class="flex-1 overflow-hidden">

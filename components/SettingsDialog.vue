@@ -8,11 +8,15 @@ const toast = useToast()
 const { t } = useI18n()
 
 const plugins = usePluginsStore()
-const activeTab = ref('general')
+const activeTab = computed({
+  get: () => settingsStore.settingsDialogTab,
+  set: (val) => { settingsStore.settingsDialogTab = val },
+})
 
 const builtInTabs = [
   { label: t('settings.general'), value: 'general', icon: 'i-lucide-settings' },
   { label: t('settings.git'), value: 'git', icon: 'i-lucide-git-branch' },
+  { label: t('settings.plugins'), value: 'plugins', icon: 'i-lucide-plug' },
 ]
 
 const allTabs = computed(() => [
@@ -28,6 +32,26 @@ const allTabs = computed(() => [
 const activePluginTab = computed(() =>
   plugins.sortedSettingsTabs.find((t) => t.fqid === activeTab.value),
 )
+
+const { builtinPlugins } = await import('~/app-plugins')
+
+function isPluginEnabled(pluginId: string) {
+  return (settingsStore.settings.enabledPlugins ?? []).includes(pluginId)
+}
+
+async function togglePlugin(pluginId: string, enabled: boolean) {
+  const list = new Set(settingsStore.settings.enabledPlugins ?? [])
+  if (enabled) {
+    list.add(pluginId)
+    const plugin = builtinPlugins.find((p) => p.manifest.id === pluginId)
+    if (plugin) await plugins.load(plugin)
+  }
+  else {
+    list.delete(pluginId)
+    await plugins.unload(pluginId)
+  }
+  await settingsStore.updateSettings({ enabledPlugins: Array.from(list) })
+}
 
 const autosaveSec = ref(0)
 const commitSec = ref(0)
@@ -341,6 +365,38 @@ watch(
                   class="w-full"
                 />
               </UFormField>
+            </section>
+          </div>
+
+          <!-- Plugins Tab -->
+          <div
+            v-else-if="activeTab === 'plugins'"
+            class="space-y-6"
+          >
+            <section>
+              <h3 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">
+                {{ $t('settings.systemPlugins') }}
+              </h3>
+              <div class="space-y-3">
+                <div
+                  v-for="plugin in builtinPlugins"
+                  :key="plugin.manifest.id"
+                  class="flex items-center justify-between p-3 rounded-lg border border-default bg-elevated/30"
+                >
+                  <div>
+                    <div class="font-medium text-sm">
+                      {{ plugin.manifest.name }}
+                    </div>
+                    <div class="text-xs text-muted">
+                      {{ plugin.manifest.description }}
+                    </div>
+                  </div>
+                  <USwitch
+                    :model-value="isPluginEnabled(plugin.manifest.id)"
+                    @update:model-value="(v) => togglePlugin(plugin.manifest.id, v)"
+                  />
+                </div>
+              </div>
             </section>
           </div>
 

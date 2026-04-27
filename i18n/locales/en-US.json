@@ -108,7 +108,12 @@
     "currentFolder": "Current folder",
     "currentFolderHint": "Changing this moves the .neptu folder to the new location.",
     "change": "Change",
-    "language": "Language"
+    "language": "Language",
+    "plugins": "Plugins",
+    "systemPlugins": "System plugins"
+  },
+  "plugins": {
+    "addPlugins": "Add plugins"
   },
   "welcome": {
     "title": "Welcome to Neptu",

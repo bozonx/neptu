@@ -1,4 +1,3 @@
-import { useI18n } from 'vue-i18n'
 import type { Plugin } from '~/types/plugin'
 import FileInfoView from './FileInfoView.vue'
 
@@ -10,11 +9,10 @@ export const fileInfoPlugin: Plugin = {
     description: 'Shows name, vault and path of the current file.',
   },
   activate(ctx) {
-    const { t } = useI18n()
     const dispose = ctx.api.ui.addRightSidebarView({
       id: 'main',
       icon: 'i-lucide-info',
-      title: t('sidebar.fileInfo'),
+      title: 'File Info',
       order: 20,
       component: FileInfoView,
     })

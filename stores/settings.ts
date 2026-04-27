@@ -16,6 +16,14 @@ export const useSettingsStore = defineStore('settings', () => {
   const initialized = ref(false)
   const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 
+  const settingsDialogOpen = ref(false)
+  const settingsDialogTab = ref('general')
+
+  function openSettingsDialog(tab = 'general') {
+    settingsDialogTab.value = tab
+    settingsDialogOpen.value = true
+  }
+
   const needsMainRepo = computed(
     () => initialized.value && !mainRepoPath.value,
   )
@@ -105,6 +113,9 @@ export const useSettingsStore = defineStore('settings', () => {
     initialized,
     settings,
     needsMainRepo,
+    settingsDialogOpen,
+    settingsDialogTab,
+    openSettingsDialog,
     init,
     setMainRepo,
     changeMainRepo,

@@ -70,6 +70,11 @@ onMounted(async () => {
       await editor.loadUiState()
       const { initBuiltinPlugins } = await import('~/app-plugins')
       await initBuiltinPlugins()
+      const plugins = usePluginsStore()
+      if (!plugins.resolvedActiveRightSidebarView) {
+        const first = plugins.sortedRightSidebarViews[0]
+        if (first) plugins.setActiveRightSidebarView(first.fqid)
+      }
     }
     catch (error) {
       console.error('Failed to initialize app:', error)

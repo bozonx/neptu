@@ -120,6 +120,8 @@ export interface AppSettings {
   theme: Theme
   /** UI language locale */
   locale: 'auto' | 'en-US' | 'ru-RU'
+  /** List of enabled plugin ids. Defaults to built-ins when missing. */
+  enabledPlugins?: string[]
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -130,6 +132,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   layoutMode: 'desktop',
   theme: 'system',
   locale: 'auto',
+  enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info'],
 }
 
 export interface AppConfig {

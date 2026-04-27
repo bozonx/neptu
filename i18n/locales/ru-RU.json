@@ -108,7 +108,12 @@
     "currentFolder": "Текущая папка",
     "currentFolderHint": "Изменение перемещает папку .neptu в новое место.",
     "change": "Изменить",
-    "language": "Язык"
+    "language": "Язык",
+    "plugins": "Плагины",
+    "systemPlugins": "Системные плагины"
+  },
+  "plugins": {
+    "addPlugins": "Добавить плагины"
   },
   "welcome": {
     "title": "Добро пожаловать в Neptu",
