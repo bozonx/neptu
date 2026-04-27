@@ -21,6 +21,8 @@
     "noFileSelected": "No file selected",
     "navigation": "Navigation",
     "fileDetails": "File Details",
+    "created": "Created",
+    "modified": "Modified",
     "sortBy": "Sort by",
     "sortNameAsc": "File name (A to Z)",
     "sortNameDesc": "File name (Z to A)",

@@ -186,6 +186,7 @@ export function useFs() {
     createMarkdown,
     createFolder,
     scanMarkdownTree,
+    stat,
     sep,
   }
 }

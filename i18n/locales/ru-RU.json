@@ -21,6 +21,8 @@
     "noFileSelected": "Файл не выбран",
     "navigation": "Навигация",
     "fileDetails": "Сведения о файле",
+    "created": "Создан",
+    "modified": "Изменён",
     "sortBy": "Сортировка",
     "sortNameAsc": "Имя файла (А — Я)",
     "sortNameDesc": "Имя файла (Я — А)",
