@@ -203,10 +203,12 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function refreshTree(vault: Vault) {
     const fs = useFs()
+    const settingsStore = useSettingsStore()
     try {
       trees.value[vault.id] = await fs.scanMarkdownTree(vault.path, {
         showHidden: vault.showHidden ?? false,
         filterSettings: vault.filters,
+        sortMode: settingsStore.settings.fileSortMode,
       })
     }
     catch (error) {

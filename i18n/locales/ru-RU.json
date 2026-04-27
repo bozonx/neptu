@@ -20,7 +20,14 @@
     "noHeaders": "В этом файле нет заголовков",
     "noFileSelected": "Файл не выбран",
     "navigation": "Навигация",
-    "fileDetails": "Сведения о файле"
+    "fileDetails": "Сведения о файле",
+    "sortBy": "Сортировка",
+    "sortNameAsc": "Имя файла (А — Я)",
+    "sortNameDesc": "Имя файла (Я — А)",
+    "sortMtimeDesc": "Время изменения (сначала новые)",
+    "sortMtimeAsc": "Время изменения (сначала старые)",
+    "sortBirthtimeDesc": "Время создания (сначала новые)",
+    "sortBirthtimeAsc": "Время создания (сначала старые)"
   },
   "vault": {
     "name": "Название",

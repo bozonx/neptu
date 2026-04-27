@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { GitCommitMode, Vault, VaultType, VaultGroup } from '~/types'
+import type { FileSortMode, GitCommitMode, Vault, VaultType, VaultGroup } from '~/types'
 import SettingsDialog from '~/components/SettingsDialog.vue'
 import VaultSidebarItem from '~/components/VaultSidebarItem.vue'
 import { Splitpanes, Pane } from 'splitpanes'
@@ -85,6 +85,29 @@ const addMenuItems = [
     { label: t('sidebar.createGroup'), icon: 'i-lucide-folder-closed-plus', onSelect: () => openCreateGroup() },
   ],
 ] satisfies DropdownMenuItem[][]
+
+const sortModes: { label: string, value: FileSortMode, icon: string }[] = [
+  { label: t('sidebar.sortNameAsc'), value: 'nameAsc', icon: 'i-lucide-arrow-up-a-z' },
+  { label: t('sidebar.sortNameDesc'), value: 'nameDesc', icon: 'i-lucide-arrow-down-z-a' },
+  { label: t('sidebar.sortMtimeDesc'), value: 'mtimeDesc', icon: 'i-lucide-arrow-down-narrow-wide' },
+  { label: t('sidebar.sortMtimeAsc'), value: 'mtimeAsc', icon: 'i-lucide-arrow-up-narrow-wide' },
+  { label: t('sidebar.sortBirthtimeDesc'), value: 'birthtimeDesc', icon: 'i-lucide-calendar-arrow-down' },
+  { label: t('sidebar.sortBirthtimeAsc'), value: 'birthtimeAsc', icon: 'i-lucide-calendar-arrow-up' },
+]
+
+const sortMenuItems = computed<DropdownMenuItem[][]>(() => [
+  sortModes.map((m) => ({
+    label: m.label,
+    icon: settings.settings.fileSortMode === m.value ? 'i-lucide-check' : m.icon,
+    onSelect: () => changeSortMode(m.value),
+  })),
+])
+
+async function changeSortMode(mode: FileSortMode) {
+  settings.settings.fileSortMode = mode
+  await settings.persist()
+  await vaults.refreshAllTrees()
+}
 
 function resetAddForm(type: VaultType = 'local') {
   newVaultName.value = ''
@@ -517,6 +540,19 @@ function toggleVault(vault: Vault) {
             color="success"
             variant="ghost"
             :title="$t('sidebar.addVaultBtn')"
+          />
+        </UDropdownMenu>
+        <UDropdownMenu
+          :items="sortMenuItems"
+          :modal="false"
+          :content="{ side: 'top' }"
+        >
+          <UButton
+            icon="i-lucide-arrow-up-down"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            :title="$t('sidebar.sortBy')"
           />
         </UDropdownMenu>
         <PluginButtons location="left-sidebar-footer" />

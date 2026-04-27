@@ -96,10 +96,20 @@ export interface Vault {
   groupId?: string
 }
 
+export type FileSortMode
+  = | 'nameAsc'
+    | 'nameDesc'
+    | 'mtimeDesc'
+    | 'mtimeAsc'
+    | 'birthtimeDesc'
+    | 'birthtimeAsc'
+
 export interface FileNode {
   name: string
   path: string
   isDir: boolean
+  mtime?: number
+  birthtime?: number
   children?: FileNode[]
 }
 
@@ -120,6 +130,8 @@ export interface AppSettings {
   theme: Theme
   /** UI language locale */
   locale: 'auto' | 'en-US' | 'ru-RU'
+  /** Global file tree sorting mode */
+  fileSortMode: FileSortMode
   /** List of enabled plugin ids. Defaults to built-ins when missing. */
   enabledPlugins?: string[]
 }
@@ -132,6 +144,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   layoutMode: 'desktop',
   theme: 'system',
   locale: 'auto',
+  fileSortMode: 'nameAsc',
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info'],
 }
 

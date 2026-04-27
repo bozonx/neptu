@@ -5,11 +5,12 @@ import {
   readTextFile,
   remove,
   rename,
+  stat,
   writeTextFile,
 } from '@tauri-apps/plugin-fs'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { join, sep } from '@tauri-apps/api/path'
-import type { FileFilterSettings, FileNode } from '~/types'
+import type { FileFilterSettings, FileNode, FileSortMode } from '~/types'
 
 // Non-hidden directories we still want to skip while scanning vaults.
 // Dot-prefixed directories are filtered by `startsWith('.')`.
@@ -75,9 +76,9 @@ export function useFs() {
    */
   async function scanMarkdownTree(
     rootPath: string,
-    options: { showHidden?: boolean, filterSettings?: FileFilterSettings } = {},
+    options: { showHidden?: boolean, filterSettings?: FileFilterSettings, sortMode?: FileSortMode } = {},
   ): Promise<FileNode[]> {
-    const { showHidden = false, filterSettings } = options
+    const { showHidden = false, filterSettings, sortMode = 'nameAsc' } = options
 
     const enabledExts = new Set<string>()
     if (filterSettings) {
@@ -98,6 +99,36 @@ export function useFs() {
       return name.slice(idx + 1).toLowerCase()
     }
 
+    function getGroupIndex(node: FileNode): number {
+      const isHidden = node.name.startsWith('.')
+      if (node.isDir && isHidden) return 0
+      if (node.isDir) return 1
+      if (isHidden) return 2
+      return 3
+    }
+
+    function compareNodes(a: FileNode, b: FileNode): number {
+      const ga = getGroupIndex(a)
+      const gb = getGroupIndex(b)
+      if (ga !== gb) return ga - gb
+
+      switch (sortMode) {
+        case 'nameDesc':
+          return b.name.localeCompare(a.name)
+        case 'mtimeDesc':
+          return (b.mtime ?? 0) - (a.mtime ?? 0)
+        case 'mtimeAsc':
+          return (a.mtime ?? 0) - (b.mtime ?? 0)
+        case 'birthtimeDesc':
+          return (b.birthtime ?? 0) - (a.birthtime ?? 0)
+        case 'birthtimeAsc':
+          return (a.birthtime ?? 0) - (b.birthtime ?? 0)
+        case 'nameAsc':
+        default:
+          return a.name.localeCompare(b.name)
+      }
+    }
+
     async function walk(dirPath: string): Promise<FileNode[]> {
       const entries = await readDir(dirPath)
       const nodes: FileNode[] = []
@@ -111,10 +142,13 @@ export function useFs() {
           if (isHidden && !showHidden) continue
           const childPath = await join(dirPath, entry.name)
           const children = await walk(childPath)
+          const info = await stat(childPath).catch(() => null)
           nodes.push({
             name: entry.name,
             path: childPath,
             isDir: true,
+            mtime: info?.mtime ? info.mtime.getTime() : undefined,
+            birthtime: info?.birthtime ? info.birthtime.getTime() : undefined,
             children,
           })
         }
@@ -123,19 +157,18 @@ export function useFs() {
           const ext = getExt(entry.name)
           if (!ext || !enabledExts.has(ext)) continue
           const childPath = await join(dirPath, entry.name)
+          const info = await stat(childPath).catch(() => null)
           nodes.push({
             name: entry.name,
             path: childPath,
             isDir: false,
+            mtime: info?.mtime ? info.mtime.getTime() : undefined,
+            birthtime: info?.birthtime ? info.birthtime.getTime() : undefined,
           })
         }
       }
 
-      // Sort: directories first, then files; alphabetically within each group
-      nodes.sort((a, b) => {
-        if (a.isDir !== b.isDir) return a.isDir ? -1 : 1
-        return a.name.localeCompare(b.name)
-      })
+      nodes.sort(compareNodes)
       return nodes
     }
 

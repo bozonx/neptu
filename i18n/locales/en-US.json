@@ -20,7 +20,14 @@
     "noHeaders": "No headers found in this file",
     "noFileSelected": "No file selected",
     "navigation": "Navigation",
-    "fileDetails": "File Details"
+    "fileDetails": "File Details",
+    "sortBy": "Sort by",
+    "sortNameAsc": "File name (A to Z)",
+    "sortNameDesc": "File name (Z to A)",
+    "sortMtimeDesc": "Modified time (new to old)",
+    "sortMtimeAsc": "Modified time (old to new)",
+    "sortBirthtimeDesc": "Created time (new to old)",
+    "sortBirthtimeAsc": "Created time (old to new)"
   },
   "vault": {
     "name": "Name",
