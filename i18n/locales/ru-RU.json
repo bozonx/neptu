@@ -4,6 +4,8 @@
   },
   "sidebar": {
     "addVault": "Добавить хранилище",
+    "addLocalVault": "Добавить локальное хранилище",
+    "addGitVault": "Добавить git хранилище",
     "createGroup": "Создать группу",
     "addVaultBtn": "Добавить новое хранилище",
     "createGroupBtn": "Создать новую группу",

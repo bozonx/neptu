@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
 import type { GitCommitMode, Vault, VaultType, VaultGroup } from '~/types'
 import SettingsDialog from '~/components/SettingsDialog.vue'
 import VaultSidebarItem from '~/components/VaultSidebarItem.vue'
@@ -10,7 +11,8 @@ const git = useGitStore()
 const toast = useToast()
 const { t } = useI18n()
 
-const addVaultOpen = ref(false)
+const addLocalVaultOpen = ref(false)
+const addGitVaultOpen = ref(false)
 const newVaultName = ref('')
 const newVaultType = ref<VaultType>('local')
 const newVaultPath = ref<string | null>(null)
@@ -46,11 +48,6 @@ function vaultsInGroup(groupId: string) {
   return vaults.list.filter((v) => v.groupId === groupId)
 }
 
-const vaultTypeItems = [
-  { label: t('vault.localFolder'), value: 'local' },
-  { label: t('vault.gitRepo'), value: 'git' },
-] satisfies Array<{ label: string, value: VaultType, disabled?: boolean }>
-
 const gitModeItems = [
   { label: t('vault.connectExisting'), value: 'connect' as const },
   { label: t('vault.initNew'), value: 'init' as const },
@@ -61,17 +58,29 @@ const commitModeItems = [
   { label: t('vault.manualCommit'), value: 'manual' as const },
 ]
 
-function resetAddForm() {
+const addMenuItems = [
+  [
+    { label: t('sidebar.addLocalVault'), icon: 'i-lucide-folder-plus', onSelect: () => { addLocalVaultOpen.value = true } },
+    { label: t('sidebar.addGitVault'), icon: 'i-lucide-git-branch', onSelect: () => { addGitVaultOpen.value = true } },
+    { label: t('sidebar.createGroup'), icon: 'i-lucide-folder-closed-plus', onSelect: () => openCreateGroup() },
+  ],
+] satisfies DropdownMenuItem[][]
+
+function resetAddForm(type: VaultType = 'local') {
   newVaultName.value = ''
   newVaultPath.value = null
-  newVaultType.value = 'local'
+  newVaultType.value = type
   newGitMode.value = 'connect'
   newCommitMode.value = 'auto'
   newCommitDebounceSec.value = settings.settings.defaultCommitDebounceMs / 1000
 }
 
-watch(addVaultOpen, (value) => {
-  if (value) resetAddForm()
+watch(addLocalVaultOpen, (value) => {
+  if (value) resetAddForm('local')
+})
+
+watch(addGitVaultOpen, (value) => {
+  if (value) resetAddForm('git')
 })
 
 async function browseFolder() {
@@ -114,7 +123,8 @@ async function submitNewVault() {
           }
         : undefined,
     })
-    addVaultOpen.value = false
+    addLocalVaultOpen.value = false
+    addGitVaultOpen.value = false
     resetAddForm()
   }
   catch (error) {
@@ -241,7 +251,8 @@ function toggleVault(vault: Vault) {
     <UContextMenu
       :items="[
         [
-          { label: $t('sidebar.addVault'), icon: 'i-lucide-folder-plus', onSelect: () => addVaultOpen = true },
+          { label: $t('sidebar.addLocalVault'), icon: 'i-lucide-folder-plus', onSelect: () => addLocalVaultOpen = true },
+          { label: $t('sidebar.addGitVault'), icon: 'i-lucide-git-branch', onSelect: () => addGitVaultOpen = true },
           { label: $t('sidebar.createGroup'), icon: 'i-lucide-folder-closed-plus', onSelect: () => openCreateGroup() },
         ],
       ]"
@@ -358,20 +369,19 @@ function toggleVault(vault: Vault) {
 
     <div class="flex items-center gap-1 p-2 border-t border-default shrink-0">
       <div class="flex-1 flex items-center gap-1">
-        <UButton
-          icon="i-lucide-plus"
-          size="xs"
-          variant="ghost"
-          :title="$t('sidebar.addVaultBtn')"
-          @click="addVaultOpen = true"
-        />
-        <UButton
-          icon="i-lucide-plus"
-          size="xs"
-          variant="ghost"
-          :title="$t('sidebar.createGroupBtn')"
-          @click="openCreateGroup"
-        />
+        <UDropdownMenu
+          :items="addMenuItems"
+          :modal="false"
+          :content="{ side: 'top' }"
+        >
+          <UButton
+            icon="i-lucide-plus"
+            size="xs"
+            color="success"
+            variant="ghost"
+            :title="$t('sidebar.addVaultBtn')"
+          />
+        </UDropdownMenu>
         <PluginButtons location="left-sidebar-footer" />
       </div>
       <UButton
@@ -385,8 +395,8 @@ function toggleVault(vault: Vault) {
     </div>
 
     <UModal
-      v-model:open="addVaultOpen"
-      :title="$t('sidebar.addVault')"
+      v-model:open="addLocalVaultOpen"
+      :title="$t('sidebar.addLocalVault')"
     >
       <template #body>
         <div class="space-y-3">
@@ -400,10 +410,54 @@ function toggleVault(vault: Vault) {
             />
           </UFormField>
 
-          <UFormField :label="$t('vault.type')">
-            <URadioGroup
-              v-model="newVaultType"
-              :items="vaultTypeItems"
+          <UFormField :label="$t('vault.folder')">
+            <div class="flex items-center gap-2">
+              <UInput
+                :model-value="newVaultPath ?? ''"
+                readonly
+                :placeholder="$t('vault.noFolderSelected')"
+                class="flex-1"
+              />
+              <UButton
+                icon="i-lucide-folder-search"
+                :label="$t('vault.browse')"
+                @click="browseFolder"
+              />
+            </div>
+          </UFormField>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            :label="$t('vault.cancel')"
+            @click="addLocalVaultOpen = false"
+          />
+          <UButton
+            :label="$t('vault.add')"
+            :disabled="!newVaultPath"
+            @click="submitNewVault"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
+      v-model:open="addGitVaultOpen"
+      :title="$t('sidebar.addGitVault')"
+    >
+      <template #body>
+        <div class="space-y-3">
+          <UFormField
+            :label="$t('vault.name')"
+            :hint="$t('vault.nameHint')"
+          >
+            <UInput
+              v-model="newVaultName"
+              :placeholder="$t('vault.myNotesPlaceholder')"
             />
           </UFormField>
 
@@ -423,34 +477,32 @@ function toggleVault(vault: Vault) {
             </div>
           </UFormField>
 
-          <template v-if="newVaultType === 'git'">
-            <UFormField :label="$t('vault.repository')">
-              <URadioGroup
-                v-model="newGitMode"
-                :items="gitModeItems"
-              />
-            </UFormField>
+          <UFormField :label="$t('vault.repository')">
+            <URadioGroup
+              v-model="newGitMode"
+              :items="gitModeItems"
+            />
+          </UFormField>
 
-            <UFormField :label="$t('vault.commitMode')">
-              <URadioGroup
-                v-model="newCommitMode"
-                :items="commitModeItems"
-              />
-            </UFormField>
+          <UFormField :label="$t('vault.commitMode')">
+            <URadioGroup
+              v-model="newCommitMode"
+              :items="commitModeItems"
+            />
+          </UFormField>
 
-            <UFormField
-              v-if="newCommitMode === 'auto'"
-              :label="$t('vault.commitDebounce')"
-              :hint="$t('vault.commitDebounceHint')"
-            >
-              <UInput
-                v-model="newCommitDebounceSec"
-                type="number"
-                :min="0"
-                :step="0.5"
-              />
-            </UFormField>
-          </template>
+          <UFormField
+            v-if="newCommitMode === 'auto'"
+            :label="$t('vault.commitDebounce')"
+            :hint="$t('vault.commitDebounceHint')"
+          >
+            <UInput
+              v-model="newCommitDebounceSec"
+              type="number"
+              :min="0"
+              :step="0.5"
+            />
+          </UFormField>
         </div>
       </template>
 
@@ -460,7 +512,7 @@ function toggleVault(vault: Vault) {
             color="neutral"
             variant="ghost"
             :label="$t('vault.cancel')"
-            @click="addVaultOpen = false"
+            @click="addGitVaultOpen = false"
           />
           <UButton
             :label="$t('vault.add')"

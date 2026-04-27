@@ -4,6 +4,8 @@
   },
   "sidebar": {
     "addVault": "Add vault",
+    "addLocalVault": "Add local vault",
+    "addGitVault": "Add git vault",
     "createGroup": "Create group",
     "addVaultBtn": "Add a new vault folder",
     "createGroupBtn": "Create a new vault group",
