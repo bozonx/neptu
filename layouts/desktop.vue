@@ -78,6 +78,16 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
 
 <template>
   <div class="h-screen overflow-hidden bg-default text-default">
+    <div
+      v-if="!layoutReady"
+      class="h-full flex items-center justify-center bg-default"
+    >
+      <UIcon
+        name="i-lucide-loader-2"
+        class="size-8 animate-spin text-primary"
+      />
+    </div>
+
     <Splitpanes
       v-if="layoutReady"
       id="main-layout"

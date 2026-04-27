@@ -9,29 +9,14 @@ const editor = useEditorStore()
 const tabsStore = useTabsStore()
 const { isTauri, isMobile } = useTauri()
 
-const ready = ref(false)
-const initError = ref<string | null>(null)
+const ready = computed(() => !isTauri.value || (settings.initialized && editor.hydrated))
 
 function handleBeforeUnload() {
   // Best-effort flush of debounced writes before the window unloads.
   void flushPendingWrites()
 }
 
-onMounted(async () => {
-  if (!isTauri.value) {
-    ready.value = true
-    return
-  }
-  try {
-    await settings.init()
-    await editor.loadUiState()
-  }
-  catch (error) {
-    initError.value = error instanceof Error ? error.message : String(error)
-  }
-  finally {
-    ready.value = true
-  }
+onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', handleBeforeUnload)
   }
@@ -65,13 +50,6 @@ onBeforeUnmount(() => {
       :dismissible="false"
       :title="$t('error.tauriRequired')"
       :description="$t('error.tauriRequiredDesc')"
-    />
-
-    <UModal
-      v-if="initError"
-      :open="true"
-      :title="$t('error.initialization')"
-      :description="initError"
     />
   </div>
 </template>

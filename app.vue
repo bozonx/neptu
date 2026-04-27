@@ -58,6 +58,23 @@ useHead({
 })
 
 const layoutName = computed(() => settings.settings.layoutMode)
+
+const editor = useEditorStore()
+const { isTauri } = useTauri()
+const initError = ref<string | null>(null)
+
+onMounted(async () => {
+  if (isTauri.value) {
+    try {
+      await settings.init()
+      await editor.loadUiState()
+    }
+    catch (error) {
+      console.error('Failed to initialize app:', error)
+      initError.value = error instanceof Error ? error.message : String(error)
+    }
+  }
+})
 </script>
 
 <template>
@@ -71,5 +88,12 @@ const layoutName = computed(() => settings.settings.layoutMode)
     >
       <NuxtPage />
     </NuxtLayout>
+
+    <UModal
+      v-if="initError"
+      :open="true"
+      :title="$t('error.initialization')"
+      :description="initError"
+    />
   </UApp>
 </template>
