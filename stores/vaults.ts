@@ -201,6 +201,46 @@ export const useVaultsStore = defineStore('vaults', () => {
     return fullPath
   }
 
+  async function moveNode(sourcePath: string, targetDirPath: string) {
+    const fs = useFs()
+    const name = basename(sourcePath)
+    const destPath = await fs.join(targetDirPath, name)
+
+    if (sourcePath === destPath) return
+
+    await fs.moveFile(sourcePath, destPath)
+
+    // Find affected vaults and refresh them
+    const sourceVault = findVaultForPath(sourcePath)
+    const targetVault = findVaultForPath(targetDirPath)
+
+    if (sourceVault) await refreshTree(sourceVault)
+    if (targetVault && targetVault.id !== sourceVault?.id) await refreshTree(targetVault)
+
+    // Update editor/tabs if needed
+    const tabs = useTabsStore()
+    await tabs.updatePath(sourcePath, destPath)
+  }
+
+  async function copyNode(sourcePath: string, targetDirPath: string) {
+    const fs = useFs()
+    const name = basename(sourcePath)
+    const destPath = await fs.join(targetDirPath, name)
+
+    if (sourcePath === destPath) return
+
+    const info = await fs.stat(sourcePath)
+    if (info.isDirectory) {
+      await fs.copyFolder(sourcePath, destPath)
+    }
+    else {
+      await fs.copyFile(sourcePath, destPath)
+    }
+
+    const targetVault = findVaultForPath(targetDirPath)
+    if (targetVault) await refreshTree(targetVault)
+  }
+
   async function refreshTree(vault: Vault) {
     const fs = useFs()
     const settingsStore = useSettingsStore()
@@ -256,5 +296,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     refreshAllTrees,
     addGroup,
     removeGroup,
+    moveNode,
+    copyNode,
   }
 })

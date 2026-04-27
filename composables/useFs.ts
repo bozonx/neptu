@@ -1,4 +1,5 @@
 import {
+  copyFile as tauriCopyFile,
   exists,
   mkdir,
   readDir,
@@ -52,6 +53,30 @@ export function useFs() {
 
   async function renameFile(oldPath: string, newPath: string) {
     await rename(oldPath, newPath)
+  }
+
+  async function copyFile(src: string, dest: string) {
+    await tauriCopyFile(src, dest)
+  }
+
+  async function copyFolder(src: string, dest: string) {
+    await ensureDir(dest)
+    const entries = await readDir(src)
+    for (const entry of entries) {
+      const srcPath = await join(src, entry.name)
+      const destPath = await join(dest, entry.name)
+      if (entry.isDirectory) {
+        await copyFolder(srcPath, destPath)
+      }
+      else {
+        await tauriCopyFile(srcPath, destPath)
+      }
+    }
+  }
+
+  async function moveFile(src: string, dest: string) {
+    // rename works for both files and folders
+    await rename(src, dest)
   }
 
   async function createMarkdown(dirPath: string, fileName: string) {
@@ -183,10 +208,13 @@ export function useFs() {
     writeText,
     deleteFile,
     renameFile,
+    copyFile,
+    copyFolder,
+    moveFile,
     createMarkdown,
     createFolder,
     scanMarkdownTree,
     stat,
-    sep,
+    join,
   }
 }

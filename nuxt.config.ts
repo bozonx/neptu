@@ -4,8 +4,9 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt', '@nuxtjs/i18n'],
 
-  // SPA mode required for Tauri
+  // SSR mode disabled for Tauri
   ssr: false,
+  pages: false,
   devtools: { enabled: true },
 
   css: ['~/assets/css/main.css'],

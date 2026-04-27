@@ -82,7 +82,7 @@ const addMenuItems = [
   [
     { label: t('sidebar.addLocalVault'), icon: 'i-lucide-folder-plus', onSelect: () => { addLocalVaultOpen.value = true } },
     { label: t('sidebar.addGitVault'), icon: 'i-lucide-git-branch', onSelect: () => { addGitVaultOpen.value = true } },
-    { label: t('sidebar.createGroup'), icon: 'i-lucide-folder-closed-plus', onSelect: () => openCreateGroup() },
+    { label: t('sidebar.createGroup'), icon: 'i-lucide-folder-plus', onSelect: () => openCreateGroup() },
   ],
 ] satisfies DropdownMenuItem[][]
 
@@ -296,7 +296,7 @@ function toggleVault(vault: Vault) {
         [
           { label: $t('sidebar.addLocalVault'), icon: 'i-lucide-folder-plus', onSelect: () => addLocalVaultOpen = true },
           { label: $t('sidebar.addGitVault'), icon: 'i-lucide-git-branch', onSelect: () => addGitVaultOpen = true },
-          { label: $t('sidebar.createGroup'), icon: 'i-lucide-folder-closed-plus', onSelect: () => openCreateGroup() },
+          { label: $t('sidebar.createGroup'), icon: 'i-lucide-folder-plus', onSelect: () => openCreateGroup() },
         ],
       ]"
       :modal="false"

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { shallowRef, ref, computed } from 'vue'
 import type {
   Plugin,
   PluginManifest,
@@ -29,10 +30,10 @@ function sortByOrder<T extends { order?: number, fqid: string }>(items: T[]): T[
  * so multiple plugins can safely use the same local ids.
  */
 export const usePluginsStore = defineStore('plugins', () => {
-  const sidebarButtons = ref<RegisteredSidebarButton[]>([])
-  const rightSidebarViews = ref<RegisteredRightSidebarView[]>([])
-  const settingsTabs = ref<RegisteredSettingsTab[]>([])
-  const modals = ref<RegisteredModal[]>([])
+  const sidebarButtons = shallowRef<RegisteredSidebarButton[]>([])
+  const rightSidebarViews = shallowRef<RegisteredRightSidebarView[]>([])
+  const settingsTabs = shallowRef<RegisteredSettingsTab[]>([])
+  const modals = shallowRef<RegisteredModal[]>([])
   const activeRightSidebarView = ref<string | null>(null)
   const loaded = ref<Map<string, LoadedPlugin>>(new Map())
 

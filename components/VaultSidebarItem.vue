@@ -24,8 +24,48 @@ const settings = useSettingsStore()
 const editor = useEditorStore()
 const git = useGitStore()
 const tabs = useTabsStore()
+const vaults = useVaultsStore()
+const dnd = useDnd()
 const toast = useToast()
 const { t } = useI18n()
+
+const isDropTarget = ref(false)
+
+function onDragOver(event: DragEvent) {
+  if (!dnd.draggedPath.value) return
+  // Don't allow dropping into the same vault root if it's already there
+  // but moveNode already handles this check.
+  // We should also check if we are not dropping a parent into its own child root (which is impossible anyway)
+
+  event.preventDefault()
+  dnd.updateCopyMode(event)
+  dnd.handleAutoScroll(event)
+  isDropTarget.value = true
+}
+
+function onDragLeave() {
+  isDropTarget.value = false
+}
+
+async function onDrop(event: DragEvent) {
+  if (!dnd.draggedPath.value) return
+  isDropTarget.value = false
+
+  const sourcePath = dnd.draggedPath.value
+  const targetDir = props.vault.path
+
+  try {
+    if (event.shiftKey) {
+      await vaults.copyNode(sourcePath, targetDir)
+    }
+    else {
+      await vaults.moveNode(sourcePath, targetDir)
+    }
+  }
+  catch (error) {
+    toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
+  }
+}
 
 function vaultMenuItems(): DropdownMenuItem[][] {
   const groups: DropdownMenuItem[][] = []
@@ -143,8 +183,14 @@ async function handleDelete(node: FileNode) {
       class="w-full block"
     >
       <div
-        class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated hover:ring-1 hover:ring-inset hover:ring-border/50"
+        class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated transition-all"
+        :class="[
+          isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary/50' : 'hover:ring-1 hover:ring-inset hover:ring-border/50',
+        ]"
         @click="emit('toggle')"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
       >
         <div class="flex items-center gap-1 min-w-0">
           <UIcon

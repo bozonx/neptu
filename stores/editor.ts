@@ -65,6 +65,9 @@ export const useEditorStore = defineStore('editor', () => {
     if (buffers.value[path]) return buffers.value[path]
 
     const fs = useFs()
+    if (!(await fs.exists(path))) {
+      throw new Error(`File not found: ${path}`)
+    }
     const content = await fs.readText(path)
 
     buffers.value[path] = {
@@ -151,6 +154,19 @@ export const useEditorStore = defineStore('editor', () => {
     }
     else {
       buffers.value = {}
+    }
+  }
+
+  function onPathMigrated(oldPath: string, newPath: string) {
+    if (buffers.value[oldPath]) {
+      buffers.value[newPath] = { ...buffers.value[oldPath] }
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete buffers.value[oldPath]
+    }
+    if (cursorPositions.value[oldPath]) {
+      cursorPositions.value[newPath] = { ...cursorPositions.value[oldPath] }
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete cursorPositions.value[oldPath]
     }
   }
 
@@ -263,5 +279,6 @@ export const useEditorStore = defineStore('editor', () => {
     getCursorPosition,
     loadUiState,
     saveUiState,
+    onPathMigrated,
   }
 })

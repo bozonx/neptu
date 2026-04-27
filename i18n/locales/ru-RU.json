@@ -159,7 +159,8 @@
     "commitFailed": "Коммит не удался",
     "openFileFailed": "Не удалось открыть файл",
     "openFilePanelFailed": "Не удалось открыть файл в новой панели",
-    "deleteFailed": "Не удалось удалить"
+    "deleteFailed": "Не удалось удалить",
+    "moveFailed": "Не удалось переместить или скопировать"
   },
   "git": {
     "commit": "Коммит"

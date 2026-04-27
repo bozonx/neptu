@@ -21,8 +21,65 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const dnd = useDnd()
+const vaults = useVaultsStore()
+const toast = useToast()
 
 const expanded = ref<Record<string, boolean>>({})
+const dropTarget = ref<string | null>(null)
+
+function toggle(node: FileNode) {
+  expanded.value[node.path] = !expanded.value[node.path]
+}
+
+function onDragStart(event: DragEvent, node: FileNode) {
+  dnd.onDragStart(event, node.path)
+}
+
+function onDragEnd() {
+  dnd.onDragEnd()
+  dropTarget.value = null
+}
+
+function onDragOver(event: DragEvent, node: FileNode) {
+  if (!node.isDir || dnd.draggedPath.value === node.path) return
+  // Don't allow dropping a folder into itself or its children
+  const dragged = dnd.draggedPath.value
+  if (dragged) {
+    const sep = dragged.includes('\\') ? '\\' : '/'
+    const prefix = dragged.endsWith(sep) ? dragged : dragged + sep
+    if (node.path === dragged || node.path.startsWith(prefix)) return
+  }
+
+  event.preventDefault()
+  dnd.updateCopyMode(event)
+  dnd.handleAutoScroll(event)
+  dropTarget.value = node.path
+}
+
+function onDragLeave() {
+  dropTarget.value = null
+}
+
+async function onDrop(event: DragEvent, node: FileNode) {
+  if (!node.isDir || !dnd.draggedPath.value) return
+  dropTarget.value = null
+
+  const sourcePath = dnd.draggedPath.value
+  const targetDir = node.path
+
+  try {
+    if (event.shiftKey) {
+      await vaults.copyNode(sourcePath, targetDir)
+    }
+    else {
+      await vaults.moveNode(sourcePath, targetDir)
+    }
+  }
+  catch (error) {
+    toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
+  }
+}
 
 function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
@@ -42,10 +99,6 @@ function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
     }
   }
   return 'i-lucide-file-text'
-}
-
-function toggle(node: FileNode) {
-  expanded.value[node.path] = !expanded.value[node.path]
 }
 
 function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
@@ -79,9 +132,16 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
         :modal="false"
       >
         <div
-          class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
+          class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer transition-colors"
+          :class="{ 'bg-primary/20 ring-2 ring-inset ring-primary/50': dropTarget === node.path }"
           :style="{ paddingLeft: `${0.5 + level * 0.75}rem` }"
+          draggable="true"
           @click="toggle(node)"
+          @dragstart="onDragStart($event, node)"
+          @dragend="onDragEnd"
+          @dragover="onDragOver($event, node)"
+          @dragleave="onDragLeave"
+          @drop="onDrop($event, node)"
         >
           <UIcon
             :name="expanded[node.path] ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
@@ -141,7 +201,10 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
           class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
           :class="{ 'bg-elevated text-primary': activePath === node.path }"
           :style="{ paddingLeft: `${1.25 + level * 0.75}rem` }"
+          draggable="true"
           @click="emit('open', node.path)"
+          @dragstart="onDragStart($event, node)"
+          @dragend="onDragEnd"
         >
           <UIcon
             :name="getFileIcon(node.name, filters)"

@@ -360,6 +360,53 @@ export const useTabsStore = defineStore('tabs', () => {
     }
   }
 
+  async function updatePath(oldPath: string, newPath: string) {
+    const isFolder = !oldPath.endsWith('.md')
+    const match = (p: string) => {
+      if (p === oldPath) return true
+      if (isFolder) {
+        const sep = oldPath.endsWith('/') || oldPath.endsWith('\\') ? oldPath : oldPath + '/'
+        return p.startsWith(sep)
+      }
+      return false
+    }
+    const replace = (p: string) => {
+      if (p === oldPath) return newPath
+      if (isFolder) {
+        const sep = oldPath.endsWith('/') || oldPath.endsWith('\\') ? oldPath : oldPath + '/'
+        if (p.startsWith(sep)) {
+          return newPath + (newPath.endsWith('/') || newPath.endsWith('\\') ? '' : '/') + p.slice(sep.length)
+        }
+      }
+      return p
+    }
+
+    const editor = useEditorStore()
+
+    const leaves = allLeaves(desktopLayout.value)
+    for (const leaf of leaves) {
+      for (const tab of leaf.tabs) {
+        if (match(tab.filePath)) {
+          const oldP = tab.filePath
+          const newP = replace(oldP)
+          tab.filePath = newP
+          editor.onPathMigrated(oldP, newP)
+        }
+      }
+    }
+
+    for (const tab of mobileTabs.value) {
+      if (match(tab.filePath)) {
+        const oldP = tab.filePath
+        const newP = replace(oldP)
+        tab.filePath = newP
+        editor.onPathMigrated(oldP, newP)
+      }
+    }
+
+    await editor.saveUiState()
+  }
+
   async function openFileInNewPanel(path: string) {
     if (isMobile.value) {
       await openFile(path)
@@ -421,15 +468,31 @@ export const useTabsStore = defineStore('tabs', () => {
 
     // Open active files in buffers
     const editor = useEditorStore()
+    const fs = useFs()
+
     if (isMobile.value) {
       const active = mobileTabs.value.find((t) => t.id === mobileActiveId.value)
-      if (active) await editor.openFile(active.filePath)
+      if (active) {
+        if (await fs.exists(active.filePath)) {
+          await editor.openFile(active.filePath).catch(() => {})
+        }
+        else {
+          await closeMobileTab(active.id)
+        }
+      }
     }
     else {
       const leaves = allLeaves(desktopLayout.value)
       for (const leaf of leaves) {
         const active = leaf.tabs.find((t) => t.id === leaf.activeId)
-        if (active) await editor.openFile(active.filePath)
+        if (active) {
+          if (await fs.exists(active.filePath)) {
+            await editor.openFile(active.filePath).catch(() => {})
+          }
+          else {
+            await closeTab(leaf.id, active.id)
+          }
+        }
       }
     }
   }
@@ -541,6 +604,7 @@ export const useTabsStore = defineStore('tabs', () => {
     openFileInNewPanel,
     dropByPath,
     dropByPrefix,
+    updatePath,
     loadUiState,
     allLeaves,
     updatePanelRatio,

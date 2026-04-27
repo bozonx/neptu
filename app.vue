@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import * as uiLocales from '@nuxt/ui/locale'
+import { flushPendingWrites } from '~/composables/useConfig'
 
 const settings = useSettingsStore()
+const editor = useEditorStore()
+const tabsStore = useTabsStore()
 const colorMode = useColorMode()
 const { locale, setLocale } = useI18n()
+const { isTauri, isMobile } = useTauri()
 
 const availableLocales = ['en-US', 'ru-RU'] as const
 type AppLocale = typeof availableLocales[number]
@@ -58,12 +62,20 @@ useHead({
 })
 
 const layoutName = computed(() => settings.settings.layoutMode)
-
-const editor = useEditorStore()
-const { isTauri } = useTauri()
 const initError = ref<string | null>(null)
 
+const ready = computed(() => !isTauri.value || (settings.initialized && editor.hydrated))
+
+function handleBeforeUnload() {
+  // Best-effort flush of debounced writes before the window unloads.
+  void flushPendingWrites()
+}
+
 onMounted(async () => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload)
+  }
+
   if (isTauri.value) {
     try {
       await settings.init()
@@ -82,6 +94,12 @@ onMounted(async () => {
     }
   }
 })
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+  }
+})
 </script>
 
 <template>
@@ -93,7 +111,28 @@ onMounted(async () => {
       :name="layoutName"
       class="h-full"
     >
-      <NuxtPage />
+      <div class="contents">
+        <template v-if="ready">
+          <Editor
+            v-if="isMobile"
+            is-mobile
+          />
+          <PanelContainer
+            v-else
+            :panel="tabsStore.desktopLayout"
+          />
+        </template>
+
+        <FirstRunDialog v-if="ready && settings.needsMainRepo" />
+
+        <UModal
+          v-if="!isTauri && ready"
+          :open="true"
+          :dismissible="false"
+          :title="$t('error.tauriRequired')"
+          :description="$t('error.tauriRequiredDesc')"
+        />
+      </div>
     </NuxtLayout>
 
     <UModal

@@ -159,7 +159,8 @@
     "commitFailed": "Commit failed",
     "openFileFailed": "Failed to open file",
     "openFilePanelFailed": "Failed to open file in new panel",
-    "deleteFailed": "Failed to delete"
+    "deleteFailed": "Failed to delete",
+    "moveFailed": "Failed to move or copy"
   },
   "git": {
     "commit": "Commit"
