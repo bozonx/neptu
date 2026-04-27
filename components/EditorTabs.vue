@@ -11,6 +11,16 @@ const tabsStore = useTabsStore()
 const editorStore = useEditorStore()
 const vaults = useVaultsStore()
 
+const scrollContainer = ref<HTMLElement | null>(null)
+
+function handleWheel(e: WheelEvent) {
+  if (!scrollContainer.value) return
+  if (e.deltaY !== 0 && Math.abs(e.deltaX) === 0) {
+    e.preventDefault()
+    scrollContainer.value.scrollLeft += e.deltaY
+  }
+}
+
 const leaf = computed(() => {
   if (props.isMobile) return null
   if (!props.panelId) return null
@@ -40,6 +50,17 @@ const activeId = computed(() => {
   if (props.isMobile) return tabsStore.mobileActiveId
   return leaf.value?.activeId ?? null
 })
+
+watch(activeId, (newId) => {
+  if (newId && scrollContainer.value) {
+    nextTick(() => {
+      const activeEl = scrollContainer.value?.querySelector(`[data-tab-id="${newId}"]`)
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      }
+    })
+  }
+}, { immediate: true })
 
 function findLeaf(panel: Panel, id: string): PanelLeaf | null {
   if (panel.type === 'leaf') return panel.id === id ? panel : null
@@ -90,6 +111,23 @@ const { t } = useI18n()
 const contextMenuItems = (tab: EditorTab) => [
   [
     {
+      label: t('editor.closeAllRight'),
+      icon: 'i-lucide-arrow-right-to-line',
+      onSelect: () => props.panelId && tabsStore.closeAllRight(props.panelId, tab.id),
+    },
+    {
+      label: t('editor.closeOthers'),
+      icon: 'i-lucide-x-square',
+      onSelect: () => props.panelId && tabsStore.closeOthers(props.panelId, tab.id),
+    },
+    {
+      label: t('editor.closeAll'),
+      icon: 'i-lucide-x',
+      onSelect: () => props.panelId && tabsStore.closeAll(props.panelId),
+    },
+  ],
+  [
+    {
       label: t('editor.duplicateRight'),
       icon: 'i-lucide-panel-right-dashed',
       onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'right', tab),
@@ -116,7 +154,11 @@ const contextMenuItems = (tab: EditorTab) => [
 </script>
 
 <template>
-  <div class="flex items-center h-full w-full overflow-hidden">
+  <div
+    ref="scrollContainer"
+    class="flex items-center h-full w-full overflow-x-auto hide-scrollbar"
+    @wheel="handleWheel"
+  >
     <VueDraggable
       v-model="draggableTabs"
       group="editor-tabs"
@@ -136,6 +178,7 @@ const contextMenuItems = (tab: EditorTab) => [
         >
           <button
             type="button"
+            :data-tab-id="tab.id"
             class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
             :class="tab.id === activeId
               ? 'bg-default text-default'
@@ -169,6 +212,7 @@ const contextMenuItems = (tab: EditorTab) => [
         <button
           v-else
           type="button"
+          :data-tab-id="tab.id"
           class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative"
           :class="tab.id === activeId
             ? 'bg-default text-default'

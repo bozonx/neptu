@@ -64,9 +64,39 @@ export const useTabsStore = defineStore('tabs', () => {
       await editor.openFile(path)
     }
     else {
+      const leaves = allLeaves(desktopLayout.value)
+      let foundPanel: PanelLeaf | null = null
+      let foundTab: EditorTab | null = null
+
+      if (activePanel.value) {
+        const t = activePanel.value.tabs.find((t) => t.filePath === path)
+        if (t) {
+          foundPanel = activePanel.value
+          foundTab = t
+        }
+      }
+
+      if (!foundPanel) {
+        for (const leaf of leaves) {
+          const t = leaf.tabs.find((t) => t.filePath === path)
+          if (t) {
+            foundPanel = leaf
+            foundTab = t
+            break
+          }
+        }
+      }
+
+      if (foundPanel && foundTab) {
+        foundPanel.activeId = foundTab.id
+        activeDesktopPanelId.value = foundPanel.id
+        await editor.openFile(path)
+        await editor.saveUiState()
+        return
+      }
+
       let panel: PanelLeaf | null = activePanel.value
       if (!panel) {
-        const leaves = allLeaves(desktopLayout.value)
         if (leaves.length === 0) {
           desktopLayout.value = createLeaf()
           activeDesktopPanelId.value = (desktopLayout.value as PanelLeaf).id
@@ -79,15 +109,9 @@ export const useTabsStore = defineStore('tabs', () => {
       }
       if (!panel) return
 
-      const existing = panel.tabs.find((t) => t.filePath === path)
-      if (existing) {
-        panel.activeId = existing.id
-      }
-      else {
-        const tab: EditorTab = { id: generateId(), filePath: path }
-        panel.tabs.push(tab)
-        panel.activeId = tab.id
-      }
+      const tab: EditorTab = { id: generateId(), filePath: path }
+      panel.tabs.push(tab)
+      panel.activeId = tab.id
       await editor.openFile(path)
     }
     await editor.saveUiState()
@@ -178,6 +202,39 @@ export const useTabsStore = defineStore('tabs', () => {
       }
     }
     await useEditorStore().saveUiState()
+  }
+
+  async function closeAllRight(panelId: string, tabId: string) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+
+    const idx = panel.tabs.findIndex((t) => t.id === tabId)
+    if (idx === -1) return
+
+    const toClose = panel.tabs.slice(idx + 1)
+    for (const tab of toClose) {
+      await closeTab(panelId, tab.id)
+    }
+  }
+
+  async function closeOthers(panelId: string, tabId: string) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+
+    const toClose = panel.tabs.filter((t) => t.id !== tabId)
+    for (const tab of toClose) {
+      await closeTab(panelId, tab.id)
+    }
+  }
+
+  async function closeAll(panelId: string) {
+    const panel = findLeaf(desktopLayout.value, panelId)
+    if (!panel) return
+
+    const toClose = [...panel.tabs]
+    for (const tab of toClose) {
+      await closeTab(panelId, tab.id)
+    }
   }
 
   async function splitPanel(panelId: string, direction: SplitDirection, tabToDuplicate?: EditorTab) {
@@ -465,6 +522,9 @@ export const useTabsStore = defineStore('tabs', () => {
     activateMobileTab,
     closeTab,
     closeMobileTab,
+    closeAllRight,
+    closeOthers,
+    closeAll,
     splitPanel,
     duplicateTo,
     openFileInNewPanel,

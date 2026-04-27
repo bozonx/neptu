@@ -26,7 +26,13 @@ body,
 .border-r-default { border-right-color: var(--ui-border); }
 .border-l-default { border-left-color: var(--ui-border); }
 
-
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 
 .splitpanes__splitter {
   background-color: var(--ui-border);
