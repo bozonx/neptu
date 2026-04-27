@@ -5,6 +5,8 @@
   "sidebar": {
     "addVault": "Add vault",
     "createGroup": "Create group",
+    "addVaultBtn": "Add a new vault folder",
+    "createGroupBtn": "Create a new vault group",
     "noVaults": "No vaults yet. Add a folder to get started.",
     "deleteGroup": "Delete group",
     "settings": "Settings",

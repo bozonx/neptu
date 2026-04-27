@@ -183,12 +183,13 @@ async function handleDelete(node: FileNode) {
               @click.stop="handleSync()"
             />
             <UButton
-              v-if="showCommit"
+              v-if="vault.type === 'git'"
               icon="i-lucide-git-commit"
               size="xs"
               color="neutral"
               variant="ghost"
               :title="$t('git.commit')"
+              :disabled="!showCommit"
               :loading="committing"
               @click.stop="handleVaultCommit()"
             />

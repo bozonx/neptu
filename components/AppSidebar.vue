@@ -360,16 +360,16 @@ function toggleVault(vault: Vault) {
       <div class="flex-1 flex items-center gap-1">
         <UButton
           icon="i-lucide-plus"
-          :label="$t('sidebar.addVault')"
           size="xs"
           variant="ghost"
+          :title="$t('sidebar.addVaultBtn')"
           @click="addVaultOpen = true"
         />
         <UButton
           icon="i-lucide-plus"
-          :label="$t('sidebar.createGroup')"
           size="xs"
           variant="ghost"
+          :title="$t('sidebar.createGroupBtn')"
           @click="openCreateGroup"
         />
         <PluginButtons location="left-sidebar-footer" />

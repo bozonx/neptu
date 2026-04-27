@@ -9,7 +9,6 @@ const toast = useToast()
 const { t } = useI18n()
 const { isTauri } = useTauri()
 const plugins = usePluginsStore()
-const settingsStore = useSettingsStore()
 
 const leftHeaderButtons = plugins.buttonsFor('left-sidebar-header')
 // In Tauri we wait for ui-state.json to be loaded so Splitpanes mounts with
@@ -70,27 +69,19 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         max-size="40"
         class="flex flex-col bg-default"
       >
-        <div class="h-10 border-b border-default flex items-center px-3 gap-2 shrink-0">
-          <div class="flex items-center gap-2 flex-1 min-w-0">
+        <!-- Plugin toolbar row -->
+        <div class="border-b border-default flex items-center gap-1 px-2 py-1 shrink-0 bg-elevated/30 flex-wrap">
+          <template v-if="leftHeaderButtons.length === 0">
             <UIcon
               name="i-lucide-book-marked"
               class="size-5 text-primary shrink-0"
             />
             <span class="font-semibold text-sm truncate">Neptu</span>
-          </div>
-        </div>
-        <!-- Plugin toolbar row -->
-        <div class="h-9 border-b border-default flex items-center gap-1 px-2 shrink-0 bg-elevated/30">
+          </template>
           <PluginButtons
+            v-else
             location="left-sidebar-header"
             size="xs"
-          />
-          <UButton
-            v-if="leftHeaderButtons.length === 0"
-            size="xs"
-            variant="link"
-            :label="$t('plugins.addPlugins')"
-            @click="settingsStore.openSettingsDialog('plugins')"
           />
         </div>
         <div class="flex-1 overflow-hidden">
