@@ -8,6 +8,11 @@ const tabsStore = useTabsStore()
 const git = useGitStore()
 const toast = useToast()
 const { t } = useI18n()
+const { isTauri } = useTauri()
+// In Tauri we wait for ui-state.json to be loaded so Splitpanes mounts with
+// the persisted sizes; outside Tauri there's no persisted state and a blocking
+// modal is shown over the layout anyway.
+const layoutReady = computed(() => !isTauri.value || editor.hydrated)
 
 const activeFilePath = computed(() => {
   const leaf = tabsStore.allLeaves(tabsStore.desktopLayout).find((l) => l.id === tabsStore.activeDesktopPanelId)
@@ -74,6 +79,7 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
 <template>
   <div class="h-screen overflow-hidden bg-default text-default">
     <Splitpanes
+      v-if="layoutReady"
       id="main-layout"
       @resized="handleResize"
     >

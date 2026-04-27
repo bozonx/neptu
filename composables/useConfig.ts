@@ -112,6 +112,8 @@ export function useConfig() {
     configPathCache = configPath
     uiStatePathCache = await getUiStatePath()
     await fs.ensureDir(await configDir())
+    // Make sure any pending debounced write has landed before we read it back.
+    await configWriter.flush()
 
     try {
       const raw = await fs.readText(configPath)
@@ -162,6 +164,8 @@ export function useConfig() {
 
   async function loadUiState(): Promise<UiState> {
     const path = await getUiStatePath()
+    if (!uiStatePathCache) uiStatePathCache = path
+    await uiStateWriter.flush()
     try {
       const raw = await fs.readText(path)
       const parsed = JSON.parse(raw) as Partial<UiState>

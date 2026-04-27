@@ -239,6 +239,7 @@ export const useEditorStore = defineStore('editor', () => {
     currentContent,
     currentVault,
     activeRightTab,
+    hydrated,
     scrollToLineTrigger,
     cursorPositions,
     openFile,
