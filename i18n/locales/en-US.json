@@ -142,6 +142,7 @@
     "pushCompleted": "Push completed",
     "pushFailed": "Push failed",
     "saveFailed": "Save failed",
+    "commitCompleted": "Commit completed",
     "commitFailed": "Commit failed",
     "openFileFailed": "Failed to open file",
     "openFilePanelFailed": "Failed to open file in new panel",

@@ -5,7 +5,6 @@ import FileSidebar from '~/components/FileSidebar.vue'
 
 const editor = useEditorStore()
 const tabsStore = useTabsStore()
-const git = useGitStore()
 const toast = useToast()
 const { t } = useI18n()
 const { isTauri } = useTauri()
@@ -25,12 +24,6 @@ const activeFilePath = computed(() => {
   return tab?.filePath ?? null
 })
 
-const currentVault = computed(() => {
-  const path = activeFilePath.value
-  if (!path) return null
-  return useVaultsStore().findVaultForPath(path)
-})
-
 // Global save error notification
 watch(() => {
   const path = activeFilePath.value
@@ -44,33 +37,6 @@ watch(() => {
     })
   }
 })
-
-const showCommitButton = computed(() => {
-  const v = currentVault.value
-  if (!v || v.type !== 'git') return false
-  if (v.git?.commitMode !== 'manual') return false
-  return git.status[v.id]?.dirty ?? false
-})
-
-const committing = computed(() => {
-  const v = currentVault.value
-  return !!v && git.commitStatus[v.id] === 'committing'
-})
-
-async function handleCommit() {
-  const v = currentVault.value
-  if (!v) return
-  try {
-    await git.commit(v.id)
-  }
-  catch (error) {
-    toast.add({
-      title: t('toast.commitFailed'),
-      description: error instanceof Error ? error.message : String(error),
-      color: 'error',
-    })
-  }
-}
 
 function handleResize(event: Array<{ pane: number, size: number }>) {
   // We only care about the top-level layout which has exactly 3 panes: [left, center, right]
@@ -112,14 +78,6 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
             />
             <span class="font-semibold text-sm truncate">Neptu</span>
           </div>
-          <UButton
-            v-if="showCommitButton"
-            icon="i-lucide-git-commit"
-            :label="$t('git.commit')"
-            size="xs"
-            :loading="committing"
-            @click="handleCommit"
-          />
         </div>
         <!-- Plugin toolbar row -->
         <div class="h-9 border-b border-default flex items-center gap-1 px-2 shrink-0 bg-elevated/30">

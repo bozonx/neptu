@@ -17,6 +17,7 @@ const emit = defineEmits<{
   openInNewPanel: [path: string]
   delete: [node: FileNode]
   createIn: [dirPath: string]
+  createSubfolder: [dirPath: string]
 }>()
 
 const { t } = useI18n()
@@ -59,7 +60,7 @@ function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
 function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
   return [
     [
-      { label: t('vault.newNoteBtn'), icon: 'i-lucide-file-plus', onSelect: () => emit('createIn', node.path) },
+      { label: t('vault.newFolderBtn'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createSubfolder', node.path) },
       { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
     ],
   ]
@@ -91,6 +92,15 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
             class="size-4 text-muted shrink-0"
           />
           <span class="truncate flex-1">{{ node.name }}</span>
+          <UButton
+            icon="i-lucide-file-plus"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            class="opacity-0 group-hover:opacity-100"
+            :title="$t('vault.newNoteBtn')"
+            @click.stop="emit('createIn', node.path)"
+          />
           <UDropdownMenu
             :items="folderMenuItems(node)"
             :modal="false"
@@ -119,6 +129,7 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
         @open-in-new-panel="(p) => emit('openInNewPanel', p)"
         @delete="(n) => emit('delete', n)"
         @create-in="(d) => emit('createIn', d)"
+        @create-subfolder="(d) => emit('createSubfolder', d)"
       />
 
       <UContextMenu

@@ -265,8 +265,8 @@ function toggleVault(vault: Vault) {
           :active-path="editor.currentFilePath"
           :filters="mainVault.filters"
           @toggle="toggleVault(mainVault)"
-          @create-note="(v) => openCreateNote(v)"
-          @create-folder="(v) => openCreateFolder(v)"
+          @create-note="(v, d) => openCreateNote(v, d)"
+          @create-folder="(v, d) => openCreateFolder(v, d)"
           @edit-vault="(v) => openEditVault(v)"
           @remove-vault="(v) => openRemoveVaultConfirm(v)"
         />
@@ -286,8 +286,8 @@ function toggleVault(vault: Vault) {
           :active-path="editor.currentFilePath"
           :filters="vault.filters"
           @toggle="toggleVault(vault)"
-          @create-note="(v) => openCreateNote(v)"
-          @create-folder="(v) => openCreateFolder(v)"
+          @create-note="(v, d) => openCreateNote(v, d)"
+          @create-folder="(v, d) => openCreateFolder(v, d)"
           @edit-vault="(v) => openEditVault(v)"
           @remove-vault="(v) => openRemoveVaultConfirm(v)"
         />
@@ -346,8 +346,8 @@ function toggleVault(vault: Vault) {
               :active-path="editor.currentFilePath"
               :filters="vault.filters"
               @toggle="toggleVault(vault)"
-              @create-note="(v) => openCreateNote(v)"
-              @create-folder="(v) => openCreateFolder(v)"
+              @create-note="(v, d) => openCreateNote(v, d)"
+              @create-folder="(v, d) => openCreateFolder(v, d)"
               @edit-vault="(v) => openEditVault(v)"
               @remove-vault="(v) => openRemoveVaultConfirm(v)"
             />
@@ -359,14 +359,14 @@ function toggleVault(vault: Vault) {
     <div class="flex items-center gap-1 p-2 border-t border-default shrink-0">
       <div class="flex-1 flex items-center gap-1">
         <UButton
-          icon="i-lucide-folder-plus"
+          icon="i-lucide-plus"
           :label="$t('sidebar.addVault')"
           size="xs"
           variant="ghost"
           @click="addVaultOpen = true"
         />
         <UButton
-          icon="i-lucide-folder-closed-plus"
+          icon="i-lucide-plus"
           :label="$t('sidebar.createGroup')"
           size="xs"
           variant="ghost"

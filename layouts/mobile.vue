@@ -5,8 +5,6 @@ import FileSidebarToolbar from '~/components/FileSidebarToolbar.vue'
 
 const editor = useEditorStore()
 const tabsStore = useTabsStore()
-const git = useGitStore()
-const vaults = useVaultsStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -15,12 +13,6 @@ const rightDrawerOpen = ref(false)
 
 const activeTab = computed(() => {
   return tabsStore.mobileTabs.find((t) => t.id === tabsStore.mobileActiveId)
-})
-
-const currentVault = computed(() => {
-  const path = activeTab.value?.filePath
-  if (!path) return null
-  return vaults.findVaultForPath(path)
 })
 
 // Global save error notification
@@ -36,33 +28,6 @@ watch(() => {
     })
   }
 })
-
-const showCommitButton = computed(() => {
-  const v = currentVault.value
-  if (!v || v.type !== 'git') return false
-  if (v.git?.commitMode !== 'manual') return false
-  return git.status[v.id]?.dirty ?? false
-})
-
-const committing = computed(() => {
-  const v = currentVault.value
-  return !!v && git.commitStatus[v.id] === 'committing'
-})
-
-async function handleCommit() {
-  const v = currentVault.value
-  if (!v) return
-  try {
-    await git.commit(v.id)
-  }
-  catch (error) {
-    toast.add({
-      title: t('toast.commitFailed'),
-      description: error instanceof Error ? error.message : String(error),
-      color: 'error',
-    })
-  }
-}
 </script>
 
 <template>
@@ -86,16 +51,6 @@ async function handleCommit() {
       </div>
 
       <div class="flex items-center gap-1">
-        <UButton
-          v-if="showCommitButton"
-          icon="i-lucide-git-commit"
-          size="sm"
-          variant="ghost"
-          color="neutral"
-          :loading="committing"
-          @click="handleCommit"
-        />
-
         <!-- Right Sidebar Toolbar moved to Top Bar -->
         <FileSidebarToolbar
           class="bg-elevated/50 rounded-lg px-1 py-0.5"

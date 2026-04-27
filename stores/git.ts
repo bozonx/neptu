@@ -15,6 +15,7 @@ const commitTimers = new Map<string, ReturnType<typeof setTimeout>>()
 export const useGitStore = defineStore('git', () => {
   const status = ref<Record<string, GitStatusInfo>>({})
   const commitStatus = ref<Record<string, CommitStatus>>({})
+  const pendingCommits = ref<Record<string, boolean>>({})
 
   async function refreshStatus(vaultId: string) {
     const vaults = useVaultsStore()
@@ -64,6 +65,7 @@ export const useGitStore = defineStore('git', () => {
       clearTimeout(t)
       commitTimers.delete(vaultId)
     }
+    pendingCommits.value[vaultId] = false
   }
 
   /**
@@ -77,8 +79,10 @@ export const useGitStore = defineStore('git', () => {
     if (vault.git.commitMode !== 'auto') return
     cancelCommit(vaultId)
     const delay = Math.max(0, vault.git.commitDebounceMs)
+    pendingCommits.value[vaultId] = true
     const handle = setTimeout(() => {
       commitTimers.delete(vaultId)
+      pendingCommits.value[vaultId] = false
       commit(vaultId).catch((error) => {
         console.error('Auto-commit failed', error)
       })
@@ -131,11 +135,13 @@ export const useGitStore = defineStore('git', () => {
   function dropVault(vaultId: string) {
     Reflect.deleteProperty(status.value, vaultId)
     Reflect.deleteProperty(commitStatus.value, vaultId)
+    Reflect.deleteProperty(pendingCommits.value, vaultId)
   }
 
   return {
     status,
     commitStatus,
+    pendingCommits,
     refreshStatus,
     refreshAllStatuses,
     resolveAuthor,

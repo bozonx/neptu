@@ -142,6 +142,7 @@
     "pushCompleted": "Push завершён",
     "pushFailed": "Push не удался",
     "saveFailed": "Сохранение не удалось",
+    "commitCompleted": "Коммит выполнен",
     "commitFailed": "Коммит не удался",
     "openFileFailed": "Не удалось открыть файл",
     "openFilePanelFailed": "Не удалось открыть файл в новой панели",

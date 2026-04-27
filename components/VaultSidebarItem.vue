@@ -14,8 +14,8 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   toggle: []
-  createNote: [vault: Vault]
-  createFolder: [vault: Vault]
+  createNote: [vault: Vault, dir?: string]
+  createFolder: [vault: Vault, dir?: string]
   editVault: [vault: Vault]
   removeVault: [vault: Vault]
 }>()
@@ -30,6 +30,7 @@ const { t } = useI18n()
 function vaultMenuItems(): DropdownMenuItem[][] {
   const groups: DropdownMenuItem[][] = []
   const top: DropdownMenuItem[] = [
+    { label: t('vault.newFolderBtn'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', props.vault) },
     { label: t('vault.editVault'), icon: 'i-lucide-pencil', onSelect: () => emit('editVault', props.vault) },
   ]
   if (props.vault.path !== settings.mainRepoPath) {
@@ -85,6 +86,29 @@ async function handlePush() {
   }
   catch (error) {
     toast.add({ title: t('toast.pushFailed'), description: String(error), color: 'error' })
+  }
+}
+
+const showCommit = computed(() => {
+  if (props.vault.type !== 'git' || !props.vault.git) return false
+  const dirty = git.status[props.vault.id]?.dirty ?? false
+  const pending = git.pendingCommits[props.vault.id] ?? false
+  if (props.vault.git.commitMode === 'manual') return dirty
+  return pending
+})
+
+const committing = computed(() => git.commitStatus[props.vault.id] === 'committing')
+
+async function handleVaultCommit() {
+  if (props.vault.type !== 'git') return
+  git.cancelCommit(props.vault.id)
+  try {
+    await git.commit(props.vault.id)
+    toast.add({ title: t('toast.commitCompleted'), color: 'success' })
+    await git.refreshStatus(props.vault.id)
+  }
+  catch (error) {
+    toast.add({ title: t('toast.commitFailed'), description: String(error), color: 'error' })
   }
 }
 
@@ -150,14 +174,6 @@ async function handleDelete(node: FileNode) {
               @click.stop="emit('createNote', vault)"
             />
             <UButton
-              icon="i-lucide-folder-plus"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              :title="$t('vault.newFolderBtn')"
-              @click.stop="emit('createFolder', vault)"
-            />
-            <UButton
               v-if="vault.type === 'git'"
               icon="i-lucide-refresh-cw"
               size="xs"
@@ -165,6 +181,16 @@ async function handleDelete(node: FileNode) {
               variant="ghost"
               :title="$t('vault.sync')"
               @click.stop="handleSync()"
+            />
+            <UButton
+              v-if="showCommit"
+              icon="i-lucide-git-commit"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              :title="$t('git.commit')"
+              :loading="committing"
+              @click.stop="handleVaultCommit()"
             />
             <UDropdownMenu
               :items="vaultMenuItems()"
@@ -194,7 +220,8 @@ async function handleDelete(node: FileNode) {
       @open="openFile"
       @open-in-new-panel="openFileInNewPanel"
       @delete="handleDelete"
-      @create-in="(d) => emit('createNote', vault)"
+      @create-in="(d) => emit('createNote', vault, d)"
+      @create-subfolder="(d) => emit('createFolder', vault, d)"
     />
   </div>
 </template>
