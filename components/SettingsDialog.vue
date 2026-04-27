@@ -7,11 +7,27 @@ const settingsStore = useSettingsStore()
 const toast = useToast()
 const { t } = useI18n()
 
+const plugins = usePluginsStore()
 const activeTab = ref('general')
-const tabs = [
+
+const builtInTabs = [
   { label: t('settings.general'), value: 'general', icon: 'i-lucide-settings' },
   { label: t('settings.git'), value: 'git', icon: 'i-lucide-git-branch' },
 ]
+
+const allTabs = computed(() => [
+  ...builtInTabs,
+  ...plugins.sortedSettingsTabs.map((t) => ({
+    label: t.label,
+    value: t.fqid,
+    icon: t.icon,
+    component: t.component,
+  })),
+])
+
+const activePluginTab = computed(() =>
+  plugins.sortedSettingsTabs.find((t) => t.fqid === activeTab.value),
+)
 
 const autosaveSec = ref(0)
 const commitSec = ref(0)
@@ -149,7 +165,7 @@ watch(
         <!-- Sidebar Navigation -->
         <aside class="w-56 border-r border-default p-4 space-y-1">
           <UButton
-            v-for="tab in tabs"
+            v-for="tab in allTabs"
             :key="tab.value"
             :icon="tab.icon"
             :label="tab.label"
@@ -327,6 +343,12 @@ watch(
               </UFormField>
             </section>
           </div>
+
+          <!-- Plugin Tab -->
+          <component
+            :is="activePluginTab?.component"
+            v-else-if="activePluginTab"
+          />
         </main>
       </div>
     </template>

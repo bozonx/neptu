@@ -172,7 +172,10 @@ export interface CursorPosition {
 }
 
 export interface UiState {
-  activeRightTab: 'outline' | 'info'
+  /** Legacy field — migrated on load to activeRightSidebarView */
+  activeRightTab?: 'outline' | 'info'
+  /** FQID of the active right-sidebar view, e.g. `com.neptu.outline:main`. */
+  activeRightSidebarView?: string | null
   desktopLayout?: Panel
   activeDesktopPanelId?: string
   mobileTabs?: EditorTab[]
@@ -183,7 +186,7 @@ export interface UiState {
 }
 
 export const DEFAULT_UI_STATE: UiState = {
-  activeRightTab: 'outline',
+  activeRightSidebarView: null,
 }
 
 export interface AddVaultPayload {

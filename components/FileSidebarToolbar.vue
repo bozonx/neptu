@@ -1,26 +1,25 @@
 <script setup lang="ts">
-const editor = useEditorStore()
+const plugins = usePluginsStore()
+
+function isActive(fqid: string) {
+  return plugins.resolvedActiveRightSidebarView?.fqid === fqid
+}
 </script>
 
 <template>
   <div class="flex items-center gap-1">
     <div class="flex-1 flex items-center gap-1">
       <UButton
-        icon="i-lucide-list-tree"
+        v-for="view in plugins.sortedRightSidebarViews"
+        :key="view.fqid"
+        :icon="view.icon"
         size="xs"
-        :variant="editor.activeRightTab === 'outline' ? 'subtle' : 'ghost'"
-        :color="editor.activeRightTab === 'outline' ? 'primary' : 'neutral'"
-        :title="$t('sidebar.outline')"
-        @click="editor.activeRightTab = 'outline'"
+        :variant="isActive(view.fqid) ? 'subtle' : 'ghost'"
+        :color="isActive(view.fqid) ? 'primary' : 'neutral'"
+        :title="view.title"
+        @click="plugins.setActiveRightSidebarView(view.fqid)"
       />
-      <UButton
-        icon="i-lucide-info"
-        size="xs"
-        :variant="editor.activeRightTab === 'info' ? 'subtle' : 'ghost'"
-        :color="editor.activeRightTab === 'info' ? 'primary' : 'neutral'"
-        :title="$t('sidebar.fileInfo')"
-        @click="editor.activeRightTab = 'info'"
-      />
+      <PluginButtons location="right-sidebar-toolbar" />
     </div>
   </div>
 </template>

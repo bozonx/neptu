@@ -117,6 +117,13 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
             @click="handleCommit"
           />
         </div>
+        <!-- Plugin toolbar row -->
+        <div class="h-9 border-b border-default flex items-center gap-1 px-2 shrink-0 bg-elevated/30">
+          <PluginButtons
+            location="left-sidebar-header"
+            size="xs"
+          />
+        </div>
         <div class="flex-1 overflow-hidden">
           <AppSidebar />
         </div>

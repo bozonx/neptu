@@ -23,6 +23,8 @@ Cross-platform markdown notes editor for desktop and mobile, built on
   mode and use the **Commit** button in the top bar.
 - App-wide **Settings** dialog (cog button in the sidebar) for autosave
   debounce, default commit debounce and commit author overrides.
+- **Plugin system** — built-in plugins (Outline, File Info) register views,
+  toolbar buttons, settings tabs and modals via a typed API.
 - First-run wizard asks for a *main repository*; settings live in the
   Tauri app config directory (`config.json`).
 
@@ -51,7 +53,10 @@ stores/                # Pinia setup-stores
   git.ts              # git status, commit timers, debounced auto-commit
   editor.ts           # active file buffer + autosave
   tabs.ts             # list of open editor tabs (cross-vault)
+  plugins.ts          # plugin registry + UI specs (sidebar views, buttons, modals)
+app-plugins/          # plugin API + built-in plugins (outline, file-info)
 types/index.ts        # shared types
+types/plugin.ts       # plugin manifest, API and UI-spec types
 src-tauri/            # Rust shell (Cargo.toml, tauri.conf.json, capabilities)
   src/git.rs          # libgit2-backed git commands
 ```

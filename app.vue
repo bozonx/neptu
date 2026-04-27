@@ -68,6 +68,8 @@ onMounted(async () => {
     try {
       await settings.init()
       await editor.loadUiState()
+      const { initBuiltinPlugins } = await import('~/app-plugins')
+      await initBuiltinPlugins()
     }
     catch (error) {
       console.error('Failed to initialize app:', error)
@@ -95,5 +97,7 @@ onMounted(async () => {
       :title="$t('error.initialization')"
       :description="initError"
     />
+
+    <PluginModalHost />
   </UApp>
 </template>

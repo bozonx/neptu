@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS, DEFAULT_UI_STATE, type AppConfig, type AppSettings, t
 
 const CONFIG_FILE = 'config.json'
 const UI_STATE_FILE = 'ui-state.json'
+const PLUGINS_DIR = 'plugins'
 const PERSIST_DEBOUNCE_MS = 200
 
 /**
@@ -184,6 +185,30 @@ export function useConfig() {
     uiStateWriter.schedule(state)
   }
 
+  async function getPluginStatePath(pluginId: string): Promise<string> {
+    const dir = await join(await configDir(), PLUGINS_DIR)
+    await fs.ensureDir(dir)
+    // File-name safe: replace slashes and strip characters that are unsafe on FAT32/APFS.
+    const safe = pluginId.replace(/[^a-zA-Z0-9._-]/g, '_')
+    return await join(dir, `${safe}.json`)
+  }
+
+  async function loadPluginState<T = unknown>(pluginId: string): Promise<T | null> {
+    try {
+      const path = await getPluginStatePath(pluginId)
+      const raw = await fs.readText(path)
+      return JSON.parse(raw) as T
+    }
+    catch {
+      return null
+    }
+  }
+
+  async function savePluginState<T = unknown>(pluginId: string, value: T): Promise<void> {
+    const path = await getPluginStatePath(pluginId)
+    await writeTextFile(path, JSON.stringify(value, null, 2))
+  }
+
   return {
     getConfigPath,
     getUiStatePath,
@@ -191,5 +216,7 @@ export function useConfig() {
     saveAppConfig,
     loadUiState,
     saveUiState,
+    loadPluginState,
+    savePluginState,
   }
 }

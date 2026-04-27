@@ -176,7 +176,6 @@ export const useEditorStore = defineStore('editor', () => {
   }, 500)
 
   const scrollToLineTrigger = ref<Record<string, number | null>>({})
-  const activeRightTab = ref<'info' | 'outline'>('outline')
   const cursorPositions = ref<Record<string, CursorPosition>>({})
 
   function scrollToLine(line: number, path?: string) {
@@ -207,9 +206,19 @@ export const useEditorStore = defineStore('editor', () => {
   async function loadUiState() {
     const config = useConfig()
     const state = await config.loadUiState()
-    activeRightTab.value = state.activeRightTab
     cursorPositions.value = state.cursorPositions ?? {}
     await useTabsStore().loadUiState(state)
+    // Migrate legacy activeRightTab to plugin FQID
+    const plugins = usePluginsStore()
+    if (state.activeRightSidebarView) {
+      plugins.setActiveRightSidebarView(state.activeRightSidebarView)
+    }
+    else if (state.activeRightTab === 'outline') {
+      plugins.setActiveRightSidebarView('com.neptu.outline:main')
+    }
+    else if (state.activeRightTab === 'info') {
+      plugins.setActiveRightSidebarView('com.neptu.file-info:main')
+    }
     hydrated.value = true
   }
 
@@ -218,7 +227,7 @@ export const useEditorStore = defineStore('editor', () => {
     const config = useConfig()
     const tabs = useTabsStore()
     await config.saveUiState({
-      activeRightTab: activeRightTab.value,
+      activeRightSidebarView: usePluginsStore().activeRightSidebarView,
       desktopLayout: tabs.desktopLayout,
       activeDesktopPanelId: tabs.activeDesktopPanelId,
       mobileTabs: tabs.mobileTabs,
@@ -229,7 +238,7 @@ export const useEditorStore = defineStore('editor', () => {
     })
   }
 
-  watch(activeRightTab, () => {
+  watch(() => usePluginsStore().activeRightSidebarView, () => {
     void saveUiState()
   })
 
@@ -238,7 +247,6 @@ export const useEditorStore = defineStore('editor', () => {
     currentFilePath,
     currentContent,
     currentVault,
-    activeRightTab,
     hydrated,
     scrollToLineTrigger,
     cursorPositions,

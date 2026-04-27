@@ -15,10 +15,12 @@ overview.
 app.vue                 # root <UApp>
 pages/index.vue         # entry, triggers settings.init()
 layouts/default.vue     # sidebar + slot
-components/             # AppSidebar, Editor, VaultTree, *Dialog
+components/             # AppSidebar, Editor, VaultTree, *Dialog, PluginButtons, PluginModalHost
 composables/            # useFs, useConfig, useGit, useTauri
-stores/                 # Pinia setup-stores: settings, vaults, git, editor
+stores/                 # Pinia setup-stores: settings, vaults, git, editor, plugins
+app-plugins/            # Plugin API, built-in plugins (outline, file-info)
 types/index.ts          # shared types
+types/plugin.ts         # plugin manifest, API and UI-spec types
 src-tauri/              # Rust shell, git.rs holds invoke handlers
 ```
 
@@ -34,6 +36,8 @@ Flat Nuxt layout (`srcDir: '.'`). Auto-imports for `components/`,
   - `useGitStore` — git status, commit status, debounced auto-commit timers.
   - `useEditorStore` — current file buffer, save status, autosave watcher,
     note create/delete.
+  - `usePluginsStore` — plugin registry, UI specs (buttons, sidebar views,
+    settings tabs, modals), active right-sidebar view.
 - **Persistence is centralized** in `useSettingsStore.persist()`. Any store
   that mutates `vaults` or `settings` calls `settings.persist()` after the
   change. Never write the config file from anywhere else.
@@ -49,10 +53,13 @@ Flat Nuxt layout (`srcDir: '.'`). Auto-imports for `components/`,
 
 - TypeScript everywhere, `strict: true`. Prefer `interface` for object shapes.
 - Named exports only (per global rules).
-- Comments and JSDoc in English; UI strings in English (no i18n yet).
+- Comments and JSDoc in English; UI strings via `@nuxtjs/i18n` (locales in `i18n/locales/`).
 - Add complex-block comments only; no inline trailing comments.
 - Keep changes minimal and focused; don't break existing tests.
 - Follow ESLint config (`pnpm lint`). Run `pnpm lint:fix` before committing.
+- **Plugin system** uses `app-plugins/` (not `plugins/` — reserved by Nuxt).
+  Built-in plugins register UI specs via `createPluginAPI()`. New extension
+  points: sidebar buttons, right-sidebar views, settings tabs, modals.
 
 ## Commands
 
@@ -75,6 +82,8 @@ pnpm tauri:build        # production bundle
 - **New filesystem helper** → extend `composables/useFs.ts`. All paths are
   absolute. Keep platform-agnostic via `@tauri-apps/api/path`.
 - **New permission** → update `src-tauri/capabilities/default.json`.
+- **New plugin** → manifest + `activate()` in `app-plugins/builtin/<name>/`,
+  register in `app-plugins/index.ts`.
 
 ## Things to know about gotchas
 

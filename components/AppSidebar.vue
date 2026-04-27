@@ -374,6 +374,7 @@ function toggleVault(vault: Vault) {
           variant="ghost"
           @click="openCreateGroup"
         />
+        <PluginButtons location="left-sidebar-footer" />
       </div>
       <UButton
         icon="i-lucide-settings"
