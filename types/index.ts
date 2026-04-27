@@ -103,7 +103,7 @@ export interface FileNode {
   children?: FileNode[]
 }
 
-export type LayoutMode = 'auto' | 'desktop' | 'mobile'
+export type LayoutMode = 'desktop' | 'mobile'
 export type Theme = 'system' | 'light' | 'dark'
 
 export interface AppSettings {
@@ -127,7 +127,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultCommitDebounceMs: 5000,
   gitAuthorName: '',
   gitAuthorEmail: '',
-  layoutMode: 'auto',
+  layoutMode: 'desktop',
   theme: 'system',
   locale: 'auto',
 }

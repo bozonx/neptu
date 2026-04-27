@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import * as uiLocales from '@nuxt/ui/locale'
 
 const settings = useSettingsStore()
 const colorMode = useColorMode()
-const breakpoints = useBreakpoints(breakpointsTailwind)
-const isDesktop = breakpoints.greaterOrEqual('lg')
 const { locale, setLocale } = useI18n()
 
 const availableLocales = ['en-US', 'ru-RU'] as const
@@ -60,14 +57,7 @@ useHead({
   htmlAttrs: { lang, dir },
 })
 
-const layoutName = computed(() => {
-  const mode = settings.settings.layoutMode
-  if (mode === 'desktop') return 'desktop'
-  if (mode === 'mobile') return 'mobile'
-
-  // 'auto' mode
-  return isDesktop.value ? 'desktop' : 'mobile'
-})
+const layoutName = computed(() => settings.settings.layoutMode)
 </script>
 
 <template>

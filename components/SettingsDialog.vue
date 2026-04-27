@@ -17,7 +17,7 @@ const autosaveSec = ref(0)
 const commitSec = ref(0)
 const authorName = ref('')
 const authorEmail = ref('')
-const layoutMode = ref<AppSettings['layoutMode']>('auto')
+const layoutMode = ref<AppSettings['layoutMode']>('desktop')
 const theme = ref<AppSettings['theme']>('system')
 const locale = ref<AppSettings['locale']>('auto')
 const detectedAuthor = ref<GitAuthor | null>(null)
@@ -206,7 +206,6 @@ watch(
                 <URadioGroup
                   v-model="layoutMode"
                   :items="[
-                    { label: $t('settings.auto'), value: 'auto' },
                     { label: $t('settings.desktop'), value: 'desktop' },
                     { label: $t('settings.mobile'), value: 'mobile' },
                   ]"

@@ -1,16 +1,9 @@
 import { appConfigDir, join, resolve } from '@tauri-apps/api/path'
-import { DEFAULT_SETTINGS, DEFAULT_UI_STATE, type AppConfig, type UiState } from '~/types'
+import { type } from '@tauri-apps/plugin-os'
+import { DEFAULT_SETTINGS, DEFAULT_UI_STATE, type AppConfig, type AppSettings, type UiState } from '~/types'
 
 const CONFIG_FILE = 'config.json'
 const UI_STATE_FILE = 'ui-state.json'
-
-const DEFAULT_CONFIG: AppConfig = {
-  version: 1,
-  mainRepoPath: null,
-  vaults: [],
-  settings: { ...DEFAULT_SETTINGS },
-  groups: [],
-}
 
 /**
  * Persistent configuration helpers.
@@ -47,17 +40,42 @@ export function useConfig() {
     try {
       const raw = await fs.readText(configPath)
       const parsed = JSON.parse(raw) as Partial<AppConfig>
-      return {
+
+      // Migrate old 'auto' layoutMode to platform-specific default
+      const rawSettings = parsed.settings as Record<string, unknown> | undefined
+      if (rawSettings?.layoutMode === 'auto') {
+        const osType = await type()
+        const detected = ['ios', 'android'].includes(osType) ? 'mobile' : 'desktop'
+        parsed.settings = { ...(parsed.settings ?? DEFAULT_SETTINGS), layoutMode: detected } as AppSettings
+      }
+
+      const config: AppConfig = {
         version: 1,
         mainRepoPath: parsed.mainRepoPath ?? null,
         vaults: parsed.vaults ?? [],
         settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
         groups: parsed.groups ?? [],
       }
+
+      // Save back migrated config so 'auto' does not persist
+      if (parsed.settings?.layoutMode) {
+        await fs.writeText(configPath, JSON.stringify(config, null, 2))
+      }
+
+      return config
     }
     catch {
-      await fs.writeText(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2))
-      return { ...DEFAULT_CONFIG }
+      const osType = await type()
+      const detectedLayout = ['ios', 'android'].includes(osType) ? 'mobile' : 'desktop'
+      const config: AppConfig = {
+        version: 1,
+        mainRepoPath: null,
+        vaults: [],
+        settings: { ...DEFAULT_SETTINGS, layoutMode: detectedLayout },
+        groups: [],
+      }
+      await fs.writeText(configPath, JSON.stringify(config, null, 2))
+      return config
     }
   }
 

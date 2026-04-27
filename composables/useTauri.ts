@@ -1,5 +1,3 @@
-import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
-
 /**
  * Detects whether the app is currently running inside a Tauri WebView.
  * Useful for conditionally rendering features that depend on native APIs.
@@ -12,15 +10,8 @@ export function useTauri() {
   )
 
   const settings = useSettingsStore()
-  const breakpoints = useBreakpoints(breakpointsTailwind)
-  const isDesktop = breakpoints.greaterOrEqual('lg')
 
-  const isMobile = computed(() => {
-    const mode = settings.settings.layoutMode
-    if (mode === 'desktop') return false
-    if (mode === 'mobile') return true
-    return !isDesktop.value
-  })
+  const isMobile = computed(() => settings.settings.layoutMode === 'mobile')
 
   return { isTauri, isMobile }
 }
