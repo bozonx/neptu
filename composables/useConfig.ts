@@ -1,9 +1,83 @@
 import { appConfigDir, join, resolve } from '@tauri-apps/api/path'
 import { type } from '@tauri-apps/plugin-os'
+import { writeTextFile } from '@tauri-apps/plugin-fs'
 import { DEFAULT_SETTINGS, DEFAULT_UI_STATE, type AppConfig, type AppSettings, type UiState } from '~/types'
 
 const CONFIG_FILE = 'config.json'
 const UI_STATE_FILE = 'ui-state.json'
+const PERSIST_DEBOUNCE_MS = 200
+
+/**
+ * Serialized + debounced writer. Coalesces rapid writes (pane drag, autosave
+ * bursts) and guarantees only one filesystem write is in flight per file at a
+ * time. The latest pending payload always wins.
+ */
+function createSerializedWriter<T>(write: (data: T) => Promise<void>) {
+  let pending: { data: T } | null = null
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let inFlight: Promise<void> | null = null
+
+  async function drain() {
+    timer = null
+    while (pending) {
+      const { data } = pending
+      pending = null
+      inFlight = write(data)
+        .catch((error) => {
+          console.error('[useConfig] persist failed', error)
+        })
+        .finally(() => {
+          inFlight = null
+        })
+      await inFlight
+    }
+  }
+
+  return {
+    schedule(data: T) {
+      pending = { data }
+      if (timer) return
+      timer = setTimeout(() => {
+        void drain()
+      }, PERSIST_DEBOUNCE_MS)
+    },
+    async flush() {
+      if (timer) {
+        clearTimeout(timer)
+        timer = null
+      }
+      if (inFlight) {
+        try {
+          await inFlight
+        }
+        catch {
+          // already logged
+        }
+      }
+      await drain()
+    },
+  }
+}
+
+let configPathCache: string | null = null
+let uiStatePathCache: string | null = null
+
+const configWriter = createSerializedWriter<AppConfig>(async (data) => {
+  if (!configPathCache) return
+  await writeTextFile(configPathCache, JSON.stringify(data, null, 2))
+})
+
+const uiStateWriter = createSerializedWriter<UiState>(async (data) => {
+  if (!uiStatePathCache) return
+  await writeTextFile(uiStatePathCache, JSON.stringify(data, null, 2))
+})
+
+/**
+ * Flushes any pending debounced writes. Call on app shutdown.
+ */
+export async function flushPendingWrites() {
+  await Promise.all([configWriter.flush(), uiStateWriter.flush()])
+}
 
 /**
  * Persistent configuration helpers.
@@ -35,6 +109,8 @@ export function useConfig() {
 
   async function loadAppConfig(): Promise<AppConfig> {
     const configPath = await getConfigPath()
+    configPathCache = configPath
+    uiStatePathCache = await getUiStatePath()
     await fs.ensureDir(await configDir())
 
     try {
@@ -80,8 +156,8 @@ export function useConfig() {
   }
 
   async function saveAppConfig(config: AppConfig): Promise<void> {
-    const configPath = await getConfigPath()
-    await fs.writeText(configPath, JSON.stringify(config, null, 2))
+    if (!configPathCache) configPathCache = await getConfigPath()
+    configWriter.schedule(config)
   }
 
   async function loadUiState(): Promise<UiState> {
@@ -100,8 +176,8 @@ export function useConfig() {
   }
 
   async function saveUiState(state: UiState): Promise<void> {
-    const path = await getUiStatePath()
-    await fs.writeText(path, JSON.stringify(state, null, 2))
+    if (!uiStatePathCache) uiStatePathCache = await getUiStatePath()
+    uiStateWriter.schedule(state)
   }
 
   return {

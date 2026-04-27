@@ -338,9 +338,9 @@ export const useTabsStore = defineStore('tabs', () => {
     if (state.desktopLayout) desktopLayout.value = state.desktopLayout
     if (state.activeDesktopPanelId) activeDesktopPanelId.value = state.activeDesktopPanelId
     if (state.mobileTabs) mobileTabs.value = state.mobileTabs
-    if (state.mobileActiveId) mobileActiveId.value = state.mobileActiveId
-    if (state.leftSidebarSize) leftSidebarSize.value = state.leftSidebarSize
-    if (state.rightSidebarSize) rightSidebarSize.value = state.rightSidebarSize
+    mobileActiveId.value = state.mobileActiveId ?? null
+    if (typeof state.leftSidebarSize === 'number') leftSidebarSize.value = state.leftSidebarSize
+    if (typeof state.rightSidebarSize === 'number') rightSidebarSize.value = state.rightSidebarSize
 
     // Ensure we have at least one leaf
     if (!desktopLayout.value) {

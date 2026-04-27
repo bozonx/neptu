@@ -2,6 +2,7 @@
 import Editor from '~/components/Editor.vue'
 import PanelContainer from '~/components/PanelContainer.vue'
 import FirstRunDialog from '~/components/FirstRunDialog.vue'
+import { flushPendingWrites } from '~/composables/useConfig'
 
 const settings = useSettingsStore()
 const editor = useEditorStore()
@@ -10,6 +11,11 @@ const { isTauri, isMobile } = useTauri()
 
 const ready = ref(false)
 const initError = ref<string | null>(null)
+
+function handleBeforeUnload() {
+  // Best-effort flush of debounced writes before the window unloads.
+  void flushPendingWrites()
+}
 
 onMounted(async () => {
   if (!isTauri.value) {
@@ -25,6 +31,15 @@ onMounted(async () => {
   }
   finally {
     ready.value = true
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('beforeunload', handleBeforeUnload)
   }
 })
 </script>

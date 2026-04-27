@@ -196,15 +196,25 @@ export const useEditorStore = defineStore('editor', () => {
     return cursorPositions.value[path]
   }
 
+  /**
+   * True once loadUiState has finished restoring persisted state. Until then
+   * saveUiState() is a no-op so that on-mount events from third-party widgets
+   * (e.g. Splitpanes emitting `@resized` with default sizes) cannot overwrite
+   * the persisted file before we've had a chance to read it.
+   */
+  const hydrated = ref(false)
+
   async function loadUiState() {
     const config = useConfig()
     const state = await config.loadUiState()
     activeRightTab.value = state.activeRightTab
     cursorPositions.value = state.cursorPositions ?? {}
     await useTabsStore().loadUiState(state)
+    hydrated.value = true
   }
 
   async function saveUiState() {
+    if (!hydrated.value) return
     const config = useConfig()
     const tabs = useTabsStore()
     await config.saveUiState({
@@ -219,8 +229,8 @@ export const useEditorStore = defineStore('editor', () => {
     })
   }
 
-  watch(activeRightTab, async () => {
-    await saveUiState()
+  watch(activeRightTab, () => {
+    void saveUiState()
   })
 
   return {
