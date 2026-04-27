@@ -38,6 +38,10 @@ export function useGit() {
     return invoke<CommitResult>('git_commit_all', payload)
   }
 
+  function diff(path: string, filePath?: string): Promise<string> {
+    return invoke<string>('git_diff', { path, filePath })
+  }
+
   return {
     isRepo,
     initRepo,
@@ -46,5 +50,6 @@ export function useGit() {
     pull,
     push,
     commitAll,
+    diff,
   }
 }

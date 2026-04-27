@@ -162,3 +162,44 @@ pub fn git_push(path: String) -> Result<String, String> {
 
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
+
+/// Returns a unified diff of the working tree against HEAD.
+/// When `file_path` is provided only that file is diffed (absolute path).
+#[tauri::command]
+pub fn git_diff(path: String, file_path: Option<String>) -> Result<String, String> {
+    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
+
+    let head_tree = match repo.head() {
+        Ok(head) => Some(head.peel_to_tree().map_err(|e| e.to_string())?),
+        Err(_) => None,
+    };
+
+    let mut opts = git2::DiffOptions::new();
+    if let Some(ref fp) = file_path {
+        let repo_root = std::path::Path::new(&path);
+        let file = std::path::Path::new(fp);
+        let relative = file
+            .strip_prefix(repo_root)
+            .map_err(|e| format!("failed to relativize path: {}", e))?
+            .to_string_lossy()
+            .to_string();
+        opts.pathspec(relative);
+    }
+
+    let diff = if let Some(ref tree) = head_tree {
+        repo.diff_tree_to_workdir(Some(tree), Some(&mut opts))
+    }
+    else {
+        repo.diff_tree_to_workdir(None, Some(&mut opts))
+    }
+    .map_err(|e| e.to_string())?;
+
+    let mut buf = Vec::new();
+    diff.print(git2::DiffFormat::Patch, |_delta, _hunk, line| {
+        buf.extend_from_slice(line.content());
+        true
+    })
+    .map_err(|e| e.to_string())?;
+
+    String::from_utf8(buf).map_err(|e| e.to_string())
+}

@@ -10,7 +10,7 @@ import {
   writeTextFile,
 } from '@tauri-apps/plugin-fs'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
-import { join, sep } from '@tauri-apps/api/path'
+import { join } from '@tauri-apps/api/path'
 import type { FileFilterSettings, FileNode, FileSortMode } from '~/types'
 
 // Non-hidden directories we still want to skip while scanning vaults.
