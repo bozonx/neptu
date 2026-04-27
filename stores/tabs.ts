@@ -23,6 +23,8 @@ export const useTabsStore = defineStore('tabs', () => {
 
   const leftSidebarSize = ref(20)
   const rightSidebarSize = ref(15)
+  const leftSidebarMode = ref<'single' | 'dual'>('single')
+  const leftSidebarDualFirstColumnSize = ref(20)
 
   const { isMobile } = useTauri()
 
@@ -341,6 +343,8 @@ export const useTabsStore = defineStore('tabs', () => {
     mobileActiveId.value = state.mobileActiveId ?? null
     if (typeof state.leftSidebarSize === 'number') leftSidebarSize.value = state.leftSidebarSize
     if (typeof state.rightSidebarSize === 'number') rightSidebarSize.value = state.rightSidebarSize
+    if (state.leftSidebarMode) leftSidebarMode.value = state.leftSidebarMode
+    if (typeof state.leftSidebarDualFirstColumnSize === 'number') leftSidebarDualFirstColumnSize.value = state.leftSidebarDualFirstColumnSize
 
     // Ensure we have at least one leaf
     if (!desktopLayout.value) {
@@ -387,6 +391,16 @@ export const useTabsStore = defineStore('tabs', () => {
   async function updateSidebarSizes(left: number, right: number) {
     leftSidebarSize.value = left
     rightSidebarSize.value = right
+    await useEditorStore().saveUiState()
+  }
+
+  async function updateLeftSidebarMode(mode: 'single' | 'dual') {
+    leftSidebarMode.value = mode
+    await useEditorStore().saveUiState()
+  }
+
+  async function updateLeftSidebarDualFirstColumnSize(size: number) {
+    leftSidebarDualFirstColumnSize.value = size
     await useEditorStore().saveUiState()
   }
 
@@ -444,6 +458,8 @@ export const useTabsStore = defineStore('tabs', () => {
     mobileActiveId,
     leftSidebarSize,
     rightSidebarSize,
+    leftSidebarMode,
+    leftSidebarDualFirstColumnSize,
     openFile,
     activateTab,
     activateMobileTab,
@@ -458,6 +474,8 @@ export const useTabsStore = defineStore('tabs', () => {
     allLeaves,
     updatePanelRatio,
     updateSidebarSizes,
+    updateLeftSidebarMode,
+    updateLeftSidebarDualFirstColumnSize,
     handleTabAdd,
     handleTabRemove,
   }

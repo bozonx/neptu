@@ -185,6 +185,8 @@ export interface UiState {
   mobileActiveId?: string | null
   leftSidebarSize?: number
   rightSidebarSize?: number
+  leftSidebarMode?: 'single' | 'dual'
+  leftSidebarDualFirstColumnSize?: number
   cursorPositions?: Record<string, CursorPosition>
 }
 
