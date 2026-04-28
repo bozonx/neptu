@@ -5,6 +5,7 @@ import FileSidebarToolbar from '~/components/FileSidebarToolbar.vue'
 
 const editor = useEditorStore()
 const tabsStore = useTabsStore()
+const settings = useSettingsStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -51,6 +52,14 @@ watch(() => {
       </div>
 
       <div class="flex items-center gap-1">
+        <UButton
+          icon="i-lucide-settings"
+          size="sm"
+          color="neutral"
+          variant="ghost"
+          :title="$t('sidebar.settings')"
+          @click="settings.openSettingsDialog()"
+        />
         <!-- Right Sidebar Toolbar moved to Top Bar -->
         <FileSidebarToolbar
           class="bg-elevated/50 rounded-lg px-1 py-0.5"

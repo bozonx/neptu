@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Splitpanes, Pane } from 'splitpanes'
 import AppSidebar from '~/components/AppSidebar.vue'
+import AppPanel from '~/components/AppPanel.vue'
 import FileSidebar from '~/components/FileSidebar.vue'
 
 const editor = useEditorStore()
@@ -103,7 +104,8 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         max-size="30"
         class="flex flex-col bg-default"
       >
-        <FileSidebar />
+        <AppPanel class="shrink-0" />
+        <FileSidebar class="flex-1 min-h-0" />
       </Pane>
     </Splitpanes>
   </div>

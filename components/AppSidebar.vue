@@ -613,14 +613,6 @@ function toggleVault(vault: Vault) {
         title="Toggle dual column mode"
         @click="toggleLeftSidebarMode()"
       />
-      <UButton
-        icon="i-lucide-settings"
-        size="xs"
-        color="neutral"
-        variant="ghost"
-        :title="$t('sidebar.settings')"
-        @click="settings.openSettingsDialog()"
-      />
     </div>
 
     <UModal
