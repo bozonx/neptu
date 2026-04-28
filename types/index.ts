@@ -203,6 +203,8 @@ export interface UiState {
   rightSidebarSize?: number
   leftSidebarMode?: 'single' | 'dual'
   leftSidebarDualFirstColumnSize?: number
+  /** Active built-in tab in the left sidebar: files or search */
+  leftSidebarTab?: 'files' | 'search'
   cursorPositions?: Record<string, CursorPosition>
 }
 

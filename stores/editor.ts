@@ -108,6 +108,7 @@ export const useEditorStore = defineStore('editor', () => {
         await git.refreshStatus(vault.id)
         if (vault.git?.commitMode === 'auto') git.scheduleCommit(vault.id)
       }
+      useSearchStore().updateFile(path, buffer.content)
     }
     catch (error) {
       setSaveStatus(path, 'error', error instanceof Error ? error.message : String(error))
@@ -129,6 +130,7 @@ export const useEditorStore = defineStore('editor', () => {
       await useGitStore().refreshStatus(payload.vault.id)
     }
     await useTabsStore().openFile(fullPath)
+    useSearchStore().updateFile(fullPath, '')
     return fullPath
   }
 
@@ -140,6 +142,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     await useTabsStore().dropByPath(payload.path)
     await fs.deleteFile(payload.path)
+    useSearchStore().removeFile(payload.path)
     const vaults = useVaultsStore()
     await vaults.refreshTree(payload.vault)
     if (payload.vault.type === 'git') {
@@ -256,6 +259,7 @@ export const useEditorStore = defineStore('editor', () => {
       rightSidebarSize: tabs.rightSidebarSize,
       leftSidebarMode: tabs.leftSidebarMode,
       leftSidebarDualFirstColumnSize: tabs.leftSidebarDualFirstColumnSize,
+      leftSidebarTab: tabs.leftSidebarTab,
       cursorPositions: cursorPositions.value,
     })
   }

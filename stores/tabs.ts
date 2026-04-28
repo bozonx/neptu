@@ -25,6 +25,7 @@ export const useTabsStore = defineStore('tabs', () => {
   const rightSidebarSize = ref(15)
   const leftSidebarMode = ref<'single' | 'dual'>('single')
   const leftSidebarDualFirstColumnSize = ref(20)
+  const leftSidebarTab = ref<'files' | 'search'>('files')
 
   const { isMobile } = useTauri()
 
@@ -459,6 +460,7 @@ export const useTabsStore = defineStore('tabs', () => {
     if (typeof state.rightSidebarSize === 'number') rightSidebarSize.value = state.rightSidebarSize
     if (state.leftSidebarMode) leftSidebarMode.value = state.leftSidebarMode
     if (typeof state.leftSidebarDualFirstColumnSize === 'number') leftSidebarDualFirstColumnSize.value = state.leftSidebarDualFirstColumnSize
+    if (state.leftSidebarTab) leftSidebarTab.value = state.leftSidebarTab
 
     // Ensure we have at least one leaf
     if (!desktopLayout.value) {
@@ -590,6 +592,7 @@ export const useTabsStore = defineStore('tabs', () => {
     rightSidebarSize,
     leftSidebarMode,
     leftSidebarDualFirstColumnSize,
+    leftSidebarTab,
     openFile,
     activateTab,
     activateMobileTab,

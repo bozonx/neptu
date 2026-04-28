@@ -31,6 +31,7 @@
     "sortBirthtimeDesc": "Created time (new to old)",
     "sortBirthtimeAsc": "Created time (old to new)",
     "files": "Files",
+    "search": "Search",
     "noRecentChanges": "No recent changes"
   },
   "vault": {
@@ -192,6 +193,12 @@
     "Image": "Image",
     "Video": "Video",
     "Audio": "Audio"
+  },
+  "search": {
+    "placeholder": "Search all vaults…",
+    "indexing": "Indexing…",
+    "startTyping": "Type to search across all vaults",
+    "noResults": "No results found"
   },
   "confirm": {
     "deleteFile": "Delete \"{name}\"? This cannot be undone."
