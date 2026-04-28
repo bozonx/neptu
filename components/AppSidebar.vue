@@ -275,6 +275,7 @@ async function submitCreateFolder() {
 // Per-vault expansion state in the sidebar.
 // The main repository is expanded by default so the user can start editing immediately.
 const expandedVaults = ref<Record<string, boolean>>({})
+const dualShowFavorites = ref(false)
 
 watchEffect(() => {
   for (const vault of vaults.list) {
@@ -347,6 +348,20 @@ function toggleVault(vault: Vault) {
                 v-if="tabs.leftSidebarMode === 'single'"
                 class="flex-1 overflow-auto p-2 min-h-0"
               >
+                <div
+                  v-if="vaults.favorites.length > 0"
+                  class="mb-2"
+                >
+                  <div class="flex items-center gap-1.5 px-2 py-1 mb-1">
+                    <UIcon
+                      name="i-lucide-star"
+                      class="size-3.5 text-primary shrink-0"
+                    />
+                    <span class="text-[10px] font-semibold text-muted uppercase tracking-wider">{{ $t('sidebar.favorites') }}</span>
+                  </div>
+                  <FavoritesList />
+                </div>
+
                 <div
                   v-if="vaults.list.length === 0"
                   class="text-sm text-muted px-2 py-4"
@@ -466,13 +481,30 @@ function toggleVault(vault: Vault) {
                   class="flex flex-col bg-default border-r border-default"
                 >
                   <div class="flex-1 overflow-y-auto p-1 gap-1 flex flex-col min-h-0">
+                    <!-- Favorites -->
+                    <div
+                      class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
+                      :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': dualShowFavorites }"
+                      :title="$t('sidebar.favorites')"
+                      @click="dualShowFavorites = true; selectedVaultId = null"
+                    >
+                      <UIcon
+                        name="i-lucide-star"
+                        class="size-4 shrink-0"
+                        :class="dualShowFavorites ? 'text-primary' : 'text-muted'"
+                      />
+                      <span class="truncate text-xs font-medium">{{ $t('sidebar.favorites') }}</span>
+                    </div>
+
+                    <div class="my-1 mx-2 border-t border-default shrink-0" />
+
                     <!-- Main Vault -->
                     <div
                       v-if="mainVault"
                       class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
                       :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === mainVault.id }"
                       :title="mainVault.name"
-                      @click="selectedVaultId = mainVault.id"
+                      @click="selectedVaultId = mainVault.id; dualShowFavorites = false"
                     >
                       <UIcon
                         name="i-lucide-folder-heart"
@@ -494,7 +526,7 @@ function toggleVault(vault: Vault) {
                       class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
                       :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
                       :title="vault.name"
-                      @click="selectedVaultId = vault.id"
+                      @click="selectedVaultId = vault.id; dualShowFavorites = false"
                     >
                       <UIcon
                         :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
@@ -528,7 +560,7 @@ function toggleVault(vault: Vault) {
                           class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors ml-2"
                           :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
                           :title="vault.name"
-                          @click="selectedVaultId = vault.id"
+                          @click="selectedVaultId = vault.id; dualShowFavorites = false"
                         >
                           <UIcon
                             :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
@@ -543,7 +575,17 @@ function toggleVault(vault: Vault) {
                 </Pane>
 
                 <Pane class="flex flex-col min-w-0 bg-default relative p-2 overflow-y-auto">
-                  <template v-if="selectedVaultId && vaults.findById(selectedVaultId)">
+                  <template v-if="dualShowFavorites">
+                    <div class="flex items-center gap-1.5 px-2 py-1 mb-1">
+                      <UIcon
+                        name="i-lucide-star"
+                        class="size-3.5 text-primary shrink-0"
+                      />
+                      <span class="text-[10px] font-semibold text-muted uppercase tracking-wider">{{ $t('sidebar.favorites') }}</span>
+                    </div>
+                    <FavoritesList />
+                  </template>
+                  <template v-else-if="selectedVaultId && vaults.findById(selectedVaultId)">
                     <VaultSidebarItem
                       :key="selectedVaultId"
                       :vault="vaults.findById(selectedVaultId)!"

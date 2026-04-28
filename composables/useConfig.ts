@@ -134,6 +134,7 @@ export function useConfig() {
         vaults: parsed.vaults ?? [],
         settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
         groups: parsed.groups ?? [],
+        favorites: parsed.favorites ?? [],
       }
 
       // Save back migrated config so 'auto' does not persist
@@ -152,6 +153,7 @@ export function useConfig() {
         vaults: [],
         settings: { ...DEFAULT_SETTINGS, layoutMode: detectedLayout },
         groups: [],
+        favorites: [],
       }
       await fs.writeText(configPath, JSON.stringify(config, null, 2))
       return config

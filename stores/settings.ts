@@ -81,7 +81,7 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.value = { ...DEFAULT_SETTINGS, ...appConfig.settings }
 
     const vaults = useVaultsStore()
-    await vaults.hydrate(appConfig.vaults ?? [], mainRepoPath.value ?? '', appConfig.groups ?? [])
+    await vaults.hydrate(appConfig.vaults ?? [], mainRepoPath.value ?? '', appConfig.groups ?? [], appConfig.favorites ?? [])
 
     const git = useGitStore()
     await git.refreshAllStatuses()
@@ -104,6 +104,7 @@ export const useSettingsStore = defineStore('settings', () => {
       settings: { ...settings.value },
       vaults: vaults.list,
       groups: vaults.groups,
+      favorites: vaults.favorites,
     }
     await config.saveAppConfig(data)
   }

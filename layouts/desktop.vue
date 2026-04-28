@@ -39,9 +39,14 @@ watch(() => {
 })
 
 function handleResize(event: Array<{ pane: number, size: number }>) {
-  // We only care about the top-level layout which has exactly 3 panes: [left, center, right]
-  if (event.length === 3 && event[0] !== undefined && event[2] !== undefined) {
-    tabsStore.updateSidebarSizes(event[0].size, event[2].size)
+  // We only care about the top-level layout which has panes: [left, center, right]
+  if (event.length >= 1 && event[0] !== undefined) {
+    const left = event[0].size
+    // When right sidebar is collapsed (size 0) preserve its persisted size
+    const right = !tabsStore.rightSidebarCollapsed && event.length === 3 && event[2] !== undefined
+      ? event[2].size
+      : tabsStore.rightSidebarSize
+    tabsStore.updateSidebarSizes(left, right)
   }
 }
 </script>
@@ -61,6 +66,7 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
     <Splitpanes
       v-if="layoutReady"
       id="main-layout"
+      :class="{ 'right-collapsed': tabsStore.rightSidebarCollapsed }"
       @resized="handleResize"
     >
       <!-- Left Sidebar -->
@@ -110,14 +116,16 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
 
       <!-- Right Sidebar -->
       <Pane
-        v-if="!tabsStore.rightSidebarCollapsed"
-        :size="tabsStore.rightSidebarSize"
-        min-size="10"
+        :size="tabsStore.rightSidebarCollapsed ? 0 : tabsStore.rightSidebarSize"
+        :min-size="tabsStore.rightSidebarCollapsed ? 0 : 10"
         max-size="30"
         class="flex flex-col bg-default"
+        :class="{ 'opacity-0 pointer-events-none overflow-hidden': tabsStore.rightSidebarCollapsed }"
       >
-        <AppPanel class="shrink-0" />
-        <FileSidebar class="flex-1 min-h-0" />
+        <template v-if="!tabsStore.rightSidebarCollapsed">
+          <AppPanel class="shrink-0" />
+          <FileSidebar class="flex-1 min-h-0" />
+        </template>
       </Pane>
     </Splitpanes>
   </div>

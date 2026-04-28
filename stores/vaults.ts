@@ -44,6 +44,7 @@ export const useVaultsStore = defineStore('vaults', () => {
   const list = ref<Vault[]>([])
   const trees = ref<Record<string, FileNode[]>>({})
   const groups = ref<VaultGroup[]>([])
+  const favorites = ref<string[]>([])
 
   function findById(id: string): Vault | null {
     return list.value.find((v) => v.id === id) ?? null
@@ -57,7 +58,7 @@ export const useVaultsStore = defineStore('vaults', () => {
    * Initial load from `AppConfig`. Ensures the main repo is always present in
    * the vault list (in case the config file was edited manually).
    */
-  async function hydrate(vaults: Vault[], mainRepoPath: string, loadedGroups?: VaultGroup[]) {
+  async function hydrate(vaults: Vault[], mainRepoPath: string, loadedGroups?: VaultGroup[], loadedFavorites?: string[]) {
     let mutated = false
     if (!vaults.some((v) => v.path === mainRepoPath)) {
       vaults.unshift({
@@ -84,9 +85,27 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     list.value = vaults
     groups.value = loadedGroups ?? []
+    favorites.value = loadedFavorites ?? []
 
     if (mutated) await useSettingsStore().persist()
     await refreshAllTrees()
+  }
+
+  async function addFavorite(path: string) {
+    if (favorites.value.includes(path)) return
+    favorites.value.push(path)
+    await useSettingsStore().persist()
+  }
+
+  async function removeFavorite(path: string) {
+    const idx = favorites.value.indexOf(path)
+    if (idx === -1) return
+    favorites.value.splice(idx, 1)
+    await useSettingsStore().persist()
+  }
+
+  function isFavorite(path: string): boolean {
+    return favorites.value.includes(path)
   }
 
   async function addVault(payload: AddVaultPayload) {
@@ -285,6 +304,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     list,
     trees,
     groups,
+    favorites,
     findById,
     findVaultForPath,
     hydrate,
@@ -298,5 +318,8 @@ export const useVaultsStore = defineStore('vaults', () => {
     removeGroup,
     moveNode,
     copyNode,
+    addFavorite,
+    removeFavorite,
+    isFavorite,
   }
 })

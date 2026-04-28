@@ -120,6 +120,11 @@ const contextMenuItems = (tab: EditorTab) => [
       icon: tab.pinned ? 'i-lucide-pin-off' : 'i-lucide-pin',
       onSelect: () => props.panelId && tabsStore.togglePin(props.panelId, tab.id),
     },
+    {
+      label: vaults.isFavorite(tab.filePath) ? t('editor.removeFromFavorites') : t('editor.addToFavorites'),
+      icon: vaults.isFavorite(tab.filePath) ? 'i-lucide-star-off' : 'i-lucide-star',
+      onSelect: () => vaults.isFavorite(tab.filePath) ? vaults.removeFavorite(tab.filePath) : vaults.addFavorite(tab.filePath),
+    },
   ],
   [
     {

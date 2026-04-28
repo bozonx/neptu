@@ -154,6 +154,7 @@ export interface AppConfig {
   vaults: Vault[]
   settings: AppSettings
   groups: VaultGroup[]
+  favorites?: string[]
 }
 
 export type SplitDirection = 'horizontal' | 'vertical'
@@ -203,8 +204,8 @@ export interface UiState {
   rightSidebarSize?: number
   leftSidebarMode?: 'single' | 'dual'
   leftSidebarDualFirstColumnSize?: number
-  /** Active built-in tab in the left sidebar: files or search */
-  leftSidebarTab?: 'files' | 'search'
+  /** Active built-in tab in the left sidebar: files, search or favorites */
+  leftSidebarTab?: 'files' | 'search' | 'favorites'
   /** Whether the right sidebar is collapsed */
   rightSidebarCollapsed?: boolean
   cursorPositions?: Record<string, CursorPosition>

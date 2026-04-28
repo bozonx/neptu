@@ -26,7 +26,7 @@ export const useTabsStore = defineStore('tabs', () => {
   const rightSidebarCollapsed = ref(false)
   const leftSidebarMode = ref<'single' | 'dual'>('single')
   const leftSidebarDualFirstColumnSize = ref(20)
-  const leftSidebarTab = ref<'files' | 'search'>('files')
+  const leftSidebarTab = ref<'files' | 'search' | 'favorites'>('files')
 
   const { isMobile } = useTauri()
 
@@ -466,7 +466,12 @@ export const useTabsStore = defineStore('tabs', () => {
     if (typeof state.rightSidebarCollapsed === 'boolean') rightSidebarCollapsed.value = state.rightSidebarCollapsed
     if (state.leftSidebarMode) leftSidebarMode.value = state.leftSidebarMode
     if (typeof state.leftSidebarDualFirstColumnSize === 'number') leftSidebarDualFirstColumnSize.value = state.leftSidebarDualFirstColumnSize
-    if (state.leftSidebarTab) leftSidebarTab.value = state.leftSidebarTab
+    if (state.leftSidebarTab) {
+      const validTabs: Array<'files' | 'search' | 'favorites'> = ['files', 'search', 'favorites']
+      if (validTabs.includes(state.leftSidebarTab)) {
+        leftSidebarTab.value = state.leftSidebarTab
+      }
+    }
 
     // Ensure we have at least one leaf
     if (!desktopLayout.value) {

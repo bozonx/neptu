@@ -102,9 +102,15 @@ function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
 }
 
 function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
+  const isFav = vaults.isFavorite(node.path)
   return [
     [
       { label: t('vault.openInNewPanel'), icon: 'i-lucide-panel-right-open', onSelect: () => emit('openInNewPanel', node.path) },
+      {
+        label: isFav ? t('sidebar.removeFromFavorites') : t('sidebar.addToFavorites'),
+        icon: isFav ? 'i-lucide-star-off' : 'i-lucide-star',
+        onSelect: () => isFav ? vaults.removeFavorite(node.path) : vaults.addFavorite(node.path),
+      },
       { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
     ],
   ]

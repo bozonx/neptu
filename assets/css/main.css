@@ -56,3 +56,7 @@ body,
   cursor: row-resize;
   border-bottom: 1px solid var(--ui-border);
 }
+
+#main-layout.right-collapsed .splitpanes__splitter:last-of-type {
+  display: none;
+}
