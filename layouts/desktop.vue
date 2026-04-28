@@ -106,18 +106,6 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         <main class="flex-1 flex flex-col min-w-0 bg-default relative">
           <slot />
         </main>
-
-        <button
-          v-if="tabsStore.rightSidebarCollapsed"
-          class="absolute top-2 right-0 z-20 w-4 h-10 flex items-center justify-center rounded-l-md border-y border-l border-default bg-elevated shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-          :title="$t('sidebar.showRightSidebar')"
-          @click="tabsStore.rightSidebarCollapsed = false"
-        >
-          <UIcon
-            name="i-lucide-chevron-left"
-            class="size-4 text-black dark:text-gray-900"
-          />
-        </button>
       </Pane>
 
       <!-- Right Sidebar -->
