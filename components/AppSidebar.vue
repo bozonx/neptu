@@ -63,7 +63,6 @@ const createGroupOpen = ref(false)
 const newGroupName = ref('')
 const removeGroupConfirmOpen = ref(false)
 const removeGroupConfirmTarget = ref<VaultGroup | null>(null)
-const expandedGroups = ref<Record<string, boolean>>({})
 
 const mainVault = computed(() => vaults.list.find((v) => v.path === settings.mainRepoPath))
 const otherUngroupedVaults = computed(() =>
@@ -269,7 +268,8 @@ async function submitRemoveVault() {
 }
 
 function toggleGroup(group: VaultGroup) {
-  expandedGroups.value[group.id] = !expandedGroups.value[group.id]
+  tabs.expandedGroups[group.id] = !tabs.expandedGroups[group.id]
+  void editor.saveUiState()
 }
 
 function openCreateGroup() {
@@ -312,20 +312,16 @@ async function submitCreateFolder() {
   }
 }
 
-// Per-vault expansion state in the sidebar.
-// The main repository is expanded by default so the user can start editing immediately.
-const expandedVaults = ref<Record<string, boolean>>({})
 const dualShowFavorites = ref(false)
 
-watchEffect(() => {
-  for (const vault of vaults.list) {
-    if (expandedVaults.value[vault.id] !== undefined) continue
-    expandedVaults.value[vault.id] = vault.path === settings.mainRepoPath
-  }
-})
-
 function toggleVault(vault: Vault) {
-  expandedVaults.value[vault.id] = !expandedVaults.value[vault.id]
+  tabs.expandedVaults[vault.id] = !tabs.expandedVaults[vault.id]
+  void editor.saveUiState()
+}
+
+function toggleFolder(path: string) {
+  tabs.expandedFolders[path] = !tabs.expandedFolders[path]
+  void editor.saveUiState()
 }
 </script>
 
@@ -408,7 +404,7 @@ function toggleVault(vault: Vault) {
                   :key="mainVault.id"
                   class="mb-2"
                   :vault="mainVault"
-                  :expanded="expandedVaults[mainVault.id] ?? false"
+                  :expanded="tabs.expandedVaults[mainVault.id] ?? (mainVault.path === settings.mainRepoPath)"
                   :nodes="vaults.trees[mainVault.id] ?? []"
                   :active-path="editor.currentFilePath"
                   :filters="mainVault.filters"
@@ -429,7 +425,7 @@ function toggleVault(vault: Vault) {
                   :key="vault.id"
                   class="mb-2"
                   :vault="vault"
-                  :expanded="expandedVaults[vault.id] ?? false"
+                  :expanded="tabs.expandedVaults[vault.id] ?? false"
                   :nodes="vaults.trees[vault.id] ?? []"
                   :active-path="editor.currentFilePath"
                   :filters="vault.filters"
@@ -456,7 +452,7 @@ function toggleVault(vault: Vault) {
                       <UIcon
                         name="i-lucide-chevron-right"
                         class="size-4 text-muted shrink-0 transition-transform"
-                        :class="{ 'rotate-90': expandedGroups[group.id] }"
+                        :class="{ 'rotate-90': tabs.expandedGroups[group.id] }"
                       />
                       <UIcon
                         name="i-lucide-folder-closed"
@@ -481,7 +477,7 @@ function toggleVault(vault: Vault) {
                   </UContextMenu>
 
                   <div
-                    v-if="expandedGroups[group.id]"
+                    v-if="tabs.expandedGroups[group.id]"
                     class="pl-3 mt-1 space-y-1"
                   >
                     <VaultSidebarItem
@@ -489,7 +485,7 @@ function toggleVault(vault: Vault) {
                       :key="vault.id"
                       class="mb-2"
                       :vault="vault"
-                      :expanded="expandedVaults[vault.id] ?? false"
+                      :expanded="tabs.expandedVaults[vault.id] ?? false"
                       :nodes="vaults.trees[vault.id] ?? []"
                       :active-path="editor.currentFilePath"
                       :filters="vault.filters"

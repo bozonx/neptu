@@ -66,6 +66,7 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
     <Splitpanes
       v-if="layoutReady"
       id="main-layout"
+      class="w-full h-full"
       :class="{ 'right-collapsed': tabsStore.rightSidebarCollapsed }"
       @resized="handleResize"
     >
@@ -97,14 +98,17 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
       </Pane>
 
       <!-- Central Content -->
-      <Pane class="flex flex-col min-w-0 bg-default relative">
+      <Pane
+        :size="100 - tabsStore.leftSidebarSize - (tabsStore.rightSidebarCollapsed ? 0 : tabsStore.rightSidebarSize)"
+        class="flex flex-col min-w-0 bg-default relative"
+      >
         <main class="flex-1 flex flex-col min-w-0 bg-default relative">
           <slot />
         </main>
 
         <button
           v-if="tabsStore.rightSidebarCollapsed"
-          class="absolute top-1/2 -translate-y-1/2 right-0 z-20 w-5 h-12 flex items-center justify-center rounded-l-md border-y border-l border-default bg-elevated shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+          class="absolute top-2 right-0 z-20 w-4 h-10 flex items-center justify-center rounded-l-md border-y border-l border-default bg-elevated shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
           :title="$t('sidebar.showRightSidebar')"
           @click="tabsStore.rightSidebarCollapsed = false"
         >
