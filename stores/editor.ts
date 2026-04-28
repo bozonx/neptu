@@ -161,6 +161,8 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  const activeSelectionText = ref('')
+
   function onPathMigrated(oldPath: string, newPath: string) {
     if (buffers.value[oldPath]) {
       buffers.value[newPath] = { ...buffers.value[oldPath] }
@@ -283,6 +285,7 @@ export const useEditorStore = defineStore('editor', () => {
     currentContent,
     currentVault,
     hydrated,
+    activeSelectionText,
     scrollToLineTrigger,
     cursorPositions,
     openFile,

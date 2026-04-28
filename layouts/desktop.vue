@@ -3,6 +3,7 @@ import { Splitpanes, Pane } from 'splitpanes'
 import AppSidebar from '~/components/AppSidebar.vue'
 import AppPanel from '~/components/AppPanel.vue'
 import FileSidebar from '~/components/FileSidebar.vue'
+import AppStatusBar from '~/components/AppStatusBar.vue'
 
 const editor = useEditorStore()
 const tabsStore = useTabsStore()
@@ -125,11 +126,13 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         :size="tabsStore.rightSidebarSize"
         min-size="10"
         max-size="30"
-        class="flex flex-col bg-default"
+        class="flex flex-col bg-default pb-7"
       >
         <AppPanel class="shrink-0" />
         <FileSidebar class="flex-1 min-h-0" />
       </Pane>
     </Splitpanes>
+
+    <AppStatusBar v-if="layoutReady" />
   </div>
 </template>

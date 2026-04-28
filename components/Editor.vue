@@ -56,6 +56,17 @@ function handleFocus() {
   if (props.panelId && !props.isMobile) {
     tabsStore.activeDesktopPanelId = props.panelId
   }
+  updateSelection()
+}
+
+function updateSelection() {
+  const el = textareaRef.value
+  if (!el || !currentFilePath.value) {
+    editorStore.activeSelectionText = ''
+    return
+  }
+  const text = el.value
+  editorStore.activeSelectionText = text.slice(el.selectionStart, el.selectionEnd)
 }
 
 function saveCursorState() {
@@ -88,6 +99,7 @@ function restoreCursorState() {
 
 watch(currentFilePath, () => {
   restoreCursorState()
+  editorStore.activeSelectionText = ''
 })
 </script>
 
@@ -129,7 +141,10 @@ watch(currentFilePath, () => {
         class="w-full flex-1 resize-none bg-transparent outline-none p-6 font-mono text-sm leading-relaxed text-default"
         spellcheck="false"
         :placeholder="$t('editor.startWriting')"
-        @input="onInput"
+        @input="(e) => { onInput(e); updateSelection() }"
+        @keyup="updateSelection"
+        @mouseup="updateSelection"
+        @touchend="updateSelection"
         @blur="saveCursorState"
       />
 
