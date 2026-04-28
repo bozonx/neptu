@@ -8,12 +8,14 @@ interface Props {
   nodes: FileNode[]
   activePath: string | null
   filters?: FileFilterSettings
+  expandedFolders?: Record<string, boolean>
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   toggle: []
+  toggleFolder: [path: string]
   createNote: [vault: Vault, dir?: string]
   createFolder: [vault: Vault, dir?: string]
   editVault: [vault: Vault]
@@ -264,11 +266,13 @@ async function handleDelete(node: FileNode) {
       :nodes="nodes"
       :active-path="activePath"
       :filters="filters"
+      :expanded-folders="expandedFolders"
       @open="openFile"
       @open-in-new-panel="openFileInNewPanel"
       @delete="handleDelete"
       @create-in="(d) => emit('createNote', vault, d)"
       @create-subfolder="(d) => emit('createFolder', vault, d)"
+      @toggle-folder="(p: string) => emit('toggleFolder', p)"
     />
   </div>
 </template>

@@ -8,9 +8,10 @@ interface Props {
   activePath: string | null
   level?: number
   filters?: FileFilterSettings
+  expandedFolders?: Record<string, boolean>
 }
 
-withDefaults(defineProps<Props>(), { level: 0 })
+withDefaults(defineProps<Props>(), { level: 0, expandedFolders: () => ({}) })
 
 const emit = defineEmits<{
   open: [path: string]
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   delete: [node: FileNode]
   createIn: [dirPath: string]
   createSubfolder: [dirPath: string]
+  toggleFolder: [path: string]
 }>()
 
 const { t } = useI18n()
@@ -25,11 +27,10 @@ const dnd = useDnd()
 const vaults = useVaultsStore()
 const toast = useToast()
 
-const expanded = ref<Record<string, boolean>>({})
 const dropTarget = ref<string | null>(null)
 
 function toggle(node: FileNode) {
-  expanded.value[node.path] = !expanded.value[node.path]
+  emit('toggleFolder', node.path)
 }
 
 function onDragStart(event: DragEvent, node: FileNode) {
@@ -150,7 +151,7 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
           @drop="onDrop($event, node)"
         >
           <UIcon
-            :name="expanded[node.path] ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+            :name="expandedFolders?.[node.path] ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
             class="size-4 text-muted shrink-0"
           />
           <UIcon
@@ -185,17 +186,19 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
       </UContextMenu>
 
       <VaultTree
-        v-if="node.isDir && expanded[node.path]"
+        v-if="node.isDir && expandedFolders?.[node.path]"
         :vault="vault"
         :nodes="node.children ?? []"
         :active-path="activePath"
         :level="level + 1"
         :filters="filters"
-        @open="(p) => emit('open', p)"
-        @open-in-new-panel="(p) => emit('openInNewPanel', p)"
-        @delete="(n) => emit('delete', n)"
-        @create-in="(d) => emit('createIn', d)"
-        @create-subfolder="(d) => emit('createSubfolder', d)"
+        :expanded-folders="expandedFolders"
+        @open="(p: string) => emit('open', p)"
+        @open-in-new-panel="(p: string) => emit('openInNewPanel', p)"
+        @delete="(n: FileNode) => emit('delete', n)"
+        @create-in="(d: string) => emit('createIn', d)"
+        @create-subfolder="(d: string) => emit('createSubfolder', d)"
+        @toggle-folder="(p: string) => emit('toggleFolder', p)"
       />
 
       <UContextMenu

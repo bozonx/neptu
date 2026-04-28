@@ -28,6 +28,10 @@ export const useTabsStore = defineStore('tabs', () => {
   const leftSidebarDualFirstColumnSize = ref(20)
   const leftSidebarTab = ref<'files' | 'search' | 'favorites'>('files')
 
+  const expandedGroups = ref<Record<string, boolean>>({})
+  const expandedVaults = ref<Record<string, boolean>>({})
+  const expandedFolders = ref<Record<string, boolean>>({})
+
   const { isMobile } = useTauri()
 
   watch(rightSidebarCollapsed, () => {
@@ -473,6 +477,10 @@ export const useTabsStore = defineStore('tabs', () => {
       }
     }
 
+    expandedGroups.value = state.expandedGroups ?? {}
+    expandedVaults.value = state.expandedVaults ?? {}
+    expandedFolders.value = state.expandedFolders ?? {}
+
     // Ensure we have at least one leaf
     if (!desktopLayout.value) {
       desktopLayout.value = createLeaf()
@@ -605,6 +613,9 @@ export const useTabsStore = defineStore('tabs', () => {
     leftSidebarMode,
     leftSidebarDualFirstColumnSize,
     leftSidebarTab,
+    expandedGroups,
+    expandedVaults,
+    expandedFolders,
     openFile,
     activateTab,
     activateMobileTab,

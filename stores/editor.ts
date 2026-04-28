@@ -263,6 +263,9 @@ export const useEditorStore = defineStore('editor', () => {
       leftSidebarDualFirstColumnSize: tabs.leftSidebarDualFirstColumnSize,
       leftSidebarTab: tabs.leftSidebarTab,
       cursorPositions: cursorPositions.value,
+      expandedGroups: tabs.expandedGroups,
+      expandedVaults: tabs.expandedVaults,
+      expandedFolders: tabs.expandedFolders,
     })
   }
 

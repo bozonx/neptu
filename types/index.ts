@@ -222,6 +222,12 @@ export interface UiState {
   /** Whether the right sidebar is collapsed */
   rightSidebarCollapsed?: boolean
   cursorPositions?: Record<string, CursorPosition>
+  /** Expanded state of vault groups in the sidebar */
+  expandedGroups?: Record<string, boolean>
+  /** Expanded state of vaults in the sidebar */
+  expandedVaults?: Record<string, boolean>
+  /** Expanded state of folders in the file tree */
+  expandedFolders?: Record<string, boolean>
 }
 
 export const DEFAULT_UI_STATE: UiState = {

@@ -408,7 +408,9 @@ function toggleFolder(path: string) {
                   :nodes="vaults.trees[mainVault.id] ?? []"
                   :active-path="editor.currentFilePath"
                   :filters="mainVault.filters"
+                  :expanded-folders="tabs.expandedFolders"
                   @toggle="toggleVault(mainVault)"
+                  @toggle-folder="toggleFolder"
                   @create-note="(v, d) => openCreateNote(v, d)"
                   @create-folder="(v, d) => openCreateFolder(v, d)"
                   @edit-vault="(v) => openEditVault(v)"
@@ -429,7 +431,9 @@ function toggleFolder(path: string) {
                   :nodes="vaults.trees[vault.id] ?? []"
                   :active-path="editor.currentFilePath"
                   :filters="vault.filters"
+                  :expanded-folders="tabs.expandedFolders"
                   @toggle="toggleVault(vault)"
+                  @toggle-folder="toggleFolder"
                   @create-note="(v, d) => openCreateNote(v, d)"
                   @create-folder="(v, d) => openCreateFolder(v, d)"
                   @edit-vault="(v) => openEditVault(v)"
@@ -489,7 +493,9 @@ function toggleFolder(path: string) {
                       :nodes="vaults.trees[vault.id] ?? []"
                       :active-path="editor.currentFilePath"
                       :filters="vault.filters"
+                      :expanded-folders="tabs.expandedFolders"
                       @toggle="toggleVault(vault)"
+                      @toggle-folder="toggleFolder"
                       @create-note="(v, d) => openCreateNote(v, d)"
                       @create-folder="(v, d) => openCreateFolder(v, d)"
                       @edit-vault="(v) => openEditVault(v)"
@@ -578,12 +584,12 @@ function toggleFolder(path: string) {
                         <UIcon
                           name="i-lucide-chevron-right"
                           class="size-3 text-muted shrink-0 transition-transform"
-                          :class="{ 'rotate-90': expandedGroups[group.id] }"
+                          :class="{ 'rotate-90': tabs.expandedGroups[group.id] }"
                         />
                         <span class="text-[10px] font-semibold text-muted uppercase tracking-wider truncate flex-1">{{ group.name }}</span>
                       </div>
 
-                      <template v-if="expandedGroups[group.id]">
+                      <template v-if="tabs.expandedGroups[group.id]">
                         <div
                           v-for="vault in vaultsInGroup(group.id)"
                           :key="vault.id"
@@ -623,7 +629,9 @@ function toggleFolder(path: string) {
                       :nodes="vaults.trees[selectedVaultId] ?? []"
                       :active-path="editor.currentFilePath"
                       :filters="vaults.findById(selectedVaultId)!.filters"
+                      :expanded-folders="tabs.expandedFolders"
                       @toggle="() => {}"
+                      @toggle-folder="toggleFolder"
                       @create-note="(v, d) => openCreateNote(v, d)"
                       @create-folder="(v, d) => openCreateFolder(v, d)"
                       @edit-vault="(v) => openEditVault(v)"
