@@ -155,13 +155,26 @@ export function useFs() {
       }
     }
 
+    function globToRegex(pattern: string): RegExp {
+      const normalized = pattern.replace(/\\/g, '/')
+      const segments = normalized.split('/').filter(Boolean)
+      let regexStr = '^'
+      for (const seg of segments) {
+        if (regexStr !== '^') regexStr += '\\/'
+        regexStr += seg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[^/]*')
+      }
+      regexStr += '(\\/.*|$)'
+      return new RegExp(regexStr)
+    }
+
+    const excludeRegexes = excludes ? excludes.map(globToRegex) : []
+
     function isExcluded(absPath: string): boolean {
-      if (!excludes || excludes.length === 0) return false
+      if (excludeRegexes.length === 0) return false
       let rel = absPath.slice(normRoot.length)
       if (rel.startsWith('/') || rel.startsWith('\\')) rel = rel.slice(1)
-      for (const pattern of excludes) {
-        const norm = pattern.replace(/[\\/]+$/, '')
-        if (rel === norm || rel.startsWith(norm + '/') || rel.startsWith(norm + '\\')) return true
+      for (const re of excludeRegexes) {
+        if (re.test(rel)) return true
       }
       return false
     }
