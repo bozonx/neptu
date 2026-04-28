@@ -108,7 +108,10 @@
     "siteLangMonolingual": "Одноязычный",
     "siteLangMultilingual": "Мультиязычный",
     "contentFolder": "Папка контента",
-    "contentFolderHint": "По умолчанию: src"
+    "contentFolderHint": "По умолчанию: src",
+    "excludes": "Исключённые пути",
+    "excludesHint": "Пути относительно корня хранилища, которые будут скрыты из дерева файлов.",
+    "excludePlaceholder": "папка/подпапка или файл.md"
   },
   "settings": {
     "title": "Настройки",

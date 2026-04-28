@@ -102,6 +102,8 @@ export interface Vault {
   contentFolder?: string
   /** Language mode for informational sites */
   siteLangMode?: SiteLangMode
+  /** Paths relative to vault root to exclude from the file tree */
+  excludes?: string[]
 }
 
 export type FileSortMode

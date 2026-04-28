@@ -108,7 +108,10 @@
     "siteLangMonolingual": "Monolingual",
     "siteLangMultilingual": "Multilingual",
     "contentFolder": "Content folder",
-    "contentFolderHint": "Default: src"
+    "contentFolderHint": "Default: src",
+    "excludes": "Excluded paths",
+    "excludesHint": "Paths relative to vault root that will be hidden from the file tree.",
+    "excludePlaceholder": "folder/subfolder or file.md"
   },
   "settings": {
     "title": "Settings",

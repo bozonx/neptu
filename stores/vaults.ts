@@ -164,7 +164,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function updateVault(
     id: string,
-    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentFolder' | 'siteLangMode'>> & { git?: GitVaultSettings },
+    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentFolder' | 'siteLangMode' | 'excludes'>> & { git?: GitVaultSettings },
   ) {
     const vault = findById(id)
     if (!vault) return
@@ -212,6 +212,10 @@ export const useVaultsStore = defineStore('vaults', () => {
     }
     if (updates.siteLangMode !== undefined) {
       vault.siteLangMode = updates.siteLangMode
+      needsRefresh = true
+    }
+    if (updates.excludes !== undefined) {
+      vault.excludes = updates.excludes
       needsRefresh = true
     }
 
@@ -276,6 +280,7 @@ export const useVaultsStore = defineStore('vaults', () => {
         showHidden: settingsStore.settings.showHiddenFiles,
         filterSettings: vault.filters,
         sortMode: settingsStore.settings.fileSortMode,
+        excludes: vault.excludes,
       })
     }
     catch (error) {

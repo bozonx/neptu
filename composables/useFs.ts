@@ -101,9 +101,10 @@ export function useFs() {
    */
   async function scanMarkdownTree(
     rootPath: string,
-    options: { showHidden?: boolean, filterSettings?: FileFilterSettings, sortMode?: FileSortMode } = {},
+    options: { showHidden?: boolean, filterSettings?: FileFilterSettings, sortMode?: FileSortMode, excludes?: string[] } = {},
   ): Promise<FileNode[]> {
-    const { showHidden = false, filterSettings, sortMode = 'nameAsc' } = options
+    const { showHidden = false, filterSettings, sortMode = 'nameAsc', excludes } = options
+    const normRoot = rootPath.replace(/[/]+$/, '')
 
     const enabledExts = new Set<string>()
     if (filterSettings) {
@@ -154,6 +155,17 @@ export function useFs() {
       }
     }
 
+    function isExcluded(absPath: string): boolean {
+      if (!excludes || excludes.length === 0) return false
+      let rel = absPath.slice(normRoot.length)
+      if (rel.startsWith('/') || rel.startsWith('\\')) rel = rel.slice(1)
+      for (const pattern of excludes) {
+        const norm = pattern.replace(/[\\/]+$/, '')
+        if (rel === norm || rel.startsWith(norm + '/') || rel.startsWith(norm + '\\')) return true
+      }
+      return false
+    }
+
     async function walk(dirPath: string): Promise<FileNode[]> {
       const entries = await readDir(dirPath)
       const nodes: FileNode[] = []
@@ -166,6 +178,7 @@ export function useFs() {
           if (SKIP_DIRS.has(entry.name)) continue
           if (isHidden && !showHidden) continue
           const childPath = await join(dirPath, entry.name)
+          if (isExcluded(childPath)) continue
           const children = await walk(childPath)
           const info = await stat(childPath).catch(() => null)
           nodes.push({
@@ -182,6 +195,7 @@ export function useFs() {
           const ext = getExt(entry.name)
           if (!ext || !enabledExts.has(ext)) continue
           const childPath = await join(dirPath, entry.name)
+          if (isExcluded(childPath)) continue
           const info = await stat(childPath).catch(() => null)
           nodes.push({
             name: entry.name,
@@ -197,7 +211,7 @@ export function useFs() {
       return nodes
     }
 
-    return walk(rootPath)
+    return walk(normRoot)
   }
 
   return {

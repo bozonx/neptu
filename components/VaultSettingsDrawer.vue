@@ -26,6 +26,8 @@ const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
 const editContentType = ref<ContentType>('vault')
 const editContentFolder = ref('src')
 const editSiteLangMode = ref<SiteLangMode>('monolingual')
+const editExcludes = ref<string[]>([])
+const newExclude = ref('')
 const newCustomExt = ref('')
 
 let skipNextWatch = false
@@ -45,6 +47,8 @@ watch(
     editContentType.value = vault.contentType ?? 'vault'
     editContentFolder.value = vault.contentFolder ?? 'src'
     editSiteLangMode.value = vault.siteLangMode ?? 'monolingual'
+    editExcludes.value = vault.excludes ? [...vault.excludes] : []
+    newExclude.value = ''
     newCustomExt.value = ''
     nextTick(() => {
       skipNextWatch = false
@@ -52,6 +56,19 @@ watch(
   },
   { immediate: true },
 )
+
+function addExclude() {
+  const raw = newExclude.value.trim().replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
+  if (!raw) return
+  if (!editExcludes.value.includes(raw)) {
+    editExcludes.value.push(raw)
+  }
+  newExclude.value = ''
+}
+
+function removeExclude(idx: number) {
+  editExcludes.value.splice(idx, 1)
+}
 
 function addCustomExtension(group: FileFilterGroup) {
   const raw = newCustomExt.value.trim().toLowerCase().replace(/^\.+/, '')
@@ -89,6 +106,7 @@ async function save() {
       contentType: editContentType.value,
       contentFolder: editContentType.value !== 'vault' ? editContentFolder.value : undefined,
       siteLangMode: editContentType.value === 'site' ? editSiteLangMode.value : undefined,
+      excludes: editExcludes.value,
     })
   }
   catch (error) {
@@ -103,7 +121,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode, editExcludes],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -285,6 +303,48 @@ const siteLangModeItems = [
                 color="neutral"
                 variant="ghost"
                 @click="addCustomExtension(group)"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            {{ $t('vault.excludes') }}
+          </h3>
+          <p class="text-xs text-muted">
+            {{ $t('vault.excludesHint') }}
+          </p>
+          <div class="flex items-center gap-2">
+            <UInput
+              v-model="newExclude"
+              :placeholder="$t('vault.excludePlaceholder')"
+              class="flex-1"
+              @keydown.enter="addExclude"
+            />
+            <UButton
+              icon="i-lucide-plus"
+              color="neutral"
+              variant="ghost"
+              @click="addExclude"
+            />
+          </div>
+          <div
+            v-if="editExcludes.length > 0"
+            class="space-y-1"
+          >
+            <div
+              v-for="(item, idx) in editExcludes"
+              :key="idx"
+              class="flex items-center justify-between rounded-md bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-sm"
+            >
+              <span class="font-mono text-xs">{{ item }}</span>
+              <UButton
+                icon="i-lucide-x"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                @click="removeExclude(idx)"
               />
             </div>
           </div>
