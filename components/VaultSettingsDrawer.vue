@@ -21,7 +21,6 @@ const editVaultName = ref('')
 const editVaultPath = ref<string | null>(null)
 const editCommitMode = ref<GitCommitMode>('auto')
 const editCommitDebounceSec = ref(5)
-const editShowHidden = ref(false)
 const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
 const newCustomExt = ref('')
 
@@ -36,7 +35,6 @@ watch(
     editVaultPath.value = vault.path
     editCommitMode.value = vault.git?.commitMode ?? 'auto'
     editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? settings.settings.defaultCommitDebounceMs) / 1000
-    editShowHidden.value = vault.showHidden ?? false
     editFilters.value = vault.filters
       ? JSON.parse(JSON.stringify(vault.filters))
       : JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
@@ -81,7 +79,6 @@ async function save() {
           }
         : undefined,
       filters: editFilters.value,
-      showHidden: editShowHidden.value,
     })
   }
   catch (error) {
@@ -96,7 +93,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editShowHidden, editFilters],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -178,15 +175,6 @@ const commitModeItems = [
             </UFormField>
           </section>
         </template>
-
-        <section class="space-y-3">
-          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-            {{ $t('vault.visibility') }}
-          </h3>
-          <UFormField :label="$t('vault.showHidden')">
-            <USwitch v-model="editShowHidden" />
-          </UFormField>
-        </section>
 
         <section class="space-y-3">
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">

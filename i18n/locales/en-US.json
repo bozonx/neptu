@@ -38,7 +38,9 @@
     "noFavorites": "No favorites yet",
     "noRecentChanges": "No recent changes",
     "hideRightSidebar": "Hide right sidebar",
-    "showRightSidebar": "Show right sidebar"
+    "showRightSidebar": "Show right sidebar",
+    "showHiddenFiles": "Show hidden files",
+    "hideHiddenFiles": "Hide hidden files"
   },
   "vault": {
     "name": "Name",

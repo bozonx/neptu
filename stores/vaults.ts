@@ -67,7 +67,6 @@ export const useVaultsStore = defineStore('vaults', () => {
         type: 'local',
         path: mainRepoPath,
         filters: JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)),
-        showHidden: false,
       })
       mutated = true
     }
@@ -75,10 +74,6 @@ export const useVaultsStore = defineStore('vaults', () => {
     for (const v of vaults) {
       if (!v.filters) {
         v.filters = JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
-        mutated = true
-      }
-      if (v.showHidden === undefined) {
-        v.showHidden = false
         mutated = true
       }
     }
@@ -118,7 +113,6 @@ export const useVaultsStore = defineStore('vaults', () => {
       type: payload.type,
       path: payload.path,
       filters: DEFAULT_FILE_FILTERS,
-      showHidden: false,
     }
 
     if (payload.type === 'git') {
@@ -165,7 +159,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function updateVault(
     id: string,
-    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'showHidden'>> & { git?: GitVaultSettings },
+    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters'>> & { git?: GitVaultSettings },
   ) {
     const vault = findById(id)
     if (!vault) return
@@ -200,11 +194,6 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     if (updates.filters !== undefined) {
       vault.filters = updates.filters
-      needsRefresh = true
-    }
-
-    if (updates.showHidden !== undefined) {
-      vault.showHidden = updates.showHidden
       needsRefresh = true
     }
 
@@ -265,7 +254,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     const settingsStore = useSettingsStore()
     try {
       trees.value[vault.id] = await fs.scanMarkdownTree(vault.path, {
-        showHidden: vault.showHidden ?? false,
+        showHidden: settingsStore.settings.showHiddenFiles,
         filterSettings: vault.filters,
         sortMode: settingsStore.settings.fileSortMode,
       })

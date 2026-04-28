@@ -90,8 +90,6 @@ export interface Vault {
   git?: GitVaultSettings
   /** Per-vault file-extension filter settings */
   filters?: FileFilterSettings
-  /** Whether to show hidden files and folders (names starting with ".") */
-  showHidden?: boolean
   /** ID of the group this vault belongs to */
   groupId?: string
 }
@@ -132,6 +130,8 @@ export interface AppSettings {
   locale: 'auto' | 'en-US' | 'ru-RU'
   /** Global file tree sorting mode */
   fileSortMode: FileSortMode
+  /** Whether to show hidden files and folders (names starting with ".") across all vaults */
+  showHiddenFiles: boolean
   /** List of enabled plugin ids. Defaults to built-ins when missing. */
   enabledPlugins?: string[]
 }
@@ -145,6 +145,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
   locale: 'auto',
   fileSortMode: 'nameAsc',
+  showHiddenFiles: false,
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
 }
 

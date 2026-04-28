@@ -87,6 +87,25 @@ const addMenuItems = [
   ],
 ] satisfies DropdownMenuItem[][]
 
+const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
+  [
+    { label: t('sidebar.addLocalVault'), icon: 'i-lucide-folder-plus', onSelect: () => { addLocalVaultOpen.value = true } },
+    { label: t('sidebar.addGitVault'), icon: 'i-lucide-git-branch', onSelect: () => { addGitVaultOpen.value = true } },
+    { label: t('sidebar.createGroup'), icon: 'i-lucide-folder-plus', onSelect: () => openCreateGroup() },
+  ],
+  [
+    {
+      label: settings.settings.showHiddenFiles ? t('sidebar.hideHiddenFiles') : t('sidebar.showHiddenFiles'),
+      icon: settings.settings.showHiddenFiles ? 'i-lucide-eye-off' : 'i-lucide-eye',
+      onSelect: async () => {
+        settings.settings.showHiddenFiles = !settings.settings.showHiddenFiles
+        await settings.persist()
+        await vaults.refreshAllTrees()
+      },
+    },
+  ],
+])
+
 const sortModes: { label: string, value: FileSortMode, icon: string }[] = [
   { label: t('sidebar.sortNameAsc'), value: 'nameAsc', icon: 'i-lucide-arrow-up-a-z' },
   { label: t('sidebar.sortNameDesc'), value: 'nameDesc', icon: 'i-lucide-arrow-down-z-a' },
@@ -333,13 +352,7 @@ function toggleVault(vault: Vault) {
         </template>
         <template v-else>
           <UContextMenu
-            :items="[
-              [
-                { label: $t('sidebar.addLocalVault'), icon: 'i-lucide-folder-plus', onSelect: () => addLocalVaultOpen = true },
-                { label: $t('sidebar.addGitVault'), icon: 'i-lucide-git-branch', onSelect: () => addGitVaultOpen = true },
-                { label: $t('sidebar.createGroup'), icon: 'i-lucide-folder-plus', onSelect: () => openCreateGroup() },
-              ],
-            ]"
+            :items="contextMenuItems"
             :modal="false"
             class="flex-1 overflow-hidden flex flex-col min-h-0"
           >
