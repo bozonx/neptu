@@ -127,7 +127,7 @@ export const useVaultsStore = defineStore('vaults', () => {
       }
       else {
         const ok = await git.isRepo(payload.path)
-        if (!ok) throw new Error('Selected folder is not a git repository')
+        if (!ok) throw Object.assign(new Error('Selected folder is not a git repository'), { code: 'NOT_GIT_REPO' })
       }
       vault.git = payload.git ?? {
         commitMode: 'auto',

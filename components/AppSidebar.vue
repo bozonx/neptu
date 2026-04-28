@@ -211,9 +211,10 @@ async function submitNewVault() {
     resetAddForm()
   }
   catch (error) {
+    const isNotGitRepo = error instanceof Error && 'code' in error && (error as { code?: unknown }).code === 'NOT_GIT_REPO'
     toast.add({
       title: t('toast.addVaultFailed'),
-      description: error instanceof Error ? error.message : String(error),
+      description: isNotGitRepo ? t('error.notGitRepo') : (error instanceof Error ? error.message : String(error)),
       color: 'error',
     })
   }

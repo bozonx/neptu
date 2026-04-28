@@ -210,7 +210,8 @@
   "error": {
     "tauriRequired": "Требуется Tauri",
     "tauriRequiredDesc": "Neptu нуждается в среде выполнения Tauri для доступа к файловой системе. Запустите `pnpm tauri:dev` вместо `pnpm dev`.",
-    "initialization": "Ошибка инициализации"
+    "initialization": "Ошибка инициализации",
+    "notGitRepo": "Выбранная папка не является git-репозиторием"
   },
   "filters": {
     "Text": "Текст",

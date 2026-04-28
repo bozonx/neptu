@@ -210,7 +210,8 @@
   "error": {
     "tauriRequired": "Tauri runtime required",
     "tauriRequiredDesc": "Neptu needs the Tauri runtime to access the filesystem. Run `pnpm tauri:dev` instead of `pnpm dev`.",
-    "initialization": "Initialization error"
+    "initialization": "Initialization error",
+    "notGitRepo": "Selected folder is not a git repository"
   },
   "filters": {
     "Text": "Text",
