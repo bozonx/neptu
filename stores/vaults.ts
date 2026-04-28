@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import {
   DEFAULT_FILE_FILTERS,
+  getVaultScanRoot,
   type AddVaultPayload,
   type FileNode,
   type GitVaultSettings,
@@ -67,6 +68,7 @@ export const useVaultsStore = defineStore('vaults', () => {
         type: 'local',
         path: mainRepoPath,
         filters: JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)),
+        contentType: 'vault',
       })
       mutated = true
     }
@@ -113,6 +115,9 @@ export const useVaultsStore = defineStore('vaults', () => {
       type: payload.type,
       path: payload.path,
       filters: DEFAULT_FILE_FILTERS,
+      contentType: payload.contentType ?? 'vault',
+      contentFolder: payload.contentFolder,
+      siteLangMode: payload.siteLangMode,
     }
 
     if (payload.type === 'git') {
@@ -159,7 +164,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function updateVault(
     id: string,
-    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters'>> & { git?: GitVaultSettings },
+    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentFolder' | 'siteLangMode'>> & { git?: GitVaultSettings },
   ) {
     const vault = findById(id)
     if (!vault) return
@@ -194,6 +199,19 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     if (updates.filters !== undefined) {
       vault.filters = updates.filters
+      needsRefresh = true
+    }
+
+    if (updates.contentType !== undefined) {
+      vault.contentType = updates.contentType
+      needsRefresh = true
+    }
+    if (updates.contentFolder !== undefined) {
+      vault.contentFolder = updates.contentFolder
+      needsRefresh = true
+    }
+    if (updates.siteLangMode !== undefined) {
+      vault.siteLangMode = updates.siteLangMode
       needsRefresh = true
     }
 
@@ -252,15 +270,16 @@ export const useVaultsStore = defineStore('vaults', () => {
   async function refreshTree(vault: Vault) {
     const fs = useFs()
     const settingsStore = useSettingsStore()
+    const scanRoot = getVaultScanRoot(vault)
     try {
-      trees.value[vault.id] = await fs.scanMarkdownTree(vault.path, {
+      trees.value[vault.id] = await fs.scanMarkdownTree(scanRoot, {
         showHidden: settingsStore.settings.showHiddenFiles,
         filterSettings: vault.filters,
         sortMode: settingsStore.settings.fileSortMode,
       })
     }
     catch (error) {
-      console.error('Failed to scan vault tree', vault.path, error)
+      console.error('Failed to scan vault tree', scanRoot, error)
       trees.value[vault.id] = []
     }
   }

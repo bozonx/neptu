@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { FileSortMode, GitCommitMode, Vault, VaultType, VaultGroup } from '~/types'
+import { getVaultScanRoot } from '~/types'
+import type { ContentType, FileSortMode, GitCommitMode, SiteLangMode, Vault, VaultType, VaultGroup } from '~/types'
 import SettingsDialog from '~/components/SettingsDialog.vue'
 import VaultSidebarItem from '~/components/VaultSidebarItem.vue'
 import { Splitpanes, Pane } from 'splitpanes'
@@ -40,6 +41,9 @@ const newVaultPath = ref<string | null>(null)
 const newGitMode = ref<'connect' | 'init'>('connect')
 const newCommitMode = ref<GitCommitMode>('auto')
 const newCommitDebounceSec = ref(5)
+const newContentType = ref<ContentType>('vault')
+const newContentFolder = ref('src')
+const newSiteLangMode = ref<SiteLangMode>('monolingual')
 
 const newNoteOpen = ref(false)
 const newNoteName = ref('')
@@ -77,6 +81,17 @@ const gitModeItems = [
 const commitModeItems = [
   { label: t('vault.autoCommit'), value: 'auto' as const },
   { label: t('vault.manualCommit'), value: 'manual' as const },
+]
+
+const contentTypeItems = [
+  { label: t('vault.contentTypeVault'), value: 'vault' as const },
+  { label: t('vault.contentTypeBlog'), value: 'blog' as const },
+  { label: t('vault.contentTypeSite'), value: 'site' as const },
+]
+
+const siteLangModeItems = [
+  { label: t('vault.siteLangMonolingual'), value: 'monolingual' as const },
+  { label: t('vault.siteLangMultilingual'), value: 'multilingual' as const },
 ]
 
 const addMenuItems = [
@@ -136,6 +151,9 @@ function resetAddForm(type: VaultType = 'local') {
   newGitMode.value = 'connect'
   newCommitMode.value = 'auto'
   newCommitDebounceSec.value = settings.settings.defaultCommitDebounceMs / 1000
+  newContentType.value = 'vault'
+  newContentFolder.value = 'src'
+  newSiteLangMode.value = 'monolingual'
 }
 
 watch(addLocalVaultOpen, (value) => {
@@ -185,6 +203,9 @@ async function submitNewVault() {
             commitDebounceMs: Math.max(0, Math.round(newCommitDebounceSec.value * 1000)),
           }
         : undefined,
+      contentType: newContentType.value,
+      contentFolder: newContentType.value !== 'vault' ? newContentFolder.value : undefined,
+      siteLangMode: newContentType.value === 'site' ? newSiteLangMode.value : undefined,
     })
     addLocalVaultOpen.value = false
     addGitVaultOpen.value = false
@@ -200,7 +221,7 @@ async function submitNewVault() {
 }
 
 function openCreateNote(vault: Vault, dir?: string) {
-  newNoteCtx.value = { vault, dir: dir ?? vault.path }
+  newNoteCtx.value = { vault, dir: dir ?? getVaultScanRoot(vault) }
   newNoteName.value = ''
   newNoteOpen.value = true
 }
@@ -275,7 +296,7 @@ async function submitRemoveGroup() {
 }
 
 function openCreateFolder(vault: Vault, dir?: string) {
-  newFolderCtx.value = { vault, dir: dir ?? vault.path }
+  newFolderCtx.value = { vault, dir: dir ?? getVaultScanRoot(vault) }
   newFolderName.value = ''
   newFolderOpen.value = true
 }
@@ -780,6 +801,46 @@ function toggleVault(vault: Vault) {
               :min="0"
               :step="0.5"
             />
+          </UFormField>
+
+          <UFormField :label="$t('vault.contentType')">
+            <URadioGroup
+              v-model="newContentType"
+              :items="contentTypeItems"
+            />
+          </UFormField>
+
+          <p
+            v-if="newContentType === 'vault'"
+            class="text-xs text-muted"
+          >
+            {{ $t('vault.contentTypeVaultDesc') }}
+          </p>
+
+          <template v-if="newContentType === 'blog'">
+            <p class="text-xs text-muted">
+              {{ $t('vault.contentTypeBlogDesc') }}
+            </p>
+          </template>
+
+          <template v-if="newContentType === 'site'">
+            <p class="text-xs text-muted">
+              {{ $t('vault.contentTypeSiteDesc') }}
+            </p>
+            <UFormField :label="$t('vault.siteLangMode')">
+              <URadioGroup
+                v-model="newSiteLangMode"
+                :items="siteLangModeItems"
+              />
+            </UFormField>
+          </template>
+
+          <UFormField
+            v-if="newContentType !== 'vault'"
+            :label="$t('vault.contentFolder')"
+            :hint="$t('vault.contentFolderHint')"
+          >
+            <UInput v-model="newContentFolder" />
           </UFormField>
         </div>
       </template>

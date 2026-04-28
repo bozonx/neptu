@@ -1,5 +1,9 @@
 export type VaultType = 'local' | 'git'
 
+export type ContentType = 'vault' | 'blog' | 'site'
+
+export type SiteLangMode = 'monolingual' | 'multilingual'
+
 export type GitCommitMode = 'auto' | 'manual'
 
 export interface FileFilterExtension {
@@ -92,6 +96,12 @@ export interface Vault {
   filters?: FileFilterSettings
   /** ID of the group this vault belongs to */
   groupId?: string
+  /** Content structure type */
+  contentType?: ContentType
+  /** Relative folder inside the vault that is treated as the content root (e.g. "src") */
+  contentFolder?: string
+  /** Language mode for informational sites */
+  siteLangMode?: SiteLangMode
 }
 
 export type FileSortMode
@@ -223,6 +233,19 @@ export interface AddVaultPayload {
   /** Required for git vaults */
   gitMode?: 'init' | 'connect'
   git?: GitVaultSettings
+  contentType?: ContentType
+  contentFolder?: string
+  siteLangMode?: SiteLangMode
+}
+
+/** Returns the absolute path that should be scanned as the content root for a vault */
+export function getVaultScanRoot(vault: Vault): string {
+  if (vault.contentType === 'vault' || !vault.contentType) {
+    return vault.path
+  }
+  const folder = vault.contentFolder ?? 'src'
+  const base = vault.path.replace(/[/\\]+$/, '')
+  return `${base}/${folder}`
 }
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'

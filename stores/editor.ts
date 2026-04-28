@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { getVaultScanRoot } from '~/types'
 import type { CursorPosition, SaveStatus, Vault } from '~/types'
 
 const SAVED_HINT_MS = 1500
@@ -122,7 +123,7 @@ export const useEditorStore = defineStore('editor', () => {
     parentDir?: string
   }) {
     const fs = useFs()
-    const dir = payload.parentDir ?? payload.vault.path
+    const dir = payload.parentDir ?? getVaultScanRoot(payload.vault)
     const fullPath = await fs.createMarkdown(dir, payload.fileName)
     const vaults = useVaultsStore()
     await vaults.refreshTree(payload.vault)

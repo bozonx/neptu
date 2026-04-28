@@ -97,7 +97,18 @@
     "newFolderBtn": "New folder",
     "openInNewPanel": "Open in new panel",
     "more": "More",
-    "main": "Main"
+    "main": "Main",
+    "contentTypeVault": "Vault",
+    "contentTypeBlog": "Blog",
+    "contentTypeSite": "Informational site",
+    "contentTypeVaultDesc": "A vault of disparate documents without a fixed structure.",
+    "contentTypeBlogDesc": "A static blog. It is assumed that you are using the Vitepress template https://github.com/bozonx/vitepress-theme-neptu-blog.git and the file structure will be appropriate.",
+    "contentTypeSiteDesc": "An informational site. You can use any static site generators. Consider the Neptu landing informational site template https://github.com/bozonx/vitepress-theme-neptu-landing.git based on Vitepress.",
+    "siteLangMode": "Site language mode",
+    "siteLangMonolingual": "Monolingual",
+    "siteLangMultilingual": "Multilingual",
+    "contentFolder": "Content folder",
+    "contentFolderHint": "Default: src"
   },
   "settings": {
     "title": "Settings",

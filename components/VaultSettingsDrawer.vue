@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { DEFAULT_FILE_FILTERS, type FileFilterGroup, type GitCommitMode, type Vault } from '~/types'
+import { DEFAULT_FILE_FILTERS } from '~/types'
+import type { ContentType, FileFilterGroup, GitCommitMode, SiteLangMode, Vault } from '~/types'
 
 const props = defineProps<{
   vault: Vault | null
@@ -22,6 +23,9 @@ const editVaultPath = ref<string | null>(null)
 const editCommitMode = ref<GitCommitMode>('auto')
 const editCommitDebounceSec = ref(5)
 const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
+const editContentType = ref<ContentType>('vault')
+const editContentFolder = ref('src')
+const editSiteLangMode = ref<SiteLangMode>('monolingual')
 const newCustomExt = ref('')
 
 let skipNextWatch = false
@@ -38,6 +42,9 @@ watch(
     editFilters.value = vault.filters
       ? JSON.parse(JSON.stringify(vault.filters))
       : JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
+    editContentType.value = vault.contentType ?? 'vault'
+    editContentFolder.value = vault.contentFolder ?? 'src'
+    editSiteLangMode.value = vault.siteLangMode ?? 'monolingual'
     newCustomExt.value = ''
     nextTick(() => {
       skipNextWatch = false
@@ -79,6 +86,9 @@ async function save() {
           }
         : undefined,
       filters: editFilters.value,
+      contentType: editContentType.value,
+      contentFolder: editContentType.value !== 'vault' ? editContentFolder.value : undefined,
+      siteLangMode: editContentType.value === 'site' ? editSiteLangMode.value : undefined,
     })
   }
   catch (error) {
@@ -93,7 +103,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -108,6 +118,17 @@ watch(open, (val) => {
 const commitModeItems = [
   { label: t('vault.autoCommit'), value: 'auto' as const },
   { label: t('vault.manualCommit'), value: 'manual' as const },
+]
+
+const contentTypeItems = [
+  { label: t('vault.contentTypeVault'), value: 'vault' as const },
+  { label: t('vault.contentTypeBlog'), value: 'blog' as const },
+  { label: t('vault.contentTypeSite'), value: 'site' as const },
+]
+
+const siteLangModeItems = [
+  { label: t('vault.siteLangMonolingual'), value: 'monolingual' as const },
+  { label: t('vault.siteLangMultilingual'), value: 'multilingual' as const },
 ]
 </script>
 
@@ -175,6 +196,51 @@ const commitModeItems = [
             </UFormField>
           </section>
         </template>
+
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            {{ $t('vault.contentType') }}
+          </h3>
+          <UFormField :label="$t('vault.contentType')">
+            <URadioGroup
+              v-model="editContentType"
+              :items="contentTypeItems"
+            />
+          </UFormField>
+
+          <p
+            v-if="editContentType === 'vault'"
+            class="text-xs text-muted"
+          >
+            {{ $t('vault.contentTypeVaultDesc') }}
+          </p>
+
+          <template v-if="editContentType === 'blog'">
+            <p class="text-xs text-muted">
+              {{ $t('vault.contentTypeBlogDesc') }}
+            </p>
+          </template>
+
+          <template v-if="editContentType === 'site'">
+            <p class="text-xs text-muted">
+              {{ $t('vault.contentTypeSiteDesc') }}
+            </p>
+            <UFormField :label="$t('vault.siteLangMode')">
+              <URadioGroup
+                v-model="editSiteLangMode"
+                :items="siteLangModeItems"
+              />
+            </UFormField>
+          </template>
+
+          <UFormField
+            v-if="editContentType !== 'vault'"
+            :label="$t('vault.contentFolder')"
+            :hint="$t('vault.contentFolderHint')"
+          >
+            <UInput v-model="editContentFolder" />
+          </UFormField>
+        </section>
 
         <section class="space-y-3">
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
