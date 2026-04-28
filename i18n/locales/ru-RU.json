@@ -32,7 +32,9 @@
     "sortBirthtimeAsc": "Время создания (сначала старые)",
     "files": "Файлы",
     "search": "Поиск",
-    "noRecentChanges": "Нет недавних изменений"
+    "noRecentChanges": "Нет недавних изменений",
+    "hideRightSidebar": "Скрыть правый сайдбар",
+    "showRightSidebar": "Показать правый сайдбар"
   },
   "vault": {
     "name": "Название",

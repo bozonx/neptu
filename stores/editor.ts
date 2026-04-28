@@ -257,6 +257,7 @@ export const useEditorStore = defineStore('editor', () => {
       mobileActiveId: tabs.mobileActiveId,
       leftSidebarSize: tabs.leftSidebarSize,
       rightSidebarSize: tabs.rightSidebarSize,
+      rightSidebarCollapsed: tabs.rightSidebarCollapsed,
       leftSidebarMode: tabs.leftSidebarMode,
       leftSidebarDualFirstColumnSize: tabs.leftSidebarDualFirstColumnSize,
       leftSidebarTab: tabs.leftSidebarTab,

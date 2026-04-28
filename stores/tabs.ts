@@ -23,11 +23,16 @@ export const useTabsStore = defineStore('tabs', () => {
 
   const leftSidebarSize = ref(20)
   const rightSidebarSize = ref(15)
+  const rightSidebarCollapsed = ref(false)
   const leftSidebarMode = ref<'single' | 'dual'>('single')
   const leftSidebarDualFirstColumnSize = ref(20)
   const leftSidebarTab = ref<'files' | 'search'>('files')
 
   const { isMobile } = useTauri()
+
+  watch(rightSidebarCollapsed, () => {
+    void useEditorStore().saveUiState()
+  })
 
   // Helpers to traverse the tree
   function findLeaf(panel: Panel, id: string): PanelLeaf | null {
@@ -458,6 +463,7 @@ export const useTabsStore = defineStore('tabs', () => {
     mobileActiveId.value = state.mobileActiveId ?? null
     if (typeof state.leftSidebarSize === 'number') leftSidebarSize.value = state.leftSidebarSize
     if (typeof state.rightSidebarSize === 'number') rightSidebarSize.value = state.rightSidebarSize
+    if (typeof state.rightSidebarCollapsed === 'boolean') rightSidebarCollapsed.value = state.rightSidebarCollapsed
     if (state.leftSidebarMode) leftSidebarMode.value = state.leftSidebarMode
     if (typeof state.leftSidebarDualFirstColumnSize === 'number') leftSidebarDualFirstColumnSize.value = state.leftSidebarDualFirstColumnSize
     if (state.leftSidebarTab) leftSidebarTab.value = state.leftSidebarTab
@@ -590,6 +596,7 @@ export const useTabsStore = defineStore('tabs', () => {
     mobileActiveId,
     leftSidebarSize,
     rightSidebarSize,
+    rightSidebarCollapsed,
     leftSidebarMode,
     leftSidebarDualFirstColumnSize,
     leftSidebarTab,

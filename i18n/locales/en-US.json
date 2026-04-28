@@ -32,7 +32,9 @@
     "sortBirthtimeAsc": "Created time (old to new)",
     "files": "Files",
     "search": "Search",
-    "noRecentChanges": "No recent changes"
+    "noRecentChanges": "No recent changes",
+    "hideRightSidebar": "Hide right sidebar",
+    "showRightSidebar": "Show right sidebar"
   },
   "vault": {
     "name": "Name",

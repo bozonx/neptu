@@ -95,10 +95,22 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         <main class="flex-1 flex flex-col min-w-0 bg-default relative">
           <slot />
         </main>
+
+        <UButton
+          v-if="tabsStore.rightSidebarCollapsed"
+          icon="i-lucide-chevron-left"
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          class="absolute top-2 right-2 z-20 w-5 justify-center px-0"
+          :title="$t('sidebar.showRightSidebar')"
+          @click="tabsStore.rightSidebarCollapsed = false"
+        />
       </Pane>
 
       <!-- Right Sidebar -->
       <Pane
+        v-if="!tabsStore.rightSidebarCollapsed"
         :size="tabsStore.rightSidebarSize"
         min-size="10"
         max-size="30"

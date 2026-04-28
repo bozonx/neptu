@@ -205,6 +205,8 @@ export interface UiState {
   leftSidebarDualFirstColumnSize?: number
   /** Active built-in tab in the left sidebar: files or search */
   leftSidebarTab?: 'files' | 'search'
+  /** Whether the right sidebar is collapsed */
+  rightSidebarCollapsed?: boolean
   cursorPositions?: Record<string, CursorPosition>
 }
 

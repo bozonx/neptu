@@ -345,7 +345,7 @@ function toggleVault(vault: Vault) {
             <div class="flex-1 flex flex-col min-h-0 w-full relative">
               <div
                 v-if="tabs.leftSidebarMode === 'single'"
-                class="flex-1 overflow-auto p-2"
+                class="flex-1 overflow-auto p-2 min-h-0"
               >
                 <div
                   v-if="vaults.list.length === 0"
@@ -463,81 +463,83 @@ function toggleVault(vault: Vault) {
                   :size="tabs.leftSidebarDualFirstColumnSize"
                   min-size="10"
                   max-size="60"
-                  class="flex flex-col bg-default overflow-y-auto p-1 gap-1 border-r border-default"
+                  class="flex flex-col bg-default border-r border-default"
                 >
-                  <!-- Main Vault -->
-                  <div
-                    v-if="mainVault"
-                    class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
-                    :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === mainVault.id }"
-                    :title="mainVault.name"
-                    @click="selectedVaultId = mainVault.id"
-                  >
-                    <UIcon
-                      name="i-lucide-folder-heart"
-                      class="size-4 shrink-0"
-                      :class="selectedVaultId === mainVault.id ? 'text-primary' : 'text-primary/70'"
-                    />
-                    <span class="truncate text-xs font-medium">{{ mainVault.name }}</span>
-                  </div>
-
-                  <div
-                    v-if="mainVault && otherUngroupedVaults.length"
-                    class="my-1 mx-2 border-t border-default shrink-0"
-                  />
-
-                  <!-- Ungrouped Vaults -->
-                  <div
-                    v-for="vault in otherUngroupedVaults"
-                    :key="vault.id"
-                    class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
-                    :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
-                    :title="vault.name"
-                    @click="selectedVaultId = vault.id"
-                  >
-                    <UIcon
-                      :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
-                      class="size-4 shrink-0"
-                      :class="selectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
-                    />
-                    <span class="truncate text-xs">{{ vault.name }}</span>
-                  </div>
-
-                  <!-- Groups -->
-                  <template
-                    v-for="group in vaults.groups"
-                    :key="group.id"
-                  >
+                  <div class="flex-1 overflow-y-auto p-1 gap-1 flex flex-col min-h-0">
+                    <!-- Main Vault -->
                     <div
-                      class="flex items-center gap-1 px-1 mt-2 mb-0.5 cursor-pointer group hover:opacity-100 opacity-70"
-                      @click="toggleGroup(group)"
+                      v-if="mainVault"
+                      class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
+                      :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === mainVault.id }"
+                      :title="mainVault.name"
+                      @click="selectedVaultId = mainVault.id"
                     >
                       <UIcon
-                        name="i-lucide-chevron-right"
-                        class="size-3 text-muted shrink-0 transition-transform"
-                        :class="{ 'rotate-90': expandedGroups[group.id] }"
+                        name="i-lucide-folder-heart"
+                        class="size-4 shrink-0"
+                        :class="selectedVaultId === mainVault.id ? 'text-primary' : 'text-primary/70'"
                       />
-                      <span class="text-[10px] font-semibold text-muted uppercase tracking-wider truncate flex-1">{{ group.name }}</span>
+                      <span class="truncate text-xs font-medium">{{ mainVault.name }}</span>
                     </div>
 
-                    <template v-if="expandedGroups[group.id]">
+                    <div
+                      v-if="mainVault && otherUngroupedVaults.length"
+                      class="my-1 mx-2 border-t border-default shrink-0"
+                    />
+
+                    <!-- Ungrouped Vaults -->
+                    <div
+                      v-for="vault in otherUngroupedVaults"
+                      :key="vault.id"
+                      class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
+                      :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
+                      :title="vault.name"
+                      @click="selectedVaultId = vault.id"
+                    >
+                      <UIcon
+                        :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
+                        class="size-4 shrink-0"
+                        :class="selectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
+                      />
+                      <span class="truncate text-xs">{{ vault.name }}</span>
+                    </div>
+
+                    <!-- Groups -->
+                    <template
+                      v-for="group in vaults.groups"
+                      :key="group.id"
+                    >
                       <div
-                        v-for="vault in vaultsInGroup(group.id)"
-                        :key="vault.id"
-                        class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors ml-2"
-                        :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
-                        :title="vault.name"
-                        @click="selectedVaultId = vault.id"
+                        class="flex items-center gap-1 px-1 mt-2 mb-0.5 cursor-pointer group hover:opacity-100 opacity-70"
+                        @click="toggleGroup(group)"
                       >
                         <UIcon
-                          :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
-                          class="size-4 shrink-0"
-                          :class="selectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
+                          name="i-lucide-chevron-right"
+                          class="size-3 text-muted shrink-0 transition-transform"
+                          :class="{ 'rotate-90': expandedGroups[group.id] }"
                         />
-                        <span class="truncate text-xs">{{ vault.name }}</span>
+                        <span class="text-[10px] font-semibold text-muted uppercase tracking-wider truncate flex-1">{{ group.name }}</span>
                       </div>
+
+                      <template v-if="expandedGroups[group.id]">
+                        <div
+                          v-for="vault in vaultsInGroup(group.id)"
+                          :key="vault.id"
+                          class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors ml-2"
+                          :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
+                          :title="vault.name"
+                          @click="selectedVaultId = vault.id"
+                        >
+                          <UIcon
+                            :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
+                            class="size-4 shrink-0"
+                            :class="selectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
+                          />
+                          <span class="truncate text-xs">{{ vault.name }}</span>
+                        </div>
+                      </template>
                     </template>
-                  </template>
+                  </div>
                 </Pane>
 
                 <Pane class="flex flex-col min-w-0 bg-default relative p-2 overflow-y-auto">
@@ -564,6 +566,46 @@ function toggleVault(vault: Vault) {
                   </div>
                 </Pane>
               </Splitpanes>
+
+              <div class="flex items-center gap-1 p-2 border-t border-default shrink-0 z-10 bg-default">
+                <div class="flex-1 flex items-center gap-1">
+                  <UDropdownMenu
+                    :items="addMenuItems"
+                    :modal="false"
+                    :content="{ side: 'top' }"
+                  >
+                    <UButton
+                      icon="i-lucide-plus"
+                      size="xs"
+                      color="success"
+                      variant="ghost"
+                      :title="$t('sidebar.addVaultBtn')"
+                    />
+                  </UDropdownMenu>
+                  <UDropdownMenu
+                    :items="sortMenuItems"
+                    :modal="false"
+                    :content="{ side: 'top' }"
+                  >
+                    <UButton
+                      icon="i-lucide-arrow-up-down"
+                      size="xs"
+                      color="neutral"
+                      variant="ghost"
+                      :title="$t('sidebar.sortBy')"
+                    />
+                  </UDropdownMenu>
+                  <PluginButtons location="left-sidebar-footer" />
+                </div>
+                <UButton
+                  :icon="tabs.leftSidebarMode === 'single' ? 'i-lucide-panel-left' : 'i-lucide-columns'"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  title="Toggle dual column mode"
+                  @click="toggleLeftSidebarMode()"
+                />
+              </div>
             </div>
           </UContextMenu>
         </template>
@@ -572,46 +614,6 @@ function toggleVault(vault: Vault) {
         :is="plugins.resolvedActiveLeftSidebarView.component"
         v-else
         class="flex-1 overflow-hidden"
-      />
-    </div>
-
-    <div class="flex items-center gap-1 p-2 border-t border-default shrink-0 z-10 bg-default">
-      <div class="flex-1 flex items-center gap-1">
-        <UDropdownMenu
-          :items="addMenuItems"
-          :modal="false"
-          :content="{ side: 'top' }"
-        >
-          <UButton
-            icon="i-lucide-plus"
-            size="xs"
-            color="success"
-            variant="ghost"
-            :title="$t('sidebar.addVaultBtn')"
-          />
-        </UDropdownMenu>
-        <UDropdownMenu
-          :items="sortMenuItems"
-          :modal="false"
-          :content="{ side: 'top' }"
-        >
-          <UButton
-            icon="i-lucide-arrow-up-down"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            :title="$t('sidebar.sortBy')"
-          />
-        </UDropdownMenu>
-        <PluginButtons location="left-sidebar-footer" />
-      </div>
-      <UButton
-        :icon="tabs.leftSidebarMode === 'single' ? 'i-lucide-panel-left' : 'i-lucide-columns'"
-        size="xs"
-        color="neutral"
-        variant="ghost"
-        title="Toggle dual column mode"
-        @click="toggleLeftSidebarMode()"
       />
     </div>
 
