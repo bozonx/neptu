@@ -102,30 +102,29 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
           <slot />
         </main>
 
-        <UButton
+        <button
           v-if="tabsStore.rightSidebarCollapsed"
-          icon="i-lucide-chevron-left"
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          class="absolute top-2 right-2 z-20 w-5 justify-center px-0"
+          class="absolute top-1/2 -translate-y-1/2 right-0 z-20 w-5 h-12 flex items-center justify-center rounded-l-md border-y border-l border-default bg-elevated shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
           :title="$t('sidebar.showRightSidebar')"
           @click="tabsStore.rightSidebarCollapsed = false"
-        />
+        >
+          <UIcon
+            name="i-lucide-chevron-left"
+            class="size-4 text-black dark:text-gray-900"
+          />
+        </button>
       </Pane>
 
       <!-- Right Sidebar -->
       <Pane
-        :size="tabsStore.rightSidebarCollapsed ? 0 : tabsStore.rightSidebarSize"
-        :min-size="tabsStore.rightSidebarCollapsed ? 0 : 10"
+        v-if="!tabsStore.rightSidebarCollapsed"
+        :size="tabsStore.rightSidebarSize"
+        min-size="10"
         max-size="30"
         class="flex flex-col bg-default"
-        :class="{ 'opacity-0 pointer-events-none overflow-hidden': tabsStore.rightSidebarCollapsed }"
       >
-        <template v-if="!tabsStore.rightSidebarCollapsed">
-          <AppPanel class="shrink-0" />
-          <FileSidebar class="flex-1 min-h-0" />
-        </template>
+        <AppPanel class="shrink-0" />
+        <FileSidebar class="flex-1 min-h-0" />
       </Pane>
     </Splitpanes>
   </div>
