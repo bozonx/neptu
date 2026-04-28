@@ -69,6 +69,23 @@ function updateSelection() {
   editorStore.activeSelectionText = text.slice(el.selectionStart, el.selectionEnd)
 }
 
+function handleSelectionChange() {
+  if (document.activeElement === textareaRef.value) {
+    updateSelection()
+  }
+  else {
+    editorStore.activeSelectionText = ''
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('selectionchange', handleSelectionChange)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('selectionchange', handleSelectionChange)
+})
+
 function saveCursorState() {
   const el = textareaRef.value
   const path = currentFilePath.value
@@ -141,10 +158,7 @@ watch(currentFilePath, () => {
         class="w-full flex-1 resize-none bg-transparent outline-none p-6 font-mono text-sm leading-relaxed text-default"
         spellcheck="false"
         :placeholder="$t('editor.startWriting')"
-        @input="(e) => { onInput(e); updateSelection() }"
-        @keyup="updateSelection"
-        @mouseup="updateSelection"
-        @touchend="updateSelection"
+        @input="onInput"
         @blur="saveCursorState"
       />
 
