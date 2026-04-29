@@ -10,6 +10,7 @@ import {
 } from '~/types'
 import {
   DEFAULT_VAULT_CONFIG,
+  BLOG_VAULT_CONFIG,
   isValidVaultConfig,
   type VaultConfig,
 } from '~/types/vault-config'
@@ -105,7 +106,8 @@ export const useVaultsStore = defineStore('vaults', () => {
     const fs = useFs()
     const markerPath = await fs.join(vault.path, '.neptu-vault.yaml')
     if (!(await fs.exists(markerPath))) {
-      await fs.writeYaml(markerPath, DEFAULT_VAULT_CONFIG)
+      const config = vault.contentType === 'blog' ? BLOG_VAULT_CONFIG : DEFAULT_VAULT_CONFIG
+      await fs.writeYaml(markerPath, config)
     }
   }
 
