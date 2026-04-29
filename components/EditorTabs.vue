@@ -189,7 +189,7 @@ const contextMenuItems = (tab: EditorTab) => [
         ? 'flex-col h-full overflow-y-auto overflow-x-hidden'
         : settingsStore.settings.tabDisplayMode === 'multi_line'
           ? 'flex-row flex-wrap items-center'
-          : 'flex-row items-center h-full overflow-x-auto'
+          : 'flex-row items-center h-full overflow-x-auto',
     ]"
     @wheel="handleWheel"
   >
@@ -204,7 +204,7 @@ const contextMenuItems = (tab: EditorTab) => [
           ? 'flex-col w-full'
           : settingsStore.settings.tabDisplayMode === 'multi_line'
             ? 'flex-row flex-wrap items-center'
-            : 'flex-row items-center h-full'
+            : 'flex-row items-center h-full',
       ]"
       :ghost-class="'opacity-50'"
       @add="onAdd"
@@ -229,7 +229,7 @@ const contextMenuItems = (tab: EditorTab) => [
                 : 'border-r border-b',
               tab.id === activeId
                 ? 'bg-default text-default'
-                : 'bg-elevated/50 text-muted hover:text-default'
+                : 'bg-elevated/50 text-muted hover:text-default',
             ]"
             :title="tab.filePath"
             @click="handleTabClick(tab)"
@@ -290,7 +290,7 @@ const contextMenuItems = (tab: EditorTab) => [
               : 'border-r border-b',
             tab.id === activeId
               ? 'bg-default text-default'
-              : 'bg-elevated/50 text-muted hover:text-default'
+              : 'bg-elevated/50 text-muted hover:text-default',
           ]"
           :title="tab.filePath"
           @click="handleTabClick(tab)"

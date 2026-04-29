@@ -154,8 +154,16 @@ const committing = computed(() => git.commitStatus[props.vault.id] === 'committi
 async function handleVaultCommit() {
   if (props.vault.type !== 'git') return
   git.cancelCommit(props.vault.id)
+  const isManual = props.vault.git?.commitMode === 'manual'
+  const useAuto = settings.settings.gitAutoMessage ?? true
+  let message: string | undefined
+  if (isManual && !useAuto) {
+    const input = prompt(t('git.commitMessagePrompt'))
+    if (input === null) return
+    message = input.trim() || undefined
+  }
   try {
-    await git.commit(props.vault.id)
+    await git.commit(props.vault.id, message)
     toast.add({ title: t('toast.commitCompleted'), color: 'success' })
     await git.refreshStatus(props.vault.id)
   }

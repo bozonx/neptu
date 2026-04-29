@@ -138,7 +138,7 @@ watch(currentFilePath, () => {
           ? 'h-10 items-center px-1 overflow-x-auto overflow-y-hidden'
           : settingsStore.settings.tabDisplayMode === 'multi_line'
             ? 'min-h-[40px] items-center px-1 flex-wrap'
-            : ''
+            : '',
       ]"
     >
       <EditorTabs

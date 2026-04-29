@@ -64,6 +64,7 @@ const locale = ref<AppSettings['locale']>('auto')
 const tabDisplayMode = ref<AppSettings['tabDisplayMode']>('single_line')
 const confirmDeleteLocal = ref(true)
 const confirmDeleteGit = ref(true)
+const gitAutoMessage = ref(true)
 const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
 const newMainPath = ref('')
@@ -87,6 +88,7 @@ watch(open, async (value) => {
   tabDisplayMode.value = s.tabDisplayMode
   confirmDeleteLocal.value = s.confirmDeleteLocal
   confirmDeleteGit.value = s.confirmDeleteGit
+  gitAutoMessage.value = s.gitAutoMessage ?? true
   newMainPath.value = ''
   try {
     const git = useGit()
@@ -160,6 +162,7 @@ async function save() {
       tabDisplayMode: tabDisplayMode.value,
       confirmDeleteLocal: confirmDeleteLocal.value,
       confirmDeleteGit: confirmDeleteGit.value,
+      gitAutoMessage: gitAutoMessage.value,
     })
     colorMode.preference = theme.value
   }
@@ -175,7 +178,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale, tabDisplayMode, confirmDeleteLocal, confirmDeleteGit],
+  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale, tabDisplayMode, confirmDeleteLocal, confirmDeleteGit, gitAutoMessage],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -421,6 +424,13 @@ watch(
                   :placeholder="$t('settings.authorHint')"
                   class="w-full"
                 />
+              </UFormField>
+
+              <UFormField
+                :label="$t('settings.gitAutoMessage')"
+                :hint="$t('settings.gitAutoMessageHint')"
+              >
+                <USwitch v-model="gitAutoMessage" />
               </UFormField>
             </section>
           </div>

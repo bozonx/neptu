@@ -14,8 +14,8 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
   if (panel.type === 'node' && event.length === 2) {
     const isRtl = typeof document !== 'undefined' && document.dir === 'rtl'
     const isHorizontalSplit = panel.direction === 'horizontal'
-    const ratio = (isRtl && isHorizontalSplit) 
-      ? 1 - (event[0]!.size / 100) 
+    const ratio = (isRtl && isHorizontalSplit)
+      ? 1 - (event[0]!.size / 100)
       : event[0]!.size / 100
 
     tabsStore.updatePanelRatio(panel.id, ratio)

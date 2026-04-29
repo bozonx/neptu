@@ -148,6 +148,8 @@ export interface SharedSettings {
   confirmDeleteGit: boolean
   /** List of enabled plugin ids. Defaults to built-ins when missing. */
   enabledPlugins?: string[]
+  /** Use auto-generated message for manual commits (no prompt). */
+  gitAutoMessage: boolean
 }
 
 export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
@@ -160,6 +162,7 @@ export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   confirmDeleteLocal: true,
   confirmDeleteGit: true,
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
+  gitAutoMessage: true,
 }
 
 export type TabDisplayMode = 'single_line' | 'multi_line' | 'left_vertical'

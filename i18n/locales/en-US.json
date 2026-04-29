@@ -144,6 +144,8 @@
     "git": "Git",
     "defaultCommitDebounce": "Default commit debounce (seconds)",
     "defaultCommitDebounceHint": "Used as the default for new git vaults in auto-commit mode. The timer starts after each autosave and resets on new edits.",
+    "gitAutoMessage": "Auto message for manual commits",
+    "gitAutoMessageHint": "When enabled, manual commits use an auto-generated message instead of prompting.",
     "authorName": "Author name",
     "authorEmail": "Author email",
     "authorHint": "Leave empty to use git's global config",
@@ -204,7 +206,9 @@
     "moveFailed": "Failed to move or copy"
   },
   "git": {
-    "commit": "Commit"
+    "commit": "Commit",
+    "autoMessage": "Auto",
+    "commitMessagePrompt": "Enter commit message:"
   },
   "editor": {
     "noFileSelected": "Select or create a markdown file to start editing",
