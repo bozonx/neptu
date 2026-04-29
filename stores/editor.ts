@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { getVaultScanRoot } from '~/types'
 import type { CursorPosition, SaveStatus, Vault } from '~/types'
+import type { Schema } from '~/types/vault-config'
+import {
+  findSchemaForFile,
+  parseFrontmatter,
+  splitFrontmatter,
+  synthesizeFile,
+} from '~/composables/useFrontmatter'
 
 const SAVED_HINT_MS = 1500
 
@@ -11,6 +18,10 @@ interface EditorBuffer {
   saveError: string | null
   openEpoch: number
   lastEditTimestamp: number
+  // Populated when the file matches a vault schema
+  frontmatter?: Record<string, unknown>
+  extraFrontmatter?: Record<string, unknown>
+  schema?: Schema | null
 }
 
 /**
@@ -69,7 +80,30 @@ export const useEditorStore = defineStore('editor', () => {
     if (!(await fs.exists(path))) {
       throw new Error(`File not found: ${path}`)
     }
-    const content = await fs.readText(path)
+    const rawContent = await fs.readText(path)
+
+    const vault = findVaultForPath(path)
+    const vaultsStore = useVaultsStore()
+    const vaultConfig = vault ? vaultsStore.vaultConfigs[vault.id] : null
+    const schema = findSchemaForFile(path, vault?.path ?? '', vaultConfig)
+
+    let content = rawContent
+    let frontmatter: Record<string, unknown> | undefined
+    let extraFrontmatter: Record<string, unknown> | undefined
+
+    if (schema) {
+      const parsed = parseFrontmatter(rawContent)
+      if (parsed.frontmatter) {
+        const split = splitFrontmatter(parsed.frontmatter, schema)
+        frontmatter = split.schemaValues
+        extraFrontmatter = split.extraFrontmatter
+      }
+      else {
+        frontmatter = {}
+        extraFrontmatter = {}
+      }
+      content = parsed.body
+    }
 
     buffers.value[path] = {
       content,
@@ -78,6 +112,9 @@ export const useEditorStore = defineStore('editor', () => {
       saveError: null,
       openEpoch: Date.now(),
       lastEditTimestamp: Date.now(),
+      frontmatter,
+      extraFrontmatter,
+      schema,
     }
     return buffers.value[path]
   }
@@ -100,7 +137,12 @@ export const useEditorStore = defineStore('editor', () => {
     const fs = useFs()
     setSaveStatus(path, 'saving')
     try {
-      await fs.writeText(path, buffer.content)
+      let fileContent = buffer.content
+      if (buffer.schema && buffer.frontmatter !== undefined) {
+        const merged = { ...(buffer.extraFrontmatter ?? {}), ...(buffer.frontmatter ?? {}) }
+        fileContent = synthesizeFile(merged, buffer.content)
+      }
+      await fs.writeText(path, fileContent)
       buffer.isDirty = false
       setSaveStatus(path, 'saved')
       const vault = findVaultForPath(path)
@@ -109,7 +151,7 @@ export const useEditorStore = defineStore('editor', () => {
         await git.refreshStatus(vault.id)
         if (vault.git?.commitMode === 'auto') git.scheduleCommit(vault.id)
       }
-      useSearchStore().updateFile(path, buffer.content)
+      useSearchStore().updateFile(path, fileContent)
     }
     catch (error) {
       setSaveStatus(path, 'error', error instanceof Error ? error.message : String(error))
@@ -314,6 +356,17 @@ export const useEditorStore = defineStore('editor', () => {
     void saveUiState()
   })
 
+  function setFrontmatter(path: string, frontmatter: Record<string, unknown>) {
+    const buffer = buffers.value[path]
+    if (!buffer) return
+    buffer.frontmatter = frontmatter
+    buffer.isDirty = true
+    buffer.lastEditTimestamp = Date.now()
+
+    const vault = findVaultForPath(path)
+    if (vault?.type === 'git') useGitStore().cancelCommit(vault.id)
+  }
+
   return {
     buffers,
     currentFilePath,
@@ -325,6 +378,7 @@ export const useEditorStore = defineStore('editor', () => {
     cursorPositions,
     openFile,
     setContent,
+    setFrontmatter,
     save,
     createNote,
     deleteNote,

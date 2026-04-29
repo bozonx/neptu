@@ -12,6 +12,7 @@ import {
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { join } from '@tauri-apps/api/path'
 import { load, dump } from 'js-yaml'
+import { globToRegex } from '~/utils/glob'
 import type { FileFilterSettings, FileNode, FileSortMode } from '~/types'
 
 // Non-hidden directories we still want to skip while scanning vaults.
@@ -163,18 +164,6 @@ export function useFs() {
         default:
           return a.name.localeCompare(b.name)
       }
-    }
-
-    function globToRegex(pattern: string): RegExp {
-      const normalized = pattern.replace(/\\/g, '/')
-      const segments = normalized.split('/').filter(Boolean)
-      let regexStr = '^'
-      for (const seg of segments) {
-        if (regexStr !== '^') regexStr += '\\/'
-        regexStr += seg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[^/]*')
-      }
-      regexStr += '(\\/.*|$)'
-      return new RegExp(regexStr)
     }
 
     const excludeRegexes = excludes ? excludes.map(globToRegex) : []

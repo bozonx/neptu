@@ -150,17 +150,19 @@ watch(currentFilePath, () => {
         </div>
       </div>
 
-      <textarea
-        v-else
-        :key="currentFilePath"
-        ref="textareaRef"
-        :value="buffer?.content ?? ''"
-        class="w-full flex-1 resize-none bg-transparent outline-none p-6 font-mono text-sm leading-relaxed text-default"
-        spellcheck="false"
-        :placeholder="$t('editor.startWriting')"
-        @input="onInput"
-        @blur="saveCursorState"
-      />
+      <template v-else>
+        <FrontmatterForm :file-path="currentFilePath" />
+        <textarea
+          :key="currentFilePath"
+          ref="textareaRef"
+          :value="buffer?.content ?? ''"
+          class="w-full flex-1 resize-none bg-transparent outline-none p-6 font-mono text-sm leading-relaxed text-default"
+          spellcheck="false"
+          :placeholder="$t('editor.startWriting')"
+          @input="onInput"
+          @blur="saveCursorState"
+        />
+      </template>
 
       <!-- Mobile Bottom Toolbar Placeholder -->
       <div
