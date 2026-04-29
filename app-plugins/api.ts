@@ -67,8 +67,16 @@ export function createPluginAPI(manifest: PluginManifest): PluginAPI {
       },
     },
     storage: {
-      get: <T = unknown>() => config.loadPluginState<T>(pluginId),
-      set: <T = unknown>(value: T) => config.savePluginState<T>(pluginId, value),
+      get: <T = unknown>() => {
+        const settings = useSettingsStore()
+        if (!settings.mainRepoPath) return Promise.resolve(null)
+        return config.loadPluginState<T>(settings.mainRepoPath, pluginId)
+      },
+      set: <T = unknown>(value: T) => {
+        const settings = useSettingsStore()
+        if (!settings.mainRepoPath) return Promise.resolve()
+        return config.savePluginState<T>(settings.mainRepoPath, pluginId, value)
+      },
     },
   }
 }

@@ -200,6 +200,34 @@ export const useEditorStore = defineStore('editor', () => {
   const scrollToLineTrigger = ref<Record<string, number | null>>({})
   const cursorPositions = ref<Record<string, CursorPosition>>({})
 
+  function toRelativeCursorPositions(
+    positions: Record<string, CursorPosition>,
+    root: string,
+  ): Record<string, CursorPosition> {
+    const prefix = root.replace(/[/\\]+$/, '') + '/'
+    const result: Record<string, CursorPosition> = {}
+    for (const [path, pos] of Object.entries(positions)) {
+      const rel = path.startsWith(prefix) ? path.slice(prefix.length) : path
+      result[rel] = pos
+    }
+    return result
+  }
+
+  function fromRelativeCursorPositions(
+    positions: Record<string, CursorPosition>,
+    root: string,
+  ): Record<string, CursorPosition> {
+    const base = root.replace(/[/\\]+$/, '')
+    const result: Record<string, CursorPosition> = {}
+    for (const [rel, pos] of Object.entries(positions)) {
+      const abs = rel.startsWith('/') || (rel.length > 1 && rel[1] === ':')
+        ? rel
+        : `${base}/${rel.replace(/^[/\\]+/, '')}`
+      result[abs] = pos
+    }
+    return result
+  }
+
   function scrollToLine(line: number, path?: string) {
     const p = path ?? currentFilePath.value
     if (!p) return
@@ -228,7 +256,10 @@ export const useEditorStore = defineStore('editor', () => {
   async function loadUiState() {
     const config = useConfig()
     const state = await config.loadUiState()
-    cursorPositions.value = state.cursorPositions ?? {}
+    const root = settings.mainRepoPath
+    cursorPositions.value = root
+      ? fromRelativeCursorPositions(state.cursorPositions ?? {}, root)
+      : state.cursorPositions ?? {}
     await useTabsStore().loadUiState(state)
     // Migrate legacy activeRightTab to plugin FQID
     const plugins = usePluginsStore()
@@ -251,6 +282,10 @@ export const useEditorStore = defineStore('editor', () => {
     if (!hydrated.value) return
     const config = useConfig()
     const tabs = useTabsStore()
+    const root = settings.mainRepoPath
+    const positions = root
+      ? toRelativeCursorPositions(cursorPositions.value, root)
+      : cursorPositions.value
     await config.saveUiState({
       activeLeftSidebarView: usePluginsStore().activeLeftSidebarView,
       activeRightSidebarView: usePluginsStore().activeRightSidebarView,
@@ -264,7 +299,7 @@ export const useEditorStore = defineStore('editor', () => {
       leftSidebarMode: tabs.leftSidebarMode,
       leftSidebarDualFirstColumnSize: tabs.leftSidebarDualFirstColumnSize,
       leftSidebarTab: tabs.leftSidebarTab,
-      cursorPositions: cursorPositions.value,
+      cursorPositions: positions,
       expandedGroups: tabs.expandedGroups,
       expandedVaults: tabs.expandedVaults,
       expandedFolders: tabs.expandedFolders,

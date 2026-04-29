@@ -85,7 +85,7 @@ watch(open, async (value) => {
     const git = useGit()
     detectedAuthor.value = await git.globalAuthor()
     const config = useConfig()
-    configPath.value = await config.getConfigPath()
+    configPath.value = await config.getInstanceConfigPath()
   }
   catch {
     detectedAuthor.value = null
@@ -109,7 +109,7 @@ async function browseMainFolder() {
 async function submitChangeMainRepo() {
   if (!newMainPath.value) return
   try {
-    await settingsStore.changeMainRepo(newMainPath.value)
+    await settingsStore.setMainRepo(newMainPath.value)
     newMainPath.value = ''
     toast.add({ title: 'Main vault updated', color: 'success' })
   }

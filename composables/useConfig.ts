@@ -1,10 +1,22 @@
 import { appConfigDir, join, resolve } from '@tauri-apps/api/path'
 import { type } from '@tauri-apps/plugin-os'
 import { writeTextFile } from '@tauri-apps/plugin-fs'
-import { DEFAULT_SETTINGS, DEFAULT_UI_STATE, type AppConfig, type AppSettings, type UiState } from '~/types'
+import {
+  DEFAULT_INSTANCE_SETTINGS,
+  DEFAULT_SHARED_SETTINGS,
+  DEFAULT_UI_STATE,
+  type AppConfig,
+  type InstanceConfig,
+  type InstanceSettings,
+  type SharedConfig,
+  type SharedSettings,
+  type UiState,
+} from '~/types'
 
 const CONFIG_FILE = 'config.json'
 const UI_STATE_FILE = 'ui-state.json'
+const NEPTU_DIR = '.neptu'
+const SHARED_CONFIG_FILE = 'config.json'
 const PLUGINS_DIR = 'plugins'
 const PERSIST_DEBOUNCE_MS = 200
 
@@ -60,12 +72,12 @@ function createSerializedWriter<T>(write: (data: T) => Promise<void>) {
   }
 }
 
-let configPathCache: string | null = null
+let instanceConfigPathCache: string | null = null
 let uiStatePathCache: string | null = null
 
-const configWriter = createSerializedWriter<AppConfig>(async (data) => {
-  if (!configPathCache) return
-  await writeTextFile(configPathCache, JSON.stringify(data, null, 2))
+const instanceConfigWriter = createSerializedWriter<InstanceConfig>(async (data) => {
+  if (!instanceConfigPathCache) return
+  await writeTextFile(instanceConfigPathCache, JSON.stringify(data, null, 2))
 })
 
 const uiStateWriter = createSerializedWriter<UiState>(async (data) => {
@@ -77,17 +89,17 @@ const uiStateWriter = createSerializedWriter<UiState>(async (data) => {
  * Flushes any pending debounced writes. Call on app shutdown.
  */
 export async function flushPendingWrites() {
-  await Promise.all([configWriter.flush(), uiStateWriter.flush()])
+  await Promise.all([instanceConfigWriter.flush(), uiStateWriter.flush()])
 }
 
 /**
  * Persistent configuration helpers.
  *
- * Config lives in the Tauri app config directory by default so the OS can back
- * it up. Override with `VITE_NEPTU_DEV_DIR` env variable for development.
- * Two JSON files are written:
- *   - config.json    → AppConfig (vaults, settings, groups, mainRepoPath)
- *   - ui-state.json  → UiState (active tab, etc.)
+ * Two independent stores:
+ *   - Instance config  → Tauri app config dir / `config.json`
+ *   - Shared config    → `<mainRepo>/.neptu/config.json` (user-synced)
+ *   - UI state         → Tauri app config dir / `ui-state.json`
+ *   - Plugin state     → `<mainRepo>/.neptu/plugins/<id>.json`
  */
 export function useConfig() {
   const fs = useFs()
@@ -100,7 +112,7 @@ export function useConfig() {
     return await appConfigDir()
   }
 
-  async function getConfigPath(): Promise<string> {
+  async function getInstanceConfigPath(): Promise<string> {
     return await join(await configDir(), CONFIG_FILE)
   }
 
@@ -108,61 +120,126 @@ export function useConfig() {
     return await join(await configDir(), UI_STATE_FILE)
   }
 
-  async function loadAppConfig(): Promise<AppConfig> {
-    const configPath = await getConfigPath()
-    configPathCache = configPath
+  async function sharedConfigPath(mainRepoPath: string): Promise<string> {
+    return await join(mainRepoPath, NEPTU_DIR, SHARED_CONFIG_FILE)
+  }
+
+  async function ensureNeptuDir(mainRepoPath: string): Promise<void> {
+    const dir = await join(mainRepoPath, NEPTU_DIR)
+    await fs.ensureDir(dir)
+  }
+
+  /**
+   * Load instance-specific config from the Tauri app config directory.
+   * If a legacy AppConfig is detected (contains vaults/groups/favorites),
+   * it is split: shared fields are returned in `migratedShared` so the
+   * caller can write them to `.neptu/config.json`, while the instance
+   * file is rewritten in the new format.
+   */
+  async function loadInstanceConfig(): Promise<{ instance: InstanceConfig, migratedShared?: Partial<SharedConfig> }> {
+    const configPath = await getInstanceConfigPath()
+    instanceConfigPathCache = configPath
     uiStatePathCache = await getUiStatePath()
     await fs.ensureDir(await configDir())
-    // Make sure any pending debounced write has landed before we read it back.
-    await configWriter.flush()
+    await instanceConfigWriter.flush()
 
     try {
       const raw = await fs.readText(configPath)
       const parsed = JSON.parse(raw) as Partial<AppConfig>
 
-      // Migrate old 'auto' layoutMode to platform-specific default
+      const hasLegacyShared = Array.isArray(parsed.vaults) || Array.isArray(parsed.groups) || Array.isArray(parsed.favorites)
+
       const rawSettings = parsed.settings as Record<string, unknown> | undefined
+      let instanceSettings: InstanceSettings = { ...DEFAULT_INSTANCE_SETTINGS, ...(parsed.settings ?? {}) }
       if (rawSettings?.layoutMode === 'auto') {
         const osType = await type()
         const detected = ['ios', 'android'].includes(osType) ? 'mobile' : 'desktop'
-        parsed.settings = { ...(parsed.settings ?? DEFAULT_SETTINGS), layoutMode: detected } as AppSettings
+        instanceSettings = { ...instanceSettings, layoutMode: detected }
       }
 
-      const config: AppConfig = {
+      const instance: InstanceConfig = {
         version: 1,
         mainRepoPath: parsed.mainRepoPath ?? null,
-        vaults: parsed.vaults ?? [],
-        settings: { ...DEFAULT_SETTINGS, ...(parsed.settings ?? {}) },
-        groups: parsed.groups ?? [],
-        favorites: parsed.favorites ?? [],
+        settings: instanceSettings,
       }
 
-      // Save back migrated config so 'auto' does not persist
-      if (parsed.settings?.layoutMode) {
-        await fs.writeText(configPath, JSON.stringify(config, null, 2))
+      if (hasLegacyShared) {
+        const legacy = parsed.settings ?? {}
+        const sharedSettings: SharedSettings = {
+          ...DEFAULT_SHARED_SETTINGS,
+          autosaveDebounceMs: (legacy as Partial<SharedSettings>).autosaveDebounceMs ?? DEFAULT_SHARED_SETTINGS.autosaveDebounceMs,
+          defaultCommitDebounceMs: (legacy as Partial<SharedSettings>).defaultCommitDebounceMs ?? DEFAULT_SHARED_SETTINGS.defaultCommitDebounceMs,
+          gitAuthorName: (legacy as Partial<SharedSettings>).gitAuthorName ?? DEFAULT_SHARED_SETTINGS.gitAuthorName,
+          gitAuthorEmail: (legacy as Partial<SharedSettings>).gitAuthorEmail ?? DEFAULT_SHARED_SETTINGS.gitAuthorEmail,
+          fileSortMode: (legacy as Partial<SharedSettings>).fileSortMode ?? DEFAULT_SHARED_SETTINGS.fileSortMode,
+          showHiddenFiles: (legacy as Partial<SharedSettings>).showHiddenFiles ?? DEFAULT_SHARED_SETTINGS.showHiddenFiles,
+          enabledPlugins: (legacy as Partial<SharedSettings>).enabledPlugins ?? DEFAULT_SHARED_SETTINGS.enabledPlugins,
+        }
+
+        const migratedShared: Partial<SharedConfig> = {
+          version: 1,
+          vaults: parsed.vaults ?? [],
+          groups: parsed.groups ?? [],
+          favorites: parsed.favorites ?? [],
+          settings: sharedSettings,
+        }
+
+        // Rewrite instance config in the new (split) format
+        await fs.writeText(configPath, JSON.stringify(instance, null, 2))
+        return { instance, migratedShared }
       }
 
-      return config
+      return { instance }
     }
     catch {
       const osType = await type()
       const detectedLayout = ['ios', 'android'].includes(osType) ? 'mobile' : 'desktop'
-      const config: AppConfig = {
+      const instance: InstanceConfig = {
         version: 1,
         mainRepoPath: null,
+        settings: { ...DEFAULT_INSTANCE_SETTINGS, layoutMode: detectedLayout },
+      }
+      await fs.writeText(configPath, JSON.stringify(instance, null, 2))
+      return { instance }
+    }
+  }
+
+  async function saveInstanceConfig(config: InstanceConfig): Promise<void> {
+    if (!instanceConfigPathCache) instanceConfigPathCache = await getInstanceConfigPath()
+    instanceConfigWriter.schedule(config)
+  }
+
+  async function loadSharedConfig(mainRepoPath: string): Promise<SharedConfig> {
+    const path = await sharedConfigPath(mainRepoPath)
+    await ensureNeptuDir(mainRepoPath)
+    try {
+      const raw = await fs.readText(path)
+      const parsed = JSON.parse(raw) as Partial<SharedConfig>
+      return {
+        version: 1,
+        vaults: parsed.vaults ?? [],
+        groups: parsed.groups ?? [],
+        favorites: parsed.favorites ?? [],
+        settings: { ...DEFAULT_SHARED_SETTINGS, ...(parsed.settings ?? {}) },
+      }
+    }
+    catch {
+      const config: SharedConfig = {
+        version: 1,
         vaults: [],
-        settings: { ...DEFAULT_SETTINGS, layoutMode: detectedLayout },
         groups: [],
         favorites: [],
+        settings: { ...DEFAULT_SHARED_SETTINGS },
       }
-      await fs.writeText(configPath, JSON.stringify(config, null, 2))
+      await fs.writeText(path, JSON.stringify(config, null, 2))
       return config
     }
   }
 
-  async function saveAppConfig(config: AppConfig): Promise<void> {
-    if (!configPathCache) configPathCache = await getConfigPath()
-    configWriter.schedule(config)
+  async function saveSharedConfig(mainRepoPath: string, config: SharedConfig): Promise<void> {
+    const path = await sharedConfigPath(mainRepoPath)
+    await ensureNeptuDir(mainRepoPath)
+    await fs.writeText(path, JSON.stringify(config, null, 2))
   }
 
   async function loadUiState(): Promise<UiState> {
@@ -187,17 +264,16 @@ export function useConfig() {
     uiStateWriter.schedule(state)
   }
 
-  async function getPluginStatePath(pluginId: string): Promise<string> {
-    const dir = await join(await configDir(), PLUGINS_DIR)
+  async function getPluginStatePath(mainRepoPath: string, pluginId: string): Promise<string> {
+    const dir = await join(mainRepoPath, NEPTU_DIR, PLUGINS_DIR)
     await fs.ensureDir(dir)
-    // File-name safe: replace slashes and strip characters that are unsafe on FAT32/APFS.
     const safe = pluginId.replace(/[^a-zA-Z0-9._-]/g, '_')
     return await join(dir, `${safe}.json`)
   }
 
-  async function loadPluginState<T = unknown>(pluginId: string): Promise<T | null> {
+  async function loadPluginState<T = unknown>(mainRepoPath: string, pluginId: string): Promise<T | null> {
     try {
-      const path = await getPluginStatePath(pluginId)
+      const path = await getPluginStatePath(mainRepoPath, pluginId)
       const raw = await fs.readText(path)
       return JSON.parse(raw) as T
     }
@@ -206,16 +282,19 @@ export function useConfig() {
     }
   }
 
-  async function savePluginState<T = unknown>(pluginId: string, value: T): Promise<void> {
-    const path = await getPluginStatePath(pluginId)
+  async function savePluginState<T = unknown>(mainRepoPath: string, pluginId: string, value: T): Promise<void> {
+    const path = await getPluginStatePath(mainRepoPath, pluginId)
     await writeTextFile(path, JSON.stringify(value, null, 2))
   }
 
   return {
-    getConfigPath,
+    getInstanceConfigPath,
     getUiStatePath,
-    loadAppConfig,
-    saveAppConfig,
+    loadInstanceConfig,
+    saveInstanceConfig,
+    loadSharedConfig,
+    saveSharedConfig,
+    ensureNeptuDir,
     loadUiState,
     saveUiState,
     loadPluginState,

@@ -1,15 +1,71 @@
 import { defineStore } from 'pinia'
-import { basename, join } from '@tauri-apps/api/path'
-import { DEFAULT_SETTINGS, type AppConfig, type AppSettings } from '~/types'
+import {
+  DEFAULT_SETTINGS,
+  type AppSettings,
+  type InstanceConfig,
+  type SharedConfig,
+  type SharedSettings,
+  type Vault,
+} from '~/types'
+
+/* Helpers to make paths portable (relative to mainRepoPath) for shared config. */
+function isAbsolutePath(p: string): boolean {
+  return p.startsWith('/') || (p.length > 1 && p[1] === ':')
+}
+
+function makeRelative(p: string, root: string): string {
+  const prefix = root.replace(/[/\\]+$/, '') + '/'
+  if (p === root) return '.'
+  if (p.startsWith(prefix)) return p.slice(prefix.length)
+  return p
+}
+
+function makeAbsolute(p: string, root: string): string {
+  if (isAbsolutePath(p)) return p
+  if (p === '.' || p === '') return root
+  return root.replace(/[/\\]+$/, '') + '/' + p.replace(/^[/\\]+/, '')
+}
+
+function toRelativeVaults(vaults: Vault[], root: string): Vault[] {
+  return vaults.map((v) => {
+    const rel = makeRelative(v.path, root)
+    if (rel !== v.path) return { ...v, path: rel }
+    return { ...v }
+  })
+}
+
+function fromRelativeVaults(vaults: Vault[], root: string): Vault[] {
+  return vaults.map((v) => {
+    if (isAbsolutePath(v.path)) return v
+    return { ...v, path: makeAbsolute(v.path, root) }
+  })
+}
+
+function toRelativeFavorites(abs: string[], root: string): string[] {
+  return abs.map((p) => makeRelative(p, root))
+}
+
+function fromRelativeFavorites(rel: string[], root: string): string[] {
+  return rel.map((p) => makeAbsolute(p, root))
+}
+
+function pickSharedSettings(s: AppSettings): SharedSettings {
+  return {
+    autosaveDebounceMs: s.autosaveDebounceMs,
+    defaultCommitDebounceMs: s.defaultCommitDebounceMs,
+    gitAuthorName: s.gitAuthorName,
+    gitAuthorEmail: s.gitAuthorEmail,
+    fileSortMode: s.fileSortMode,
+    showHiddenFiles: s.showHiddenFiles,
+    enabledPlugins: s.enabledPlugins,
+  }
+}
 
 /**
  * Owns the pointer to the user's main repository and application-wide
- * preferences. Also acts as the single seam for persisting `AppConfig` to
- * the Tauri app config directory (`config.json`).
- *
- * Other stores call `persist()` after mutating data that lives in the config
- * (currently: `useVaultsStore` after vault changes). Persistence is centralized
- * here to keep a single writer for the file.
+ * preferences. Persistence is split:
+ *   - Instance config (Tauri app dir)  → mainRepoPath, UI settings
+ *   - Shared config (mainRepo/.neptu/) → vaults, groups, favorites, shared settings
  */
 export const useSettingsStore = defineStore('settings', () => {
   const mainRepoPath = ref<string | null>(null)
@@ -30,58 +86,50 @@ export const useSettingsStore = defineStore('settings', () => {
 
   async function init() {
     const config = useConfig()
-    const appConfig = await config.loadAppConfig()
-    mainRepoPath.value = appConfig.mainRepoPath ?? null
-    initialized.value = true
+    const { instance, migratedShared } = await config.loadInstanceConfig()
+    mainRepoPath.value = instance.mainRepoPath ?? null
+
+    // Apply instance settings
+    settings.value = { ...DEFAULT_SETTINGS, ...instance.settings }
+
     if (mainRepoPath.value) {
-      await applyConfig(appConfig)
+      const shared = migratedShared
+        ? (migratedShared as SharedConfig)
+        : await config.loadSharedConfig(mainRepoPath.value)
+      await applyShared(shared)
     }
+    else if (migratedShared) {
+      // Edge case: legacy config had shared data but no mainRepoPath.
+      await applyShared(migratedShared as SharedConfig)
+    }
+
+    initialized.value = true
   }
 
   async function setMainRepo(path: string) {
+    const config = useConfig()
+    await config.ensureNeptuDir(path)
+
+    // Ensure shared config file exists so it can be synced later
+    const shared = await config.loadSharedConfig(path)
+
     mainRepoPath.value = path
-    await persist()
-    const config = useConfig()
-    const appConfig = await config.loadAppConfig()
-    await applyConfig(appConfig)
+    await persistInstance()
+    await applyShared(shared)
   }
 
-  async function changeMainRepo(newPath: string) {
-    const oldPath = mainRepoPath.value
-    if (!oldPath || oldPath === newPath) return
+  async function applyShared(shared: Partial<SharedConfig>) {
+    const s = shared as SharedConfig
+    settings.value = { ...settings.value, ...s.settings }
 
-    const fs = useFs()
-    const oldNeptu = await join(oldPath, '.neptu')
-    const newNeptu = await join(newPath, '.neptu')
-
-    if (await fs.exists(oldNeptu)) {
-      try {
-        await fs.renameFile(oldNeptu, newNeptu)
-      }
-      catch (error) {
-        console.error('Failed to move .neptu folder:', error)
-      }
-    }
-
+    const root = mainRepoPath.value ?? ''
     const vaults = useVaultsStore()
-    const mainVault = vaults.list.find((v) => v.path === oldPath)
-    if (mainVault) {
-      mainVault.path = newPath
-      mainVault.name = await basename(newPath)
-    }
-
-    mainRepoPath.value = newPath
-    await persist()
-    const config = useConfig()
-    const appConfig = await config.loadAppConfig()
-    await applyConfig(appConfig)
-  }
-
-  async function applyConfig(appConfig: AppConfig) {
-    settings.value = { ...DEFAULT_SETTINGS, ...appConfig.settings }
-
-    const vaults = useVaultsStore()
-    await vaults.hydrate(appConfig.vaults ?? [], mainRepoPath.value ?? '', appConfig.groups ?? [], appConfig.favorites ?? [])
+    await vaults.hydrate(
+      fromRelativeVaults(s.vaults ?? [], root),
+      root,
+      s.groups ?? [],
+      fromRelativeFavorites(s.favorites ?? [], root),
+    )
 
     const git = useGitStore()
     await git.refreshAllStatuses()
@@ -93,20 +141,41 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   /**
-   * Serializes current settings + vault list to disk.
+   * Writes both instance and shared configs.
    */
   async function persist() {
+    await persistInstance()
+    if (mainRepoPath.value) {
+      await persistShared()
+    }
+  }
+
+  async function persistInstance() {
     const config = useConfig()
-    const vaults = useVaultsStore()
-    const data: AppConfig = {
+    const instance: InstanceConfig = {
       version: 1,
       mainRepoPath: mainRepoPath.value,
-      settings: { ...settings.value },
-      vaults: vaults.list,
-      groups: vaults.groups,
-      favorites: vaults.favorites,
+      settings: {
+        layoutMode: settings.value.layoutMode,
+        theme: settings.value.theme,
+        locale: settings.value.locale,
+      },
     }
-    await config.saveAppConfig(data)
+    await config.saveInstanceConfig(instance)
+  }
+
+  async function persistShared() {
+    const config = useConfig()
+    const vaults = useVaultsStore()
+    const root = mainRepoPath.value!
+    const shared: SharedConfig = {
+      version: 1,
+      vaults: toRelativeVaults(vaults.list, root),
+      groups: vaults.groups,
+      favorites: toRelativeFavorites(vaults.favorites, root),
+      settings: pickSharedSettings(settings.value),
+    }
+    await config.saveSharedConfig(root, shared)
   }
 
   return {
@@ -119,7 +188,6 @@ export const useSettingsStore = defineStore('settings', () => {
     openSettingsDialog,
     init,
     setMainRepo,
-    changeMainRepo,
     updateSettings,
     persist,
   }

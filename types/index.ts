@@ -126,7 +126,11 @@ export interface FileNode {
 export type LayoutMode = 'desktop' | 'mobile'
 export type Theme = 'system' | 'light' | 'dark'
 
-export interface AppSettings {
+/**
+ * Settings that should roam with the user across devices (stored in the main
+ * repository under `.neptu/config.json`).
+ */
+export interface SharedSettings {
   /** Debounce for autosave (writing the editor buffer to disk) */
   autosaveDebounceMs: number
   /** Default debounce for git auto-commit, used when creating a new git vault */
@@ -134,12 +138,6 @@ export interface AppSettings {
   /** Override for git author. Falls back to git's global config when empty */
   gitAuthorName: string
   gitAuthorEmail: string
-  /** UI Layout mode */
-  layoutMode: LayoutMode
-  /** UI Theme */
-  theme: Theme
-  /** UI language locale */
-  locale: 'auto' | 'en-US' | 'ru-RU'
   /** Global file tree sorting mode */
   fileSortMode: FileSortMode
   /** Whether to show hidden files and folders (names starting with ".") across all vaults */
@@ -148,24 +146,71 @@ export interface AppSettings {
   enabledPlugins?: string[]
 }
 
-export const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   autosaveDebounceMs: 800,
   defaultCommitDebounceMs: 5000,
   gitAuthorName: '',
   gitAuthorEmail: '',
-  layoutMode: 'desktop',
-  theme: 'system',
-  locale: 'auto',
   fileSortMode: 'nameAsc',
   showHiddenFiles: false,
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
 }
 
-export interface AppConfig {
+/**
+ * Settings tied to the current device / installation (stored in the Tauri app
+ * config directory in `config.json`).
+ */
+export interface InstanceSettings {
+  /** UI Layout mode */
+  layoutMode: LayoutMode
+  /** UI Theme */
+  theme: Theme
+  /** UI language locale */
+  locale: 'auto' | 'en-US' | 'ru-RU'
+}
+
+export const DEFAULT_INSTANCE_SETTINGS: InstanceSettings = {
+  layoutMode: 'desktop',
+  theme: 'system',
+  locale: 'auto',
+}
+
+/** Convenience merge used by UI components. */
+export interface AppSettings extends SharedSettings, InstanceSettings {}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  ...DEFAULT_SHARED_SETTINGS,
+  ...DEFAULT_INSTANCE_SETTINGS,
+}
+
+/**
+ * Shared configuration stored inside the main repository at `.neptu/config.json`
+ * so it can be synced across devices by the user (e.g. Syncthing).
+ *
+ * - `favorites` are stored as paths relative to the main repository root.
+ * - Vault paths that live inside the main repo are also stored relative.
+ */
+export interface SharedConfig {
+  version: 1
+  vaults: Vault[]
+  groups: VaultGroup[]
+  favorites: string[]
+  settings: SharedSettings
+}
+
+/**
+ * Instance-specific configuration stored in the Tauri app config directory.
+ * Holds the absolute path to the main repository on this device.
+ */
+export interface InstanceConfig {
   version: 1
   mainRepoPath: string | null
+  settings: InstanceSettings
+}
+
+/** @deprecated Use SharedConfig or InstanceConfig instead. */
+export interface AppConfig extends InstanceConfig {
   vaults: Vault[]
-  settings: AppSettings
   groups: VaultGroup[]
   favorites?: string[]
 }
