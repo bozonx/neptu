@@ -11,6 +11,7 @@ import {
 } from '@tauri-apps/plugin-fs'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { join } from '@tauri-apps/api/path'
+import { load, dump } from 'js-yaml'
 import type { FileFilterSettings, FileNode, FileSortMode } from '~/types'
 
 // Non-hidden directories we still want to skip while scanning vaults.
@@ -45,6 +46,15 @@ export function useFs() {
 
   async function writeText(path: string, content: string) {
     await writeTextFile(path, content)
+  }
+
+  async function readYaml<T = unknown>(path: string): Promise<T> {
+    const raw = await readTextFile(path)
+    return load(raw) as T
+  }
+
+  async function writeYaml(path: string, data: unknown): Promise<void> {
+    await writeTextFile(path, dump(data, { indent: 2, lineWidth: -1 }))
   }
 
   async function deleteFile(path: string) {
@@ -233,6 +243,8 @@ export function useFs() {
     exists,
     readText,
     writeText,
+    readYaml,
+    writeYaml,
     deleteFile,
     renameFile,
     copyFile,

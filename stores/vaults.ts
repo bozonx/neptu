@@ -8,6 +8,11 @@ import {
   type Vault,
   type VaultGroup,
 } from '~/types'
+import {
+  DEFAULT_VAULT_CONFIG,
+  isValidVaultConfig,
+  type VaultConfig,
+} from '~/types/vault-config'
 
 function generateId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -46,6 +51,7 @@ export const useVaultsStore = defineStore('vaults', () => {
   const trees = ref<Record<string, FileNode[]>>({})
   const groups = ref<VaultGroup[]>([])
   const favorites = ref<string[]>([])
+  const vaultConfigs = ref<Record<string, VaultConfig>>({})
 
   function findById(id: string): Vault | null {
     return list.value.find((v) => v.id === id) ?? null
@@ -85,19 +91,48 @@ export const useVaultsStore = defineStore('vaults', () => {
     favorites.value = loadedFavorites ?? []
 
     if (mutated) await useSettingsStore().persist()
-    if (mutated) {
-      const mainVault = vaults.find((v) => v.path === mainRepoPath)
-      if (mainVault) await ensureVaultMarker(mainVault)
+
+    // Ensure markers and load per-vault configs
+    for (const v of vaults) {
+      await ensureVaultMarker(v)
+      await loadVaultConfig(v)
     }
+
     await refreshAllTrees()
   }
 
   async function ensureVaultMarker(vault: Vault) {
     const fs = useFs()
-    const markerPath = await fs.join(vault.path, '.neptu-vault')
+    const markerPath = await fs.join(vault.path, '.neptu-vault.yaml')
     if (!(await fs.exists(markerPath))) {
-      await fs.writeText(markerPath, '')
+      await fs.writeYaml(markerPath, DEFAULT_VAULT_CONFIG)
     }
+  }
+
+  async function loadVaultConfig(vault: Vault): Promise<VaultConfig> {
+    const fs = useFs()
+    const path = await fs.join(vault.path, '.neptu-vault.yaml')
+    try {
+      const data = await fs.readYaml<unknown>(path)
+      if (isValidVaultConfig(data)) {
+        vaultConfigs.value[vault.id] = data
+        return data
+      }
+      console.warn('[vaults] Invalid .neptu-vault.yaml, using defaults', vault.path)
+    }
+    catch {
+      // File missing or unreadable — fall through to defaults
+    }
+    const fallback = { ...DEFAULT_VAULT_CONFIG }
+    vaultConfigs.value[vault.id] = fallback
+    return fallback
+  }
+
+  async function saveVaultConfig(vault: Vault, config: VaultConfig): Promise<void> {
+    const fs = useFs()
+    const path = await fs.join(vault.path, '.neptu-vault.yaml')
+    await fs.writeYaml(path, config)
+    vaultConfigs.value[vault.id] = config
   }
 
   async function addFavorite(path: string) {
@@ -149,6 +184,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     list.value.push(vault)
     await ensureVaultMarker(vault)
+    await loadVaultConfig(vault)
     await settings.persist()
     await refreshTree(vault)
     if (vault.type === 'git') await useGitStore().refreshStatus(vault.id)
@@ -172,6 +208,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     list.value.splice(idx, 1)
     Reflect.deleteProperty(trees.value, removed.id)
+    Reflect.deleteProperty(vaultConfigs.value, removed.id)
     await settings.persist()
   }
 
@@ -287,7 +324,7 @@ export const useVaultsStore = defineStore('vaults', () => {
   async function refreshTree(vault: Vault) {
     const fs = useFs()
     const settingsStore = useSettingsStore()
-    const scanRoot = getVaultScanRoot(vault)
+    const scanRoot = getEffectiveContentRoot(vault)
     try {
       trees.value[vault.id] = await fs.scanMarkdownTree(scanRoot, {
         showHidden: settingsStore.settings.showHiddenFiles,
@@ -326,11 +363,25 @@ export const useVaultsStore = defineStore('vaults', () => {
     await useSettingsStore().persist()
   }
 
+  /**
+   * Returns the effective content scan root for a vault, preferring
+   * `contentRoot` from `.neptu-vault.yaml` over legacy `vault.contentFolder`.
+   */
+  function getEffectiveContentRoot(vault: Vault): string {
+    const configRoot = vaultConfigs.value[vault.id]?.contentRoot
+    if (configRoot) {
+      const base = vault.path.replace(/[/\\]+$/, '')
+      return `${base}/${configRoot}`
+    }
+    return getVaultScanRoot(vault)
+  }
+
   return {
     list,
     trees,
     groups,
     favorites,
+    vaultConfigs,
     findById,
     findVaultForPath,
     hydrate,
@@ -348,5 +399,8 @@ export const useVaultsStore = defineStore('vaults', () => {
     removeFavorite,
     isFavorite,
     ensureVaultMarker,
+    loadVaultConfig,
+    saveVaultConfig,
+    getEffectiveContentRoot,
   }
 })
