@@ -167,7 +167,10 @@ function openFileInNewPanel(path: string) {
 }
 
 async function handleDelete(node: FileNode) {
-  if (!confirm(t('confirm.deleteFile', { name: node.name }))) return
+  const needsConfirm = props.vault.type === 'git'
+    ? settings.settings.confirmDeleteGit
+    : settings.settings.confirmDeleteLocal
+  if (needsConfirm && !confirm(t('confirm.deleteFile', { name: node.name }))) return
   try {
     await editor.deleteNote({ vault: props.vault, path: node.path })
   }

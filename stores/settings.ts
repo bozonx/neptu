@@ -57,6 +57,8 @@ function pickSharedSettings(s: AppSettings): SharedSettings {
     gitAuthorEmail: s.gitAuthorEmail,
     fileSortMode: s.fileSortMode,
     showHiddenFiles: s.showHiddenFiles,
+    confirmDeleteLocal: s.confirmDeleteLocal,
+    confirmDeleteGit: s.confirmDeleteGit,
     enabledPlugins: s.enabledPlugins,
   }
 }

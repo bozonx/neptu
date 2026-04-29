@@ -60,6 +60,8 @@ const authorEmail = ref('')
 const layoutMode = ref<AppSettings['layoutMode']>('desktop')
 const theme = ref<AppSettings['theme']>('system')
 const locale = ref<AppSettings['locale']>('auto')
+const confirmDeleteLocal = ref(true)
+const confirmDeleteGit = ref(true)
 const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
 const newMainPath = ref('')
@@ -80,6 +82,8 @@ watch(open, async (value) => {
   layoutMode.value = s.layoutMode
   theme.value = s.theme
   locale.value = s.locale
+  confirmDeleteLocal.value = s.confirmDeleteLocal
+  confirmDeleteGit.value = s.confirmDeleteGit
   newMainPath.value = ''
   try {
     const git = useGit()
@@ -150,6 +154,8 @@ async function save() {
       layoutMode: layoutMode.value,
       theme: theme.value,
       locale: locale.value,
+      confirmDeleteLocal: confirmDeleteLocal.value,
+      confirmDeleteGit: confirmDeleteGit.value,
     })
     colorMode.preference = theme.value
   }
@@ -165,7 +171,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale],
+  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale, confirmDeleteLocal, confirmDeleteGit],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -255,6 +261,24 @@ watch(
 
             <section class="space-y-4">
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
+                {{ $t('settings.safety') }}
+              </h3>
+              <UFormField :hint="$t('settings.confirmDeleteHint')">
+                <div class="flex flex-col gap-2">
+                  <label class="flex items-center gap-2">
+                    <USwitch v-model="confirmDeleteLocal" />
+                    <span class="text-sm">{{ $t('settings.confirmDeleteLocal') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <USwitch v-model="confirmDeleteGit" />
+                    <span class="text-sm">{{ $t('settings.confirmDeleteGit') }}</span>
+                  </label>
+                </div>
+              </UFormField>
+            </section>
+
+            <section class="space-y-4">
+              <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
                 {{ $t('settings.editor') }}
               </h3>
               <UFormField
@@ -321,6 +345,10 @@ watch(
                   />
                 </div>
               </UFormField>
+              <div class="text-xs text-muted space-y-1">
+                <p>{{ $t('settings.storageInfo1') }}</p>
+                <p>{{ $t('settings.storageInfo2') }}</p>
+              </div>
             </section>
           </div>
 

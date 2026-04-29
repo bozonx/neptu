@@ -142,6 +142,10 @@ export interface SharedSettings {
   fileSortMode: FileSortMode
   /** Whether to show hidden files and folders (names starting with ".") across all vaults */
   showHiddenFiles: boolean
+  /** Whether to confirm before deleting files/folders in local (non-git) vaults */
+  confirmDeleteLocal: boolean
+  /** Whether to confirm before deleting files/folders in git vaults */
+  confirmDeleteGit: boolean
   /** List of enabled plugin ids. Defaults to built-ins when missing. */
   enabledPlugins?: string[]
 }
@@ -153,6 +157,8 @@ export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   gitAuthorEmail: '',
   fileSortMode: 'nameAsc',
   showHiddenFiles: false,
+  confirmDeleteLocal: true,
+  confirmDeleteGit: true,
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
 }
 

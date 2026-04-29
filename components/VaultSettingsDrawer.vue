@@ -62,7 +62,7 @@ watch(
   { immediate: true },
 )
 
-function formatEnabledExtensions(extensions: { ext: string; enabled: boolean }[]): string {
+function formatEnabledExtensions(extensions: { ext: string, enabled: boolean }[]): string {
   const enabled = extensions.filter((e) => e.enabled).map((e) => `.${e.ext}`)
   return enabled.join(', ')
 }
