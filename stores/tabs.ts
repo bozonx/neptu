@@ -21,6 +21,7 @@ const RIGHT_SIDEBAR_MAX = 30
 const CENTER_MIN = 20
 const LEFT_SIDEBAR_DUAL_FIRST_MIN = 10
 const LEFT_SIDEBAR_DUAL_FIRST_MAX = 60
+const MAX_SPLIT_DEPTH = 5
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))

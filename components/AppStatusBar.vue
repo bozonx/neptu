@@ -21,15 +21,15 @@ const stats = computed(() => {
 <template>
   <div
     v-if="editorStore.currentFilePath"
-    class="fixed bottom-0 right-0 h-7 pl-3 pr-1 bg-elevated border-t border-l border-default text-xs text-muted flex items-center whitespace-nowrap z-40 gap-2"
+    class="fixed bottom-0 right-0 h-7 pl-3 pr-1 bg-elevated border-t border-l border-default text-xs text-muted flex items-center whitespace-nowrap z-40 gap-2 max-w-full"
   >
-    <span class="pointer-events-none">{{ stats }}</span>
+    <span class="pointer-events-none truncate min-w-0">{{ stats }}</span>
     <UButton
       :icon="tabsStore.rightSidebarCollapsed ? 'i-lucide-panel-right-close' : 'i-lucide-panel-right'"
       size="xs"
       color="neutral"
       variant="ghost"
-      class="w-5 h-5 justify-center px-0"
+      class="w-5 h-5 justify-center px-0 shrink-0"
       :title="tabsStore.rightSidebarCollapsed ? $t('sidebar.showRightSidebar') : $t('sidebar.hideRightSidebar')"
       @click="tabsStore.rightSidebarCollapsed = !tabsStore.rightSidebarCollapsed"
     />

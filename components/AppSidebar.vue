@@ -813,7 +813,10 @@ async function onGroupDrop(group: VaultGroup) {
                   </div>
                 </Pane>
 
-                <Pane class="flex flex-col min-w-0 bg-default relative p-2 overflow-y-auto">
+                <Pane
+                  :size="100 - tabs.leftSidebarDualFirstColumnSize"
+                  class="flex flex-col min-w-0 bg-default relative p-2 overflow-y-auto"
+                >
                   <template v-if="tabs.leftSidebarDualShowFavorites">
                     <div class="flex items-center gap-1.5 px-2 py-1 mb-1">
                       <UIcon

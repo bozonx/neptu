@@ -11,8 +11,14 @@ const tabsStore = useTabsStore()
 
 function handleResize(event: Array<{ pane: number, size: number }>) {
   const panel = props.panel!
-  if (panel.type === 'node' && event.length > 0) {
-    tabsStore.updatePanelRatio(panel.id, event[0]!.size / 100)
+  if (panel.type === 'node' && event.length === 2) {
+    const isRtl = typeof document !== 'undefined' && document.dir === 'rtl'
+    const isHorizontalSplit = panel.direction === 'horizontal'
+    const ratio = (isRtl && isHorizontalSplit) 
+      ? 1 - (event[0]!.size / 100) 
+      : event[0]!.size / 100
+
+    tabsStore.updatePanelRatio(panel.id, ratio)
   }
 }
 </script>

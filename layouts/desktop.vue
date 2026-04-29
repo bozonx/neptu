@@ -110,10 +110,9 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
 
       <!-- Right Sidebar -->
       <Pane
-        v-if="!tabsStore.rightSidebarCollapsed"
-        :size="tabsStore.rightSidebarSize"
-        min-size="10"
-        max-size="30"
+        :size="tabsStore.rightSidebarCollapsed ? 0 : tabsStore.rightSidebarSize"
+        :min-size="tabsStore.rightSidebarCollapsed ? 0 : 10"
+        :max-size="tabsStore.rightSidebarCollapsed ? 0 : 30"
         class="flex flex-col bg-default pb-7"
       >
         <AppPanel class="shrink-0" />
