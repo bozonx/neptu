@@ -1,8 +1,10 @@
 <script setup lang="ts">
 const vaults = useVaultsStore()
 const tabs = useTabsStore()
+const dnd = useDnd()
 const toast = useToast()
 const { t } = useI18n()
+const isDropTarget = ref(false)
 
 function fileName(path: string): string {
   const parts = path.split(/[\\/]/)
@@ -18,10 +20,49 @@ function openFile(path: string) {
     toast.add({ title: t('toast.openFileFailed'), description: String(error), color: 'error' })
   })
 }
+
+function canAcceptDrop() {
+  return Boolean(dnd.draggedPath.value) && !dnd.draggedIsDir.value
+}
+
+function onDragOver(event: DragEvent) {
+  if (!canAcceptDrop()) return
+  event.preventDefault()
+  isDropTarget.value = true
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+function onDragLeave() {
+  isDropTarget.value = false
+}
+
+async function onDrop() {
+  if (!canAcceptDrop() || !dnd.draggedPath.value) return
+
+  isDropTarget.value = false
+
+  try {
+    await vaults.addFavorite(dnd.draggedPath.value)
+  }
+  catch (error) {
+    toast.add({ title: t('toast.addFavoriteFailed', 'Failed to add favorite'), description: String(error), color: 'error' })
+  }
+  finally {
+    dnd.onDragEnd()
+  }
+}
 </script>
 
 <template>
-  <div class="space-y-0.5">
+  <div
+    class="space-y-0.5 rounded-md transition-colors"
+    :class="isDropTarget ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : ''"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
+  >
     <div
       v-if="vaults.favorites.length === 0"
       class="text-sm text-muted px-2 py-2"

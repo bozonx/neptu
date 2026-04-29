@@ -10,6 +10,7 @@ const props = defineProps<{
 const tabsStore = useTabsStore()
 const editorStore = useEditorStore()
 const vaults = useVaultsStore()
+const dnd = useDnd()
 
 const scrollContainer = ref<HTMLElement | null>(null)
 
@@ -92,6 +93,14 @@ function handleClose(tab: EditorTab) {
   else if (props.panelId) {
     tabsStore.closeTab(props.panelId, tab.id)
   }
+}
+
+function onTabDragStart(event: DragEvent, tab: EditorTab) {
+  dnd.onPathDragStart(event, tab.filePath, { isDir: false, source: 'tab' })
+}
+
+function onTabDragEnd() {
+  dnd.onDragEnd()
 }
 
 function onAdd(event: { data: EditorTab }) {
@@ -180,6 +189,7 @@ const contextMenuItems = (tab: EditorTab) => [
       v-model="draggableTabs"
       group="editor-tabs"
       :animation="150"
+      handle=".tab-sort-handle"
       class="flex items-center h-full min-w-4 flex-1"
       :ghost-class="'opacity-50'"
       @add="onAdd"
@@ -195,6 +205,7 @@ const contextMenuItems = (tab: EditorTab) => [
         >
           <button
             type="button"
+            draggable="true"
             :data-tab-id="tab.id"
             class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
             :class="tab.id === activeId
@@ -202,11 +213,25 @@ const contextMenuItems = (tab: EditorTab) => [
               : 'bg-elevated/50 text-muted hover:text-default'"
             :title="tab.filePath"
             @click="handleTabClick(tab)"
+            @dragstart="onTabDragStart($event, tab)"
+            @dragend="onTabDragEnd"
           >
             <div
               v-if="tab.id === activeId"
               class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
             />
+            <button
+              type="button"
+              class="tab-sort-handle -ml-1 flex items-center justify-center rounded p-0.5 text-muted/70 hover:text-default cursor-grab active:cursor-grabbing"
+              :title="$t('editor.reorderTabs', 'Reorder tabs')"
+              draggable="false"
+              @click.stop
+            >
+              <UIcon
+                name="i-lucide-grip-vertical"
+                class="size-3"
+              />
+            </button>
             <span
               v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
               class="size-1.5 rounded-full bg-primary"
@@ -235,6 +260,7 @@ const contextMenuItems = (tab: EditorTab) => [
         <button
           v-else
           type="button"
+          draggable="true"
           :data-tab-id="tab.id"
           class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative"
           :class="tab.id === activeId
@@ -242,11 +268,25 @@ const contextMenuItems = (tab: EditorTab) => [
             : 'bg-elevated/50 text-muted hover:text-default'"
           :title="tab.filePath"
           @click="handleTabClick(tab)"
+          @dragstart="onTabDragStart($event, tab)"
+          @dragend="onTabDragEnd"
         >
           <div
             v-if="tab.id === activeId"
             class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
           />
+          <button
+            type="button"
+            class="tab-sort-handle -ml-1 flex items-center justify-center rounded p-0.5 text-muted/70 hover:text-default cursor-grab active:cursor-grabbing"
+            :title="$t('editor.reorderTabs', 'Reorder tabs')"
+            draggable="false"
+            @click.stop
+          >
+            <UIcon
+              name="i-lucide-grip-vertical"
+              class="size-3"
+            />
+          </button>
           <span
             v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
             class="size-1.5 rounded-full bg-primary"

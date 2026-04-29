@@ -370,8 +370,7 @@ export const useTabsStore = defineStore('tabs', () => {
     }
   }
 
-  async function updatePath(oldPath: string, newPath: string) {
-    const isFolder = !oldPath.endsWith('.md')
+  async function updatePath(oldPath: string, newPath: string, isFolder = !oldPath.endsWith('.md')) {
     const match = (p: string) => {
       if (p === oldPath) return true
       if (isFolder) {

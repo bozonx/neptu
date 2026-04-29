@@ -25,6 +25,16 @@ function basename(path: string): string {
   return parts[parts.length - 1] ?? norm
 }
 
+function replacePathPrefix(path: string, oldPrefix: string, newPrefix: string): string {
+  if (path === oldPrefix) return newPrefix
+
+  const sep = oldPrefix.endsWith('/') || oldPrefix.endsWith('\\') ? oldPrefix : `${oldPrefix}/`
+  if (!path.startsWith(sep)) return path
+
+  const targetBase = newPrefix.endsWith('/') || newPrefix.endsWith('\\') ? newPrefix.slice(0, -1) : newPrefix
+  return `${targetBase}/${path.slice(sep.length)}`
+}
+
 /**
  * Returns the deepest vault whose `path` is a prefix of `filePath`.
  * Used to associate the currently edited file with its owning vault.
@@ -289,6 +299,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     const fs = useFs()
     const name = basename(sourcePath)
     const destPath = await fs.join(targetDirPath, name)
+    const sourceInfo = await fs.stat(sourcePath)
 
     if (sourcePath === destPath) return
 
@@ -303,7 +314,18 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     // Update editor/tabs if needed
     const tabs = useTabsStore()
-    await tabs.updatePath(sourcePath, destPath)
+    await tabs.updatePath(sourcePath, destPath, sourceInfo.isDirectory)
+
+    let favoritesChanged = false
+    favorites.value = favorites.value.map((favoritePath) => {
+      const nextPath = sourceInfo.isDirectory ? replacePathPrefix(favoritePath, sourcePath, destPath) : favoritePath === sourcePath ? destPath : favoritePath
+      if (nextPath !== favoritePath) favoritesChanged = true
+      return nextPath
+    })
+
+    if (sourceVault?.type === 'git') await useGitStore().refreshStatus(sourceVault.id)
+    if (targetVault?.type === 'git' && targetVault.id !== sourceVault?.id) await useGitStore().refreshStatus(targetVault.id)
+    if (favoritesChanged) await useSettingsStore().persist()
   }
 
   async function copyNode(sourcePath: string, targetDirPath: string) {
@@ -367,6 +389,24 @@ export const useVaultsStore = defineStore('vaults', () => {
     await useSettingsStore().persist()
   }
 
+  async function setVaultGroup(vaultId: string, groupId?: string | null) {
+    const vault = findById(vaultId)
+    if (!vault) return
+
+    if (vault.path === useSettingsStore().mainRepoPath) return
+
+    if (groupId) {
+      const group = groups.value.find((entry) => entry.id === groupId)
+      if (!group) return
+      vault.groupId = group.id
+    }
+    else {
+      delete vault.groupId
+    }
+
+    await useSettingsStore().persist()
+  }
+
   /**
    * Returns the effective content scan root for a vault, preferring
    * `contentRoot` from `.neptu-vault.yaml` over legacy `vault.contentFolder`.
@@ -397,6 +437,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     refreshAllTrees,
     addGroup,
     removeGroup,
+    setVaultGroup,
     moveNode,
     copyNode,
     addFavorite,

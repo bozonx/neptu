@@ -9,6 +9,7 @@ interface Props {
   activePath: string | null
   filters?: FileFilterSettings
   expandedFolders?: Record<string, boolean>
+  allowVaultDrag?: boolean
 }
 
 const props = defineProps<Props>()
@@ -67,6 +68,15 @@ async function onDrop(event: DragEvent) {
   catch (error) {
     toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
   }
+}
+
+function onVaultDragStart(event: DragEvent) {
+  if (!props.allowVaultDrag) return
+  dnd.onVaultDragStart(event, props.vault.id)
+}
+
+function onVaultDragEnd() {
+  dnd.onDragEnd()
 }
 
 function vaultMenuItems(): DropdownMenuItem[][] {
@@ -192,7 +202,10 @@ async function handleDelete(node: FileNode) {
         :class="[
           isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary/50' : 'hover:ring-1 hover:ring-inset hover:ring-border/50',
         ]"
+        :draggable="allowVaultDrag"
         @click="emit('toggle')"
+        @dragstart="onVaultDragStart"
+        @dragend="onVaultDragEnd"
         @dragover="onDragOver"
         @dragleave="onDragLeave"
         @drop="onDrop"

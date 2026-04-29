@@ -34,7 +34,7 @@ function toggle(node: FileNode) {
 }
 
 function onDragStart(event: DragEvent, node: FileNode) {
-  dnd.onDragStart(event, node.path)
+  dnd.onPathDragStart(event, node.path, { isDir: node.isDir, source: 'tree' })
 }
 
 function onDragEnd() {

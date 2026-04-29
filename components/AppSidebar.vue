@@ -12,6 +12,7 @@ const editor = useEditorStore()
 const git = useGitStore()
 const tabs = useTabsStore()
 const plugins = usePluginsStore()
+const dnd = useDnd()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -316,6 +317,10 @@ async function submitCreateFolder() {
 }
 
 const dualShowFavorites = ref(false)
+const singleUngroupedDropTarget = ref(false)
+const singleGroupDropTargetId = ref<string | null>(null)
+const dualFavoritesDropTarget = ref(false)
+const dualVaultDropTargetId = ref<string | null>(null)
 
 function toggleVault(vault: Vault) {
   tabs.expandedVaults[vault.id] = !tabs.expandedVaults[vault.id]
@@ -325,6 +330,151 @@ function toggleVault(vault: Vault) {
 function toggleFolder(path: string) {
   tabs.expandedFolders[path] = !tabs.expandedFolders[path]
   void editor.saveUiState()
+}
+
+function isFileDrag() {
+  return Boolean(dnd.draggedPath.value)
+}
+
+function isFavoriteCandidate() {
+  return isFileDrag() && !dnd.draggedIsDir.value
+}
+
+function isVaultCardDraggable(vault: Vault) {
+  return vault.path !== settings.mainRepoPath
+}
+
+function openDualFavoritesDrop(event: DragEvent) {
+  if (!isFavoriteCandidate()) return
+  event.preventDefault()
+  dualShowFavorites.value = true
+  selectedVaultId.value = null
+  dualFavoritesDropTarget.value = true
+  dualVaultDropTargetId.value = null
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+function clearDualFavoritesDrop() {
+  dualFavoritesDropTarget.value = false
+}
+
+async function dropToFavorites() {
+  if (!isFavoriteCandidate() || !dnd.draggedPath.value) return
+
+  dualFavoritesDropTarget.value = false
+
+  try {
+    await vaults.addFavorite(dnd.draggedPath.value)
+  }
+  catch (error) {
+    toast.add({ title: t('toast.addFavoriteFailed', 'Failed to add favorite'), description: String(error), color: 'error' })
+  }
+  finally {
+    dnd.onDragEnd()
+  }
+}
+
+function openDualVaultDrop(event: DragEvent, vault: Vault) {
+  if (!isFileDrag()) return
+  event.preventDefault()
+  dnd.updateCopyMode(event)
+  dnd.handleAutoScroll(event)
+  selectedVaultId.value = vault.id
+  dualShowFavorites.value = false
+  dualVaultDropTargetId.value = vault.id
+  dualFavoritesDropTarget.value = false
+}
+
+function clearDualVaultDrop(vaultId?: string) {
+  if (!vaultId || dualVaultDropTargetId.value === vaultId) {
+    dualVaultDropTargetId.value = null
+  }
+}
+
+async function dropToVaultRoot(event: DragEvent, vault: Vault) {
+  if (!isFileDrag() || !dnd.draggedPath.value) return
+
+  dualVaultDropTargetId.value = null
+
+  try {
+    if (event.shiftKey) {
+      await vaults.copyNode(dnd.draggedPath.value, vault.path)
+    }
+    else {
+      await vaults.moveNode(dnd.draggedPath.value, vault.path)
+    }
+  }
+  catch (error) {
+    toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
+  }
+  finally {
+    dnd.onDragEnd()
+  }
+}
+
+function onUngroupedDragOver(event: DragEvent) {
+  if (!dnd.draggedVaultId.value) return
+  event.preventDefault()
+  singleUngroupedDropTarget.value = true
+  singleGroupDropTargetId.value = null
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+function onUngroupedDragLeave() {
+  singleUngroupedDropTarget.value = false
+}
+
+async function onUngroupedDrop() {
+  if (!dnd.draggedVaultId.value) return
+
+  singleUngroupedDropTarget.value = false
+
+  try {
+    await vaults.setVaultGroup(dnd.draggedVaultId.value, null)
+  }
+  catch (error) {
+    toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
+  }
+  finally {
+    dnd.onDragEnd()
+  }
+}
+
+function onGroupDragOver(event: DragEvent, group: VaultGroup) {
+  if (!dnd.draggedVaultId.value) return
+  event.preventDefault()
+  singleGroupDropTargetId.value = group.id
+  singleUngroupedDropTarget.value = false
+  tabs.expandedGroups[group.id] = true
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+function onGroupDragLeave(groupId: string) {
+  if (singleGroupDropTargetId.value === groupId) {
+    singleGroupDropTargetId.value = null
+  }
+}
+
+async function onGroupDrop(group: VaultGroup) {
+  if (!dnd.draggedVaultId.value) return
+
+  singleGroupDropTargetId.value = null
+
+  try {
+    await vaults.setVaultGroup(dnd.draggedVaultId.value, group.id)
+  }
+  catch (error) {
+    toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
+  }
+  finally {
+    dnd.onDragEnd()
+  }
 }
 </script>
 
@@ -396,57 +546,70 @@ function toggleFolder(path: string) {
                 </div>
 
                 <div
-                  v-if="vaults.list.length === 0"
-                  class="text-sm text-muted px-2 py-4"
+                  class="rounded-lg transition-colors"
+                  :class="singleUngroupedDropTarget ? 'bg-primary/10 ring-1 ring-inset ring-primary/40 p-1' : ''"
+                  @dragover="onUngroupedDragOver"
+                  @dragleave="onUngroupedDragLeave"
+                  @drop="onUngroupedDrop"
                 >
-                  {{ $t('sidebar.noVaults') }}
+                  <div
+                    v-if="vaults.list.length === 0"
+                    class="text-sm text-muted px-2 py-4"
+                  >
+                    {{ $t('sidebar.noVaults') }}
+                  </div>
+
+                  <VaultSidebarItem
+                    v-if="mainVault"
+                    :key="mainVault.id"
+                    class="mb-2"
+                    :vault="mainVault"
+                    :expanded="tabs.expandedVaults[mainVault.id] ?? (mainVault.path === settings.mainRepoPath)"
+                    :nodes="vaults.trees[mainVault.id] ?? []"
+                    :active-path="editor.currentFilePath"
+                    :filters="mainVault.filters"
+                    :expanded-folders="tabs.expandedFolders"
+                    :allow-vault-drag="isVaultCardDraggable(mainVault)"
+                    @toggle="toggleVault(mainVault)"
+                    @toggle-folder="toggleFolder"
+                    @create-note="(v, d) => openCreateNote(v, d)"
+                    @create-folder="(v, d) => openCreateFolder(v, d)"
+                    @edit-vault="(v) => openEditVault(v)"
+                    @remove-vault="(v) => openRemoveVaultConfirm(v)"
+                  />
+
+                  <div
+                    v-if="mainVault && otherUngroupedVaults.length"
+                    class="my-2 border-t border-default"
+                  />
+
+                  <VaultSidebarItem
+                    v-for="vault in otherUngroupedVaults"
+                    :key="vault.id"
+                    class="mb-2"
+                    :vault="vault"
+                    :expanded="tabs.expandedVaults[vault.id] ?? false"
+                    :nodes="vaults.trees[vault.id] ?? []"
+                    :active-path="editor.currentFilePath"
+                    :filters="vault.filters"
+                    :expanded-folders="tabs.expandedFolders"
+                    :allow-vault-drag="isVaultCardDraggable(vault)"
+                    @toggle="toggleVault(vault)"
+                    @toggle-folder="toggleFolder"
+                    @create-note="(v, d) => openCreateNote(v, d)"
+                    @create-folder="(v, d) => openCreateFolder(v, d)"
+                    @edit-vault="(v) => openEditVault(v)"
+                    @remove-vault="(v) => openRemoveVaultConfirm(v)"
+                  />
                 </div>
-
-                <VaultSidebarItem
-                  v-if="mainVault"
-                  :key="mainVault.id"
-                  class="mb-2"
-                  :vault="mainVault"
-                  :expanded="tabs.expandedVaults[mainVault.id] ?? (mainVault.path === settings.mainRepoPath)"
-                  :nodes="vaults.trees[mainVault.id] ?? []"
-                  :active-path="editor.currentFilePath"
-                  :filters="mainVault.filters"
-                  :expanded-folders="tabs.expandedFolders"
-                  @toggle="toggleVault(mainVault)"
-                  @toggle-folder="toggleFolder"
-                  @create-note="(v, d) => openCreateNote(v, d)"
-                  @create-folder="(v, d) => openCreateFolder(v, d)"
-                  @edit-vault="(v) => openEditVault(v)"
-                  @remove-vault="(v) => openRemoveVaultConfirm(v)"
-                />
-
-                <div
-                  v-if="mainVault && otherUngroupedVaults.length"
-                  class="my-2 border-t border-default"
-                />
-
-                <VaultSidebarItem
-                  v-for="vault in otherUngroupedVaults"
-                  :key="vault.id"
-                  class="mb-2"
-                  :vault="vault"
-                  :expanded="tabs.expandedVaults[vault.id] ?? false"
-                  :nodes="vaults.trees[vault.id] ?? []"
-                  :active-path="editor.currentFilePath"
-                  :filters="vault.filters"
-                  :expanded-folders="tabs.expandedFolders"
-                  @toggle="toggleVault(vault)"
-                  @toggle-folder="toggleFolder"
-                  @create-note="(v, d) => openCreateNote(v, d)"
-                  @create-folder="(v, d) => openCreateFolder(v, d)"
-                  @edit-vault="(v) => openEditVault(v)"
-                  @remove-vault="(v) => openRemoveVaultConfirm(v)"
-                />
 
                 <div
                   v-for="group in vaults.groups"
                   :key="group.id"
                   class="mb-2"
+                  @dragover="onGroupDragOver($event, group)"
+                  @dragleave="onGroupDragLeave(group.id)"
+                  @drop="onGroupDrop(group)"
                 >
                   <UContextMenu
                     :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
@@ -454,6 +617,7 @@ function toggleFolder(path: string) {
                   >
                     <div
                       class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/50 hover:ring-1 hover:ring-inset hover:ring-border/50"
+                      :class="singleGroupDropTargetId === group.id ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : ''"
                       @click="toggleGroup(group)"
                     >
                       <UIcon
@@ -497,6 +661,7 @@ function toggleFolder(path: string) {
                       :active-path="editor.currentFilePath"
                       :filters="vault.filters"
                       :expanded-folders="tabs.expandedFolders"
+                      :allow-vault-drag="isVaultCardDraggable(vault)"
                       @toggle="toggleVault(vault)"
                       @toggle-folder="toggleFolder"
                       @create-note="(v, d) => openCreateNote(v, d)"
@@ -523,9 +688,15 @@ function toggleFolder(path: string) {
                     <!-- Favorites -->
                     <div
                       class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
-                      :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': dualShowFavorites }"
+                      :class="{
+                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': dualShowFavorites,
+                        'ring-1 ring-inset ring-primary/40 bg-primary/10': dualFavoritesDropTarget,
+                      }"
                       :title="$t('sidebar.favorites')"
                       @click="dualShowFavorites = true; selectedVaultId = null"
+                      @dragover="openDualFavoritesDrop"
+                      @dragleave="clearDualFavoritesDrop"
+                      @drop="dropToFavorites"
                     >
                       <UIcon
                         name="i-lucide-star"
@@ -541,9 +712,15 @@ function toggleFolder(path: string) {
                     <div
                       v-if="mainVault"
                       class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
-                      :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === mainVault.id }"
+                      :class="{
+                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === mainVault.id,
+                        'ring-1 ring-inset ring-primary/40 bg-primary/10': dualVaultDropTargetId === mainVault.id,
+                      }"
                       :title="mainVault.name"
                       @click="selectedVaultId = mainVault.id; dualShowFavorites = false"
+                      @dragover="openDualVaultDrop($event, mainVault)"
+                      @dragleave="clearDualVaultDrop(mainVault.id)"
+                      @drop="dropToVaultRoot($event, mainVault)"
                     >
                       <UIcon
                         name="i-lucide-folder-heart"
@@ -563,9 +740,15 @@ function toggleFolder(path: string) {
                       v-for="vault in otherUngroupedVaults"
                       :key="vault.id"
                       class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
-                      :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
+                      :class="{
+                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id,
+                        'ring-1 ring-inset ring-primary/40 bg-primary/10': dualVaultDropTargetId === vault.id,
+                      }"
                       :title="vault.name"
                       @click="selectedVaultId = vault.id; dualShowFavorites = false"
+                      @dragover="openDualVaultDrop($event, vault)"
+                      @dragleave="clearDualVaultDrop(vault.id)"
+                      @drop="dropToVaultRoot($event, vault)"
                     >
                       <UIcon
                         :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
@@ -597,9 +780,15 @@ function toggleFolder(path: string) {
                           v-for="vault in vaultsInGroup(group.id)"
                           :key="vault.id"
                           class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors ml-2"
-                          :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id }"
+                          :class="{
+                            'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id,
+                            'ring-1 ring-inset ring-primary/40 bg-primary/10': dualVaultDropTargetId === vault.id,
+                          }"
                           :title="vault.name"
                           @click="selectedVaultId = vault.id; dualShowFavorites = false"
+                          @dragover="openDualVaultDrop($event, vault)"
+                          @dragleave="clearDualVaultDrop(vault.id)"
+                          @drop="dropToVaultRoot($event, vault)"
                         >
                           <UIcon
                             :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"

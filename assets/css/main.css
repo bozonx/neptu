@@ -57,4 +57,8 @@ body,
   border-bottom: 1px solid var(--ui-border);
 }
 
+body.neptu-dnd-copy,
+body.neptu-dnd-copy * {
+  cursor: copy !important;
+}
 
