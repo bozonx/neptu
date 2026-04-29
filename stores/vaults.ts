@@ -85,7 +85,19 @@ export const useVaultsStore = defineStore('vaults', () => {
     favorites.value = loadedFavorites ?? []
 
     if (mutated) await useSettingsStore().persist()
+    if (mutated) {
+      const mainVault = vaults.find((v) => v.path === mainRepoPath)
+      if (mainVault) await ensureVaultMarker(mainVault)
+    }
     await refreshAllTrees()
+  }
+
+  async function ensureVaultMarker(vault: Vault) {
+    const fs = useFs()
+    const markerPath = await fs.join(vault.path, '.neptu-vault')
+    if (!(await fs.exists(markerPath))) {
+      await fs.writeText(markerPath, '')
+    }
   }
 
   async function addFavorite(path: string) {
@@ -136,6 +148,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     }
 
     list.value.push(vault)
+    await ensureVaultMarker(vault)
     await settings.persist()
     await refreshTree(vault)
     if (vault.type === 'git') await useGitStore().refreshStatus(vault.id)
@@ -334,5 +347,6 @@ export const useVaultsStore = defineStore('vaults', () => {
     addFavorite,
     removeFavorite,
     isFavorite,
+    ensureVaultMarker,
   }
 })
