@@ -78,7 +78,7 @@ export const useGitStore = defineStore('git', () => {
     if (!vault || vault.type !== 'git' || !vault.git) return
     if (vault.git.commitMode !== 'auto') return
     cancelCommit(vaultId)
-    const delay = Math.max(0, vault.git.commitDebounceMs)
+    const delay = Math.max(1000, vault.git.commitDebounceMs)
     pendingCommits.value[vaultId] = true
     const handle = setTimeout(() => {
       commitTimers.delete(vaultId)
@@ -113,22 +113,32 @@ export const useGitStore = defineStore('git', () => {
         status.value[vaultId] = current
         return
       }
-      const fileWord = current.changedFiles === 1 ? 'file' : 'files'
-      const finalMessage = message?.trim()
-        || `Update notes (${current.changedFiles} ${fileWord})`
+      const settings = useSettingsStore()
+      const template = settings.settings.gitAutoMessageTemplate || 'Update notes ({files} {fileWord})'
+      const count = current.changedFiles
+      const autoMessage = template
+        .replace(/\{files\}/g, String(count))
+        .replace(/\{fileWord\}/g, count === 1 ? 'file' : 'files')
+      const finalMessage = message?.trim() || autoMessage
       const result = await git.commitAll({
         path: vault.path,
         message: finalMessage,
         authorName: author.name,
         authorEmail: author.email,
       })
+      if (result.committed) {
+        status.value[vaultId] = { dirty: false, changedFiles: 0 }
+      }
       commitStatus.value[vaultId] = result.committed ? 'committed' : 'idle'
-      await refreshStatus(vaultId)
     }
     catch (error) {
       commitStatus.value[vaultId] = 'error'
       throw error
     }
+  }
+
+  function resetCommitStatus(vaultId: string) {
+    commitStatus.value[vaultId] = 'idle'
   }
 
   /** Drops cached status for a removed vault. */
@@ -148,6 +158,7 @@ export const useGitStore = defineStore('git', () => {
     cancelCommit,
     scheduleCommit,
     commit,
+    resetCommitStatus,
     dropVault,
   }
 })

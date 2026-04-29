@@ -200,6 +200,8 @@
     "saveFailed": "Сохранение не удалось",
     "commitCompleted": "Коммит выполнен",
     "commitFailed": "Коммит не удался",
+    "commitPullFailed": "Коммит выполнен, но pull не удался",
+    "commitPushFailed": "Коммит и pull выполнены, но push не удался",
     "openFileFailed": "Не удалось открыть файл",
     "openFilePanelFailed": "Не удалось открыть файл в новой панели",
     "deleteFailed": "Не удалось удалить",
@@ -208,7 +210,10 @@
   "git": {
     "commit": "Коммит",
     "autoMessage": "Авто",
-    "commitMessagePrompt": "Введите сообщение коммита:"
+    "commitMessagePrompt": "Введите сообщение коммита:",
+    "pendingCommit": "Автокоммит ожидается",
+    "gitAutoMessageTemplate": "Шаблон сообщения коммита",
+    "gitAutoMessageTemplateHint": "Переменные: {files} и {fileWord}."
   },
   "editor": {
     "noFileSelected": "Выберите или создайте markdown-файл, чтобы начать редактирование",

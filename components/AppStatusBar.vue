@@ -38,6 +38,11 @@ const committing = computed(() => {
   return gitStore.commitStatus[currentVault.value.id] === 'committing'
 })
 
+const pendingCommit = computed(() => {
+  if (!currentVault.value) return false
+  return gitStore.pendingCommits[currentVault.value.id] ?? false
+})
+
 async function handleCommit() {
   const vault = currentVault.value
   if (!vault || vault.type !== 'git') return
@@ -72,6 +77,13 @@ async function toggleAutoMessage() {
     class="fixed bottom-0 right-0 h-7 pl-3 pr-1 bg-elevated border-t border-l border-default text-xs text-muted flex items-center whitespace-nowrap z-40 gap-2 max-w-full"
   >
     <span class="pointer-events-none truncate min-w-0">{{ stats }}</span>
+
+    <UIcon
+      v-if="pendingCommit"
+      name="i-lucide-loader-circle"
+      class="size-3.5 shrink-0 animate-spin text-muted"
+      :title="$t('git.pendingCommit')"
+    />
 
     <template v-if="isManualGit">
       <USwitch

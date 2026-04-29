@@ -107,14 +107,27 @@ async function handleSync() {
   if (props.vault.type !== 'git') return
   try {
     await git.commit(props.vault.id)
-    await useGit().pull(props.vault.path)
-    await useGit().push(props.vault.path)
-    toast.add({ title: t('toast.syncCompleted'), color: 'success' })
-    await git.refreshStatus(props.vault.id)
   }
   catch (error) {
     toast.add({ title: t('toast.syncFailed'), description: String(error), color: 'error' })
+    return
   }
+  try {
+    await useGit().pull(props.vault.path)
+  }
+  catch (error) {
+    toast.add({ title: t('toast.commitPullFailed'), description: String(error), color: 'error' })
+    await git.refreshStatus(props.vault.id)
+    return
+  }
+  try {
+    await useGit().push(props.vault.path)
+    toast.add({ title: t('toast.syncCompleted'), color: 'success' })
+  }
+  catch (error) {
+    toast.add({ title: t('toast.commitPushFailed'), description: String(error), color: 'error' })
+  }
+  await git.refreshStatus(props.vault.id)
 }
 
 async function handlePull() {

@@ -150,6 +150,8 @@ export interface SharedSettings {
   enabledPlugins?: string[]
   /** Use auto-generated message for manual commits (no prompt). */
   gitAutoMessage: boolean
+  /** Template for auto-generated commit messages. */
+  gitAutoMessageTemplate: string
 }
 
 export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
@@ -163,6 +165,7 @@ export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   confirmDeleteGit: true,
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
   gitAutoMessage: true,
+  gitAutoMessageTemplate: 'Update notes ({files} {fileWord})',
 }
 
 export type TabDisplayMode = 'single_line' | 'multi_line' | 'left_vertical'

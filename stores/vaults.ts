@@ -297,17 +297,22 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function moveNode(sourcePath: string, targetDirPath: string) {
     const fs = useFs()
+    const editor = useEditorStore()
+    const git = useGitStore()
     const name = basename(sourcePath)
     const destPath = await fs.join(targetDirPath, name)
     const sourceInfo = await fs.stat(sourcePath)
 
     if (sourcePath === destPath) return
 
-    await fs.moveFile(sourcePath, destPath)
-
-    // Find affected vaults and refresh them
     const sourceVault = findVaultForPath(sourcePath)
     const targetVault = findVaultForPath(targetDirPath)
+
+    // Flush dirty buffers before moving files
+    if (sourceVault) await editor.flushVault(sourceVault)
+    if (targetVault && targetVault.id !== sourceVault?.id) await editor.flushVault(targetVault)
+
+    await fs.moveFile(sourcePath, destPath)
 
     if (sourceVault) await refreshTree(sourceVault)
     if (targetVault && targetVault.id !== sourceVault?.id) await refreshTree(targetVault)
@@ -323,17 +328,28 @@ export const useVaultsStore = defineStore('vaults', () => {
       return nextPath
     })
 
-    if (sourceVault?.type === 'git') await useGitStore().refreshStatus(sourceVault.id)
-    if (targetVault?.type === 'git' && targetVault.id !== sourceVault?.id) await useGitStore().refreshStatus(targetVault.id)
+    if (sourceVault?.type === 'git') {
+      await git.commit(sourceVault.id)
+      await git.refreshStatus(sourceVault.id)
+    }
+    if (targetVault?.type === 'git' && targetVault.id !== sourceVault?.id) {
+      await git.commit(targetVault.id)
+      await git.refreshStatus(targetVault.id)
+    }
     if (favoritesChanged) await useSettingsStore().persist()
   }
 
   async function copyNode(sourcePath: string, targetDirPath: string) {
     const fs = useFs()
+    const editor = useEditorStore()
+    const git = useGitStore()
     const name = basename(sourcePath)
     const destPath = await fs.join(targetDirPath, name)
 
     if (sourcePath === destPath) return
+
+    const targetVault = findVaultForPath(targetDirPath)
+    if (targetVault) await editor.flushVault(targetVault)
 
     const info = await fs.stat(sourcePath)
     if (info.isDirectory) {
@@ -343,8 +359,13 @@ export const useVaultsStore = defineStore('vaults', () => {
       await fs.copyFile(sourcePath, destPath)
     }
 
-    const targetVault = findVaultForPath(targetDirPath)
-    if (targetVault) await refreshTree(targetVault)
+    if (targetVault) {
+      await refreshTree(targetVault)
+      if (targetVault.type === 'git') {
+        await git.commit(targetVault.id)
+        await git.refreshStatus(targetVault.id)
+      }
+    }
   }
 
   async function refreshTree(vault: Vault) {

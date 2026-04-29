@@ -200,6 +200,8 @@
     "saveFailed": "Save failed",
     "commitCompleted": "Commit completed",
     "commitFailed": "Commit failed",
+    "commitPullFailed": "Commit done, but pull failed",
+    "commitPushFailed": "Commit & pull done, but push failed",
     "openFileFailed": "Failed to open file",
     "openFilePanelFailed": "Failed to open file in new panel",
     "deleteFailed": "Failed to delete",
@@ -208,7 +210,10 @@
   "git": {
     "commit": "Commit",
     "autoMessage": "Auto",
-    "commitMessagePrompt": "Enter commit message:"
+    "commitMessagePrompt": "Enter commit message:",
+    "pendingCommit": "Auto-commit pending",
+    "gitAutoMessageTemplate": "Commit message template",
+    "gitAutoMessageTemplateHint": "Variables: {files} and {fileWord}."
   },
   "editor": {
     "noFileSelected": "Select or create a markdown file to start editing",

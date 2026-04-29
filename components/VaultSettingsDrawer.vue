@@ -109,7 +109,7 @@ async function save() {
       git: isGit
         ? {
             commitMode: editCommitMode.value,
-            commitDebounceMs: Math.max(0, Math.round(editCommitDebounceSec.value * 1000)),
+            commitDebounceMs: Math.max(1000, Math.round(editCommitDebounceSec.value * 1000)),
           }
         : undefined,
       filters: editFilters.value,
@@ -218,7 +218,7 @@ const siteLangModeItems = [
               <UInput
                 v-model="editCommitDebounceSec"
                 type="number"
-                :min="0"
+                :min="1"
                 :step="0.5"
               />
             </UFormField>

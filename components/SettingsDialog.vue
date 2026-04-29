@@ -65,6 +65,7 @@ const tabDisplayMode = ref<AppSettings['tabDisplayMode']>('single_line')
 const confirmDeleteLocal = ref(true)
 const confirmDeleteGit = ref(true)
 const gitAutoMessage = ref(true)
+const gitAutoMessageTemplate = ref('')
 const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
 const newMainPath = ref('')
@@ -89,6 +90,7 @@ watch(open, async (value) => {
   confirmDeleteLocal.value = s.confirmDeleteLocal
   confirmDeleteGit.value = s.confirmDeleteGit
   gitAutoMessage.value = s.gitAutoMessage ?? true
+  gitAutoMessageTemplate.value = s.gitAutoMessageTemplate ?? 'Update notes ({files} {fileWord})'
   newMainPath.value = ''
   try {
     const git = useGit()
@@ -153,7 +155,7 @@ async function save() {
   try {
     await settingsStore.updateSettings({
       autosaveDebounceMs: Math.max(100, Math.round(autosaveSec.value * 1000)),
-      defaultCommitDebounceMs: Math.max(0, Math.round(commitSec.value * 1000)),
+      defaultCommitDebounceMs: Math.max(1000, Math.round(commitSec.value * 1000)),
       gitAuthorName: authorName.value.trim(),
       gitAuthorEmail: authorEmail.value.trim(),
       layoutMode: layoutMode.value,
@@ -163,6 +165,7 @@ async function save() {
       confirmDeleteLocal: confirmDeleteLocal.value,
       confirmDeleteGit: confirmDeleteGit.value,
       gitAutoMessage: gitAutoMessage.value,
+      gitAutoMessageTemplate: gitAutoMessageTemplate.value,
     })
     colorMode.preference = theme.value
   }
@@ -178,7 +181,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale, tabDisplayMode, confirmDeleteLocal, confirmDeleteGit, gitAutoMessage],
+  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale, tabDisplayMode, confirmDeleteLocal, confirmDeleteGit, gitAutoMessage, gitAutoMessageTemplate],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -400,7 +403,7 @@ watch(
                 <UInput
                   v-model="commitSec"
                   type="number"
-                  :min="0"
+                  :min="1"
                   :step="0.5"
                   class="w-32"
                 />
@@ -431,6 +434,17 @@ watch(
                 :hint="$t('settings.gitAutoMessageHint')"
               >
                 <USwitch v-model="gitAutoMessage" />
+              </UFormField>
+
+              <UFormField
+                :label="$t('git.gitAutoMessageTemplate')"
+                :hint="$t('git.gitAutoMessageTemplateHint')"
+              >
+                <UInput
+                  v-model="gitAutoMessageTemplate"
+                  :placeholder="'Update notes ({files} {fileWord})'"
+                  class="w-full"
+                />
               </UFormField>
             </section>
           </div>

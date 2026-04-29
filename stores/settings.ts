@@ -61,6 +61,7 @@ function pickSharedSettings(s: AppSettings): SharedSettings {
     confirmDeleteGit: s.confirmDeleteGit,
     enabledPlugins: s.enabledPlugins,
     gitAutoMessage: s.gitAutoMessage,
+    gitAutoMessageTemplate: s.gitAutoMessageTemplate,
   }
 }
 

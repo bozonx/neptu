@@ -54,6 +54,11 @@ export const useEditorStore = defineStore('editor', () => {
     return useVaultsStore().findVaultForPath(currentFilePath.value)
   })
 
+  watch(currentVault, (v) => {
+    if (!v || v.type !== 'git') return
+    useGitStore().resetCommitStatus(v.id)
+  })
+
   function findVaultForPath(path: string | null): Vault | null {
     if (!path) return null
     return useVaultsStore().findVaultForPath(path)
@@ -146,16 +151,28 @@ export const useEditorStore = defineStore('editor', () => {
       buffer.isDirty = false
       setSaveStatus(path, 'saved')
       const vault = findVaultForPath(path)
-      if (vault?.type === 'git') {
-        const git = useGitStore()
-        await git.refreshStatus(vault.id)
-        if (vault.git?.commitMode === 'auto') git.scheduleCommit(vault.id)
+      if (vault?.type === 'git' && vault.git?.commitMode === 'auto') {
+        useGitStore().scheduleCommit(vault.id)
       }
       useSearchStore().updateFile(path, fileContent)
     }
     catch (error) {
       setSaveStatus(path, 'error', error instanceof Error ? error.message : String(error))
       throw error
+    }
+  }
+
+  async function flushVault(vault: Vault) {
+    const prefix = vault.path.replace(/[/\\]+$/, '') + '/'
+    for (const [path, buffer] of Object.entries(buffers.value)) {
+      if (!buffer.isDirty) continue
+      if (!path.startsWith(prefix)) continue
+      try {
+        await save(path)
+      }
+      catch {
+        // Error already handled in save()
+      }
     }
   }
 
@@ -170,7 +187,9 @@ export const useEditorStore = defineStore('editor', () => {
     const vaults = useVaultsStore()
     await vaults.refreshTree(payload.vault)
     if (payload.vault.type === 'git') {
-      await useGitStore().refreshStatus(payload.vault.id)
+      const git = useGitStore()
+      await git.commit(payload.vault.id)
+      await git.refreshStatus(payload.vault.id)
     }
     await useTabsStore().openFile(fullPath)
     useSearchStore().updateFile(fullPath, '')
@@ -189,7 +208,9 @@ export const useEditorStore = defineStore('editor', () => {
     const vaults = useVaultsStore()
     await vaults.refreshTree(payload.vault)
     if (payload.vault.type === 'git') {
-      await useGitStore().refreshStatus(payload.vault.id)
+      const git = useGitStore()
+      await git.commit(payload.vault.id)
+      await git.refreshStatus(payload.vault.id)
     }
   }
 
@@ -382,6 +403,7 @@ export const useEditorStore = defineStore('editor', () => {
     setContent,
     setFrontmatter,
     save,
+    flushVault,
     createNote,
     deleteNote,
     reset,
