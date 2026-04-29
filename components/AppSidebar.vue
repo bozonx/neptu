@@ -58,6 +58,7 @@ const editingVault = ref<Vault | null>(null)
 
 const removeVaultConfirmOpen = ref(false)
 const removeVaultConfirmTarget = ref<Vault | null>(null)
+const removeVaultClearSettings = ref(false)
 
 const createGroupOpen = ref(false)
 const newGroupName = ref('')
@@ -254,9 +255,10 @@ function openRemoveVaultConfirm(vault: Vault) {
 async function submitRemoveVault() {
   if (!removeVaultConfirmTarget.value) return
   try {
-    await vaults.removeVault(removeVaultConfirmTarget.value.id)
+    await vaults.removeVault(removeVaultConfirmTarget.value.id, removeVaultClearSettings.value)
     removeVaultConfirmOpen.value = false
     removeVaultConfirmTarget.value = null
+    removeVaultClearSettings.value = false
     // If the edit modal is open for the same vault, close it
     if (editingVault.value && !vaults.findById(editingVault.value.id)) {
       editVaultOpen.value = false
@@ -916,6 +918,15 @@ function toggleFolder(path: string) {
         <p class="text-xs text-muted mt-1">
           {{ $t('vault.removeVaultHint') }}
         </p>
+        <UFormField class="mt-3">
+          <UCheckbox
+            v-model="removeVaultClearSettings"
+            :label="$t('vault.removeVaultClearSettings')"
+          />
+        </UFormField>
+        <p class="text-xs text-muted mt-1">
+          {{ $t('vault.removeVaultClearSettingsHint') }}
+        </p>
       </template>
 
       <template #footer>
@@ -928,7 +939,7 @@ function toggleFolder(path: string) {
           />
           <UButton
             color="error"
-            :label="$t('vault.remove')"
+            :label="$t('vault.removeFromApp')"
             @click="submitRemoveVault"
           />
         </div>

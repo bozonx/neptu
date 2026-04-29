@@ -25,10 +25,12 @@ const editCommitDebounceSec = ref(5)
 const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
 const editContentType = ref<ContentType>('vault')
 const editContentFolder = ref('src')
+const editUseCustomContentFolder = ref(false)
 const editSiteLangMode = ref<SiteLangMode>('monolingual')
 const editExcludes = ref<string[]>([])
 const newExclude = ref('')
 const newCustomExt = ref('')
+const editFiltersOpen = ref(false)
 
 let skipNextWatch = false
 
@@ -45,17 +47,25 @@ watch(
       ? JSON.parse(JSON.stringify(vault.filters))
       : JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
     editContentType.value = vault.contentType ?? 'vault'
-    editContentFolder.value = vault.contentFolder ?? 'src'
+    const configRoot = vaults.vaultConfigs[vault.id]?.contentRoot
+    editUseCustomContentFolder.value = vault.contentFolder !== undefined
+    editContentFolder.value = vault.contentFolder ?? configRoot ?? 'src'
     editSiteLangMode.value = vault.siteLangMode ?? 'monolingual'
     editExcludes.value = vault.excludes ? [...vault.excludes] : []
     newExclude.value = ''
     newCustomExt.value = ''
+    editFiltersOpen.value = false
     nextTick(() => {
       skipNextWatch = false
     })
   },
   { immediate: true },
 )
+
+function formatEnabledExtensions(extensions: { ext: string; enabled: boolean }[]): string {
+  const enabled = extensions.filter((e) => e.enabled).map((e) => `.${e.ext}`)
+  return enabled.join(', ')
+}
 
 function addExclude() {
   const raw = newExclude.value.trim().replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
@@ -104,7 +114,7 @@ async function save() {
         : undefined,
       filters: editFilters.value,
       contentType: editContentType.value,
-      contentFolder: editContentType.value !== 'vault' ? editContentFolder.value : undefined,
+      contentFolder: editUseCustomContentFolder.value ? editContentFolder.value : undefined,
       siteLangMode: editContentType.value === 'site' ? editSiteLangMode.value : undefined,
       excludes: editExcludes.value,
     })
@@ -121,7 +131,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode, editExcludes],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editUseCustomContentFolder, editContentFolder, editSiteLangMode, editExcludes],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -250,62 +260,99 @@ const siteLangModeItems = [
               />
             </UFormField>
           </template>
-
-          <UFormField
-            v-if="editContentType !== 'vault'"
-            :label="$t('vault.contentFolder')"
-            :hint="$t('vault.contentFolderHint')"
-          >
-            <UInput v-model="editContentFolder" />
-          </UFormField>
         </section>
 
         <section class="space-y-3">
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-            {{ $t('vault.fileFilters') }}
+            {{ $t('vault.contentFolder') }}
           </h3>
-          <div
-            v-for="group in editFilters.groups"
-            :key="group.label"
-            class="space-y-2"
-          >
+          <UFormField>
             <UCheckbox
-              :label="$t(`filters.${group.label}`)"
-              :model-value="group.enabled"
-              @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') group.enabled = v }"
+              v-model="editUseCustomContentFolder"
+              :label="$t('vault.useCustomContentFolder')"
             />
+          </UFormField>
+          <UFormField
+            :label="$t('vault.contentFolder')"
+            :hint="$t('vault.contentFolderHint')"
+          >
+            <UInput
+              v-model="editContentFolder"
+              :disabled="!editUseCustomContentFolder"
+            />
+          </UFormField>
+        </section>
+
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+              {{ $t('vault.fileFilters') }}
+            </h3>
+            <UButton
+              v-if="!editFiltersOpen"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              :label="$t('vault.editFilters')"
+              @click="editFiltersOpen = true"
+            />
+          </div>
+          <template v-if="!editFiltersOpen">
             <div
-              v-if="group.enabled"
-              class="flex flex-wrap gap-2 ml-6"
+              v-for="group in editFilters.groups"
+              :key="group.label"
+              class="text-sm"
+            >
+              <span class="font-medium">{{ $t(`filters.${group.label}`) }}:</span>
+              <span class="text-muted ml-1">
+                {{ formatEnabledExtensions(group.extensions) || $t('vault.noExtensions') }}
+              </span>
+            </div>
+          </template>
+          <template v-else>
+            <div
+              v-for="group in editFilters.groups"
+              :key="group.label"
+              class="space-y-2"
             >
               <UCheckbox
-                v-for="ext in group.extensions"
-                :key="ext.ext"
-                :label="`.${ext.ext}`"
-                :model-value="ext.enabled"
-                @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') ext.enabled = v }"
+                :label="$t(`filters.${group.label}`)"
+                :model-value="group.enabled"
+                @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') group.enabled = v }"
               />
+              <div
+                v-if="group.enabled"
+                class="flex flex-wrap gap-2 ml-6"
+              >
+                <UCheckbox
+                  v-for="ext in group.extensions"
+                  :key="ext.ext"
+                  :label="`.${ext.ext}`"
+                  :model-value="ext.enabled"
+                  @update:model-value="(v: boolean | 'indeterminate') => { if (typeof v === 'boolean') ext.enabled = v }"
+                />
+              </div>
+              <div
+                v-if="group.editable && group.enabled"
+                class="flex items-center gap-2 ml-6"
+              >
+                <UInput
+                  v-model="newCustomExt"
+                  :placeholder="$t('vault.addCustomExtension')"
+                  size="xs"
+                  class="w-36"
+                  @keydown.enter="addCustomExtension(group)"
+                />
+                <UButton
+                  icon="i-lucide-plus"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  @click="addCustomExtension(group)"
+                />
+              </div>
             </div>
-            <div
-              v-if="group.editable && group.enabled"
-              class="flex items-center gap-2 ml-6"
-            >
-              <UInput
-                v-model="newCustomExt"
-                :placeholder="$t('vault.addCustomExtension')"
-                size="xs"
-                class="w-36"
-                @keydown.enter="addCustomExtension(group)"
-              />
-              <UButton
-                icon="i-lucide-plus"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                @click="addCustomExtension(group)"
-              />
-            </div>
-          </div>
+          </template>
         </section>
 
         <section class="space-y-3">
@@ -352,25 +399,20 @@ const siteLangModeItems = [
 
         <section
           v-if="vault && vault.path !== settings.mainRepoPath"
-          class="space-y-3 pt-6 border-t border-error/10"
+          class="space-y-3 pt-6 border-t border-default"
         >
-          <h3 class="text-sm font-semibold text-error uppercase tracking-wide">
-            {{ $t('vault.dangerZone') }}
-          </h3>
-          <div class="rounded-md bg-error/5 border border-error/10 p-3">
-            <p class="text-xs text-muted mb-2">
-              {{ $t('vault.removeHint') }}
-            </p>
-            <UButton
-              icon="i-lucide-trash-2"
-              :label="$t('vault.removeFromApp')"
-              color="error"
-              variant="soft"
-              size="sm"
-              block
-              @click="open = false; emit('remove', vault)"
-            />
-          </div>
+          <p class="text-xs text-muted">
+            {{ $t('vault.removeHint') }}
+          </p>
+          <UButton
+            icon="i-lucide-trash-2"
+            :label="$t('vault.removeFromApp')"
+            color="neutral"
+            variant="soft"
+            size="sm"
+            block
+            @click="open = false; emit('remove', vault)"
+          />
         </section>
       </div>
     </template>

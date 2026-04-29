@@ -192,7 +192,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (vault.type === 'git') await useGitStore().refreshStatus(vault.id)
   }
 
-  async function removeVault(id: string) {
+  async function removeVault(id: string, clearSettings = false) {
     const settings = useSettingsStore()
     const idx = list.value.findIndex((v) => v.id === id)
     if (idx === -1) return
@@ -200,13 +200,15 @@ export const useVaultsStore = defineStore('vaults', () => {
     // Forbid removing the main repository entry
     if (removed.path === settings.mainRepoPath) return
 
-    const editor = useEditorStore()
-    const git = useGitStore()
-    const tabs = useTabsStore()
-    git.cancelCommit(id)
-    git.dropVault(id)
-    if (editor.currentFilePath?.startsWith(removed.path)) editor.reset()
-    await tabs.dropByPrefix(removed.path)
+    if (clearSettings) {
+      const editor = useEditorStore()
+      const git = useGitStore()
+      const tabs = useTabsStore()
+      git.cancelCommit(id)
+      git.dropVault(id)
+      if (editor.currentFilePath?.startsWith(removed.path)) editor.reset()
+      await tabs.dropByPrefix(removed.path)
+    }
 
     list.value.splice(idx, 1)
     Reflect.deleteProperty(trees.value, removed.id)
