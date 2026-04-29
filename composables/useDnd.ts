@@ -7,6 +7,7 @@ const draggedIsDir = ref(false)
 const draggedPathSource = ref<DraggedPathSource | null>(null)
 const draggedVaultId = ref<string | null>(null)
 const isCopyMode = ref(false)
+const shiftPressed = ref(false)
 let listenersInstalled = false
 
 function hasActiveDrag() {
@@ -23,23 +24,48 @@ function syncCopyMode(shiftKey: boolean) {
   applyDragCursorClass()
 }
 
+function resetDragState() {
+  draggedPath.value = null
+  draggedIsDir.value = false
+  draggedPathSource.value = null
+  draggedVaultId.value = null
+  shiftPressed.value = false
+  syncCopyMode(false)
+}
+
 export function useDnd() {
   if (!listenersInstalled && typeof window !== 'undefined') {
     listenersInstalled = true
 
     window.addEventListener('keydown', (event) => {
+      shiftPressed.value = event.shiftKey
       if (!hasActiveDrag()) return
-      syncCopyMode(event.shiftKey)
+      syncCopyMode(shiftPressed.value)
     })
 
     window.addEventListener('keyup', (event) => {
+      shiftPressed.value = event.shiftKey
       if (!hasActiveDrag()) return
-      syncCopyMode(event.shiftKey)
+      syncCopyMode(shiftPressed.value)
     })
 
     window.addEventListener('blur', () => {
+      shiftPressed.value = false
       if (!hasActiveDrag()) return
       syncCopyMode(false)
+    })
+
+    window.addEventListener('dragend', () => {
+      resetDragState()
+    })
+
+    window.addEventListener('drop', () => {
+      resetDragState()
+    })
+
+    window.addEventListener('mouseup', () => {
+      if (!hasActiveDrag()) return
+      resetDragState()
     })
   }
 
@@ -53,6 +79,7 @@ export function useDnd() {
       event.dataTransfer.setData('application/x-neptu-path', path)
       event.dataTransfer.effectAllowed = 'copyMove'
     }
+    shiftPressed.value = false
     syncCopyMode(false)
   }
 
@@ -71,15 +98,12 @@ export function useDnd() {
   }
 
   function onDragEnd() {
-    draggedPath.value = null
-    draggedIsDir.value = false
-    draggedPathSource.value = null
-    draggedVaultId.value = null
-    syncCopyMode(false)
+    resetDragState()
   }
 
   function updateCopyMode(event: DragEvent) {
-    syncCopyMode(event.shiftKey)
+    shiftPressed.value = event.shiftKey
+    syncCopyMode(shiftPressed.value)
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = isCopyMode.value ? 'copy' : 'move'
     }
