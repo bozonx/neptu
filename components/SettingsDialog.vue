@@ -15,6 +15,7 @@ const activeTab = computed({
 
 const builtInTabs = [
   { label: t('settings.general'), value: 'general', icon: 'i-lucide-settings' },
+  { label: t('settings.appearance'), value: 'appearance', icon: 'i-lucide-palette' },
   { label: t('settings.git'), value: 'git', icon: 'i-lucide-git-branch' },
   { label: t('settings.plugins'), value: 'plugins', icon: 'i-lucide-plug' },
 ]
@@ -60,6 +61,7 @@ const authorEmail = ref('')
 const layoutMode = ref<AppSettings['layoutMode']>('desktop')
 const theme = ref<AppSettings['theme']>('system')
 const locale = ref<AppSettings['locale']>('auto')
+const tabDisplayMode = ref<AppSettings['tabDisplayMode']>('single_line')
 const confirmDeleteLocal = ref(true)
 const confirmDeleteGit = ref(true)
 const detectedAuthor = ref<GitAuthor | null>(null)
@@ -82,6 +84,7 @@ watch(open, async (value) => {
   layoutMode.value = s.layoutMode
   theme.value = s.theme
   locale.value = s.locale
+  tabDisplayMode.value = s.tabDisplayMode
   confirmDeleteLocal.value = s.confirmDeleteLocal
   confirmDeleteGit.value = s.confirmDeleteGit
   newMainPath.value = ''
@@ -154,6 +157,7 @@ async function save() {
       layoutMode: layoutMode.value,
       theme: theme.value,
       locale: locale.value,
+      tabDisplayMode: tabDisplayMode.value,
       confirmDeleteLocal: confirmDeleteLocal.value,
       confirmDeleteGit: confirmDeleteGit.value,
     })
@@ -171,7 +175,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale, confirmDeleteLocal, confirmDeleteGit],
+  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale, tabDisplayMode, confirmDeleteLocal, confirmDeleteGit],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -227,33 +231,6 @@ watch(
                     { label: $t('settings.auto'), value: 'auto' },
                     { label: 'English', value: 'en-US' },
                     { label: 'Русский', value: 'ru-RU' },
-                  ]"
-                />
-              </UFormField>
-
-              <UFormField
-                :label="$t('settings.theme')"
-                :hint="$t('settings.themeHint')"
-              >
-                <URadioGroup
-                  v-model="theme"
-                  :items="[
-                    { label: $t('settings.system'), value: 'system' },
-                    { label: $t('settings.light'), value: 'light' },
-                    { label: $t('settings.dark'), value: 'dark' },
-                  ]"
-                />
-              </UFormField>
-
-              <UFormField
-                :label="$t('settings.layoutMode')"
-                :hint="$t('settings.layoutModeHint')"
-              >
-                <URadioGroup
-                  v-model="layoutMode"
-                  :items="[
-                    { label: $t('settings.desktop'), value: 'desktop' },
-                    { label: $t('settings.mobile'), value: 'mobile' },
                   ]"
                 />
               </UFormField>
@@ -352,9 +329,61 @@ watch(
             </section>
           </div>
 
+          <!-- Appearance Tab -->
+          <div
+            v-else-if="activeTab === 'appearance'"
+            class="space-y-8"
+          >
+            <section class="space-y-4">
+              <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
+                {{ $t('settings.appearance') }}
+              </h3>
+              <UFormField
+                :label="$t('settings.theme')"
+                :hint="$t('settings.themeHint')"
+              >
+                <URadioGroup
+                  v-model="theme"
+                  :items="[
+                    { label: $t('settings.system'), value: 'system' },
+                    { label: $t('settings.light'), value: 'light' },
+                    { label: $t('settings.dark'), value: 'dark' },
+                  ]"
+                />
+              </UFormField>
+
+              <UFormField
+                :label="$t('settings.layoutMode')"
+                :hint="$t('settings.layoutModeHint')"
+              >
+                <URadioGroup
+                  v-model="layoutMode"
+                  :items="[
+                    { label: $t('settings.desktop'), value: 'desktop' },
+                    { label: $t('settings.mobile'), value: 'mobile' },
+                  ]"
+                />
+              </UFormField>
+
+              <UFormField
+                :label="$t('settings.tabDisplayMode')"
+                :hint="$t('settings.tabDisplayModeHint')"
+              >
+                <URadioGroup
+                  v-model="tabDisplayMode"
+                  :items="[
+                    { label: $t('settings.tabDisplaySingleLine'), value: 'single_line' },
+                    { label: $t('settings.tabDisplayMultiLine'), value: 'multi_line' },
+                    { label: $t('settings.tabDisplayLeftVertical'), value: 'left_vertical' },
+                  ]"
+                />
+              </UFormField>
+            </section>
+          </div>
+
           <!-- Git Tab -->
           <div
-            v-if="activeTab === 'git'"
+            v-else-if="activeTab === 'git'"
             class="space-y-8"
           >
             <section class="space-y-4">

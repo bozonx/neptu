@@ -120,6 +120,12 @@
   "settings": {
     "title": "Настройки",
     "description": "Глобальные настройки приложения (хранятся в директории конфигурации Tauri)",
+    "appearance": "Внешний вид",
+    "tabDisplayMode": "Отображение вкладок",
+    "tabDisplayModeHint": "Как отображать вкладки открытых файлов",
+    "tabDisplaySingleLine": "В одну строку",
+    "tabDisplayMultiLine": "Многострочный",
+    "tabDisplayLeftVertical": "Слева вертикально",
     "interface": "Интерфейс",
     "theme": "Тема",
     "themeHint": "Переключение между светлой и тёмной темами.",

@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const tabsStore = useTabsStore()
 const editorStore = useEditorStore()
+const settingsStore = useSettingsStore()
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 function findLeaf(panel: Panel, id: string): PanelLeaf | null {
@@ -122,11 +123,24 @@ watch(currentFilePath, () => {
 
 <template>
   <div
-    class="flex h-full flex-col bg-default overflow-hidden"
+    class="flex h-full bg-default overflow-hidden"
+    :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'flex-row' : 'flex-col'"
     @mousedown="handleFocus"
   >
     <!-- Panel Header (Tabs) -->
-    <div class="h-10 border-b border-default flex items-center px-1 shrink-0 overflow-x-auto overflow-y-hidden">
+    <div
+      class="border-default shrink-0 flex"
+      :class="[
+        settingsStore.settings.tabDisplayMode === 'left_vertical'
+          ? 'w-48 h-full border-r flex-col overflow-y-auto overflow-x-hidden'
+          : 'w-full border-b',
+        settingsStore.settings.tabDisplayMode === 'single_line'
+          ? 'h-10 items-center px-1 overflow-x-auto overflow-y-hidden'
+          : settingsStore.settings.tabDisplayMode === 'multi_line'
+            ? 'min-h-[40px] items-center px-1 flex-wrap'
+            : ''
+      ]"
+    >
       <EditorTabs
         :panel-id="props.panelId"
         :is-mobile="props.isMobile"

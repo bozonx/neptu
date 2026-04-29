@@ -162,6 +162,8 @@ export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
 }
 
+export type TabDisplayMode = 'single_line' | 'multi_line' | 'left_vertical'
+
 /**
  * Settings tied to the current device / installation (stored in the Tauri app
  * config directory in `config.json`).
@@ -173,12 +175,15 @@ export interface InstanceSettings {
   theme: Theme
   /** UI language locale */
   locale: 'auto' | 'en-US' | 'ru-RU'
+  /** Editor tab display mode */
+  tabDisplayMode: TabDisplayMode
 }
 
 export const DEFAULT_INSTANCE_SETTINGS: InstanceSettings = {
   layoutMode: 'desktop',
   theme: 'system',
   locale: 'auto',
+  tabDisplayMode: 'single_line',
 }
 
 /** Convenience merge used by UI components. */

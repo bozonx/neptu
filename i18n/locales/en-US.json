@@ -120,6 +120,12 @@
   "settings": {
     "title": "Settings",
     "description": "Application-wide preferences (stored in the Tauri app config directory)",
+    "appearance": "Appearance",
+    "tabDisplayMode": "Tab display mode",
+    "tabDisplayModeHint": "How to display open file tabs",
+    "tabDisplaySingleLine": "Single line",
+    "tabDisplayMultiLine": "Multi-line",
+    "tabDisplayLeftVertical": "Left vertical",
     "interface": "Interface",
     "theme": "Theme",
     "themeHint": "Switch between light and dark modes.",

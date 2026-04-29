@@ -10,6 +10,7 @@ const props = defineProps<{
 const tabsStore = useTabsStore()
 const editorStore = useEditorStore()
 const vaults = useVaultsStore()
+const settingsStore = useSettingsStore()
 const dnd = useDnd()
 
 const scrollContainer = ref<HTMLElement | null>(null)
@@ -182,7 +183,14 @@ const contextMenuItems = (tab: EditorTab) => [
 <template>
   <div
     ref="scrollContainer"
-    class="flex items-center h-full w-full overflow-x-auto hide-scrollbar"
+    class="flex w-full hide-scrollbar"
+    :class="[
+      settingsStore.settings.tabDisplayMode === 'left_vertical'
+        ? 'flex-col h-full overflow-y-auto overflow-x-hidden'
+        : settingsStore.settings.tabDisplayMode === 'multi_line'
+          ? 'flex-row flex-wrap items-center'
+          : 'flex-row items-center h-full overflow-x-auto'
+    ]"
     @wheel="handleWheel"
   >
     <VueDraggable
@@ -190,7 +198,14 @@ const contextMenuItems = (tab: EditorTab) => [
       group="editor-tabs"
       :animation="150"
       handle=".tab-sort-handle"
-      class="flex items-center h-full min-w-4 flex-1"
+      class="flex flex-1 min-w-4"
+      :class="[
+        settingsStore.settings.tabDisplayMode === 'left_vertical'
+          ? 'flex-col w-full'
+          : settingsStore.settings.tabDisplayMode === 'multi_line'
+            ? 'flex-row flex-wrap items-center'
+            : 'flex-row items-center h-full'
+      ]"
       :ghost-class="'opacity-50'"
       @add="onAdd"
       @remove="onRemove"
@@ -207,10 +222,15 @@ const contextMenuItems = (tab: EditorTab) => [
             type="button"
             draggable="true"
             :data-tab-id="tab.id"
-            class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
-            :class="tab.id === activeId
-              ? 'bg-default text-default'
-              : 'bg-elevated/50 text-muted hover:text-default'"
+            class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
+            :class="[
+              settingsStore.settings.tabDisplayMode === 'left_vertical'
+                ? 'w-full border-b'
+                : 'border-r border-b',
+              tab.id === activeId
+                ? 'bg-default text-default'
+                : 'bg-elevated/50 text-muted hover:text-default'
+            ]"
             :title="tab.filePath"
             @click="handleTabClick(tab)"
             @dragstart="onTabDragStart($event, tab)"
@@ -218,7 +238,8 @@ const contextMenuItems = (tab: EditorTab) => [
           >
             <div
               v-if="tab.id === activeId"
-              class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+              class="absolute bg-primary"
+              :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'top-0 bottom-0 left-0 w-0.5' : 'bottom-0 left-0 right-0 h-0.5'"
             />
             <button
               type="button"
@@ -262,10 +283,15 @@ const contextMenuItems = (tab: EditorTab) => [
           type="button"
           draggable="true"
           :data-tab-id="tab.id"
-          class="group flex items-center gap-2 h-full border-r border-default px-3 text-xs whitespace-nowrap transition-colors relative"
-          :class="tab.id === activeId
-            ? 'bg-default text-default'
-            : 'bg-elevated/50 text-muted hover:text-default'"
+          class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-xs whitespace-nowrap transition-colors relative"
+          :class="[
+            settingsStore.settings.tabDisplayMode === 'left_vertical'
+              ? 'w-full border-b'
+              : 'border-r border-b',
+            tab.id === activeId
+              ? 'bg-default text-default'
+              : 'bg-elevated/50 text-muted hover:text-default'
+          ]"
           :title="tab.filePath"
           @click="handleTabClick(tab)"
           @dragstart="onTabDragStart($event, tab)"
@@ -273,7 +299,8 @@ const contextMenuItems = (tab: EditorTab) => [
         >
           <div
             v-if="tab.id === activeId"
-            class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+            class="absolute bg-primary"
+            :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'top-0 bottom-0 left-0 w-0.5' : 'bottom-0 left-0 right-0 h-0.5'"
           />
           <button
             type="button"

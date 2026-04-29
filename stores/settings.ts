@@ -161,6 +161,7 @@ export const useSettingsStore = defineStore('settings', () => {
         layoutMode: settings.value.layoutMode,
         theme: settings.value.theme,
         locale: settings.value.locale,
+        tabDisplayMode: settings.value.tabDisplayMode,
       },
     }
     await config.saveInstanceConfig(instance)
