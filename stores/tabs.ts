@@ -14,6 +14,34 @@ function createLeaf(tabs: EditorTab[] = [], activeId: string | null = null): Pan
   }
 }
 
+const LEFT_SIDEBAR_MIN = 15
+const LEFT_SIDEBAR_MAX = 40
+const RIGHT_SIDEBAR_MIN = 10
+const RIGHT_SIDEBAR_MAX = 30
+const CENTER_MIN = 20
+const LEFT_SIDEBAR_DUAL_FIRST_MIN = 10
+const LEFT_SIDEBAR_DUAL_FIRST_MAX = 60
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function normalizeSidebarSizes(left: number, right: number) {
+  let nextLeft = clamp(left, LEFT_SIDEBAR_MIN, LEFT_SIDEBAR_MAX)
+  let nextRight = clamp(right, RIGHT_SIDEBAR_MIN, RIGHT_SIDEBAR_MAX)
+  const maxCombined = 100 - CENTER_MIN
+
+  if (nextLeft + nextRight > maxCombined) {
+    nextRight = Math.min(nextRight, maxCombined - nextLeft)
+    if (nextRight < RIGHT_SIDEBAR_MIN) {
+      nextRight = RIGHT_SIDEBAR_MIN
+      nextLeft = clamp(maxCombined - nextRight, LEFT_SIDEBAR_MIN, LEFT_SIDEBAR_MAX)
+    }
+  }
+
+  return { left: nextLeft, right: nextRight }
+}
+
 export const useTabsStore = defineStore('tabs', () => {
   const desktopLayout = ref<Panel>(createLeaf())
   const activeDesktopPanelId = ref<string>((desktopLayout.value as PanelLeaf).id)
@@ -26,6 +54,8 @@ export const useTabsStore = defineStore('tabs', () => {
   const rightSidebarCollapsed = ref(false)
   const leftSidebarMode = ref<'single' | 'dual'>('single')
   const leftSidebarDualFirstColumnSize = ref(20)
+  const leftSidebarDualSelectedVaultId = ref<string | null>(null)
+  const leftSidebarDualShowFavorites = ref(false)
   const leftSidebarTab = ref<'files' | 'search' | 'favorites'>('files')
 
   const expandedGroups = ref<Record<string, boolean>>({})
@@ -464,11 +494,23 @@ export const useTabsStore = defineStore('tabs', () => {
     if (state.activeDesktopPanelId) activeDesktopPanelId.value = state.activeDesktopPanelId
     if (state.mobileTabs) mobileTabs.value = state.mobileTabs
     mobileActiveId.value = state.mobileActiveId ?? null
-    if (typeof state.leftSidebarSize === 'number') leftSidebarSize.value = state.leftSidebarSize
-    if (typeof state.rightSidebarSize === 'number') rightSidebarSize.value = state.rightSidebarSize
+    const normalizedSizes = normalizeSidebarSizes(
+      typeof state.leftSidebarSize === 'number' ? state.leftSidebarSize : leftSidebarSize.value,
+      typeof state.rightSidebarSize === 'number' ? state.rightSidebarSize : rightSidebarSize.value,
+    )
+    leftSidebarSize.value = normalizedSizes.left
+    rightSidebarSize.value = normalizedSizes.right
     if (typeof state.rightSidebarCollapsed === 'boolean') rightSidebarCollapsed.value = state.rightSidebarCollapsed
     if (state.leftSidebarMode) leftSidebarMode.value = state.leftSidebarMode
-    if (typeof state.leftSidebarDualFirstColumnSize === 'number') leftSidebarDualFirstColumnSize.value = state.leftSidebarDualFirstColumnSize
+    if (typeof state.leftSidebarDualFirstColumnSize === 'number') {
+      leftSidebarDualFirstColumnSize.value = clamp(
+        state.leftSidebarDualFirstColumnSize,
+        LEFT_SIDEBAR_DUAL_FIRST_MIN,
+        LEFT_SIDEBAR_DUAL_FIRST_MAX,
+      )
+    }
+    leftSidebarDualSelectedVaultId.value = state.leftSidebarDualSelectedVaultId ?? null
+    leftSidebarDualShowFavorites.value = state.leftSidebarDualShowFavorites ?? false
     if (state.leftSidebarTab) {
       const validTabs: Array<'files' | 'search' | 'favorites'> = ['files', 'search', 'favorites']
       if (validTabs.includes(state.leftSidebarTab)) {
@@ -539,8 +581,9 @@ export const useTabsStore = defineStore('tabs', () => {
   }
 
   async function updateSidebarSizes(left: number, right: number) {
-    leftSidebarSize.value = left
-    rightSidebarSize.value = right
+    const normalized = normalizeSidebarSizes(left, right)
+    leftSidebarSize.value = normalized.left
+    rightSidebarSize.value = normalized.right
     await useEditorStore().saveUiState()
   }
 
@@ -550,7 +593,13 @@ export const useTabsStore = defineStore('tabs', () => {
   }
 
   async function updateLeftSidebarDualFirstColumnSize(size: number) {
-    leftSidebarDualFirstColumnSize.value = size
+    leftSidebarDualFirstColumnSize.value = clamp(size, LEFT_SIDEBAR_DUAL_FIRST_MIN, LEFT_SIDEBAR_DUAL_FIRST_MAX)
+    await useEditorStore().saveUiState()
+  }
+
+  async function updateLeftSidebarDualState(selectedVaultId: string | null, showFavorites: boolean) {
+    leftSidebarDualSelectedVaultId.value = selectedVaultId
+    leftSidebarDualShowFavorites.value = showFavorites
     await useEditorStore().saveUiState()
   }
 
@@ -611,6 +660,8 @@ export const useTabsStore = defineStore('tabs', () => {
     rightSidebarCollapsed,
     leftSidebarMode,
     leftSidebarDualFirstColumnSize,
+    leftSidebarDualSelectedVaultId,
+    leftSidebarDualShowFavorites,
     leftSidebarTab,
     expandedGroups,
     expandedVaults,
@@ -636,6 +687,7 @@ export const useTabsStore = defineStore('tabs', () => {
     updateSidebarSizes,
     updateLeftSidebarMode,
     updateLeftSidebarDualFirstColumnSize,
+    updateLeftSidebarDualState,
     handleTabAdd,
     handleTabRemove,
   }

@@ -16,11 +16,25 @@ const dnd = useDnd()
 const toast = useToast()
 const { t } = useI18n()
 
-const selectedVaultId = ref<string | null>(null)
 watchEffect(() => {
-  if (!selectedVaultId.value && vaults.list.length > 0) {
-    const main = vaults.list.find((v) => v.path === settings.mainRepoPath)
-    selectedVaultId.value = main?.id ?? vaults.list[0]?.id ?? null
+  const selectedVaultId = tabs.leftSidebarDualSelectedVaultId
+  const selectedVaultExists = selectedVaultId ? Boolean(vaults.findById(selectedVaultId)) : false
+
+  if (tabs.leftSidebarDualShowFavorites) return
+
+  if (selectedVaultExists) return
+
+  if (vaults.list.length === 0) {
+    if (selectedVaultId !== null) {
+      void tabs.updateLeftSidebarDualState(null, false)
+    }
+    return
+  }
+
+  const main = vaults.list.find((v) => v.path === settings.mainRepoPath)
+  const fallbackVaultId = main?.id ?? vaults.list[0]?.id ?? null
+  if (selectedVaultId !== fallbackVaultId) {
+    void tabs.updateLeftSidebarDualState(fallbackVaultId, false)
   }
 })
 
@@ -316,7 +330,6 @@ async function submitCreateFolder() {
   }
 }
 
-const dualShowFavorites = ref(false)
 const singleUngroupedDropTarget = ref(false)
 const singleGroupDropTargetId = ref<string | null>(null)
 const dualFavoritesDropTarget = ref(false)
@@ -347,8 +360,7 @@ function isVaultCardDraggable(vault: Vault) {
 function openDualFavoritesDrop(event: DragEvent) {
   if (!isFavoriteCandidate()) return
   event.preventDefault()
-  dualShowFavorites.value = true
-  selectedVaultId.value = null
+  void tabs.updateLeftSidebarDualState(null, true)
   dualFavoritesDropTarget.value = true
   dualVaultDropTargetId.value = null
   if (event.dataTransfer) {
@@ -381,8 +393,7 @@ function openDualVaultDrop(event: DragEvent, vault: Vault) {
   event.preventDefault()
   dnd.updateCopyMode(event)
   dnd.handleAutoScroll(event)
-  selectedVaultId.value = vault.id
-  dualShowFavorites.value = false
+  void tabs.updateLeftSidebarDualState(vault.id, false)
   dualVaultDropTargetId.value = vault.id
   dualFavoritesDropTarget.value = false
 }
@@ -689,11 +700,11 @@ async function onGroupDrop(group: VaultGroup) {
                     <div
                       class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
                       :class="{
-                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': dualShowFavorites,
+                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': tabs.leftSidebarDualShowFavorites,
                         'ring-1 ring-inset ring-primary/40 bg-primary/10': dualFavoritesDropTarget,
                       }"
                       :title="$t('sidebar.favorites')"
-                      @click="dualShowFavorites = true; selectedVaultId = null"
+                      @click="tabs.updateLeftSidebarDualState(null, true)"
                       @dragover="openDualFavoritesDrop"
                       @dragleave="clearDualFavoritesDrop"
                       @drop="dropToFavorites"
@@ -701,7 +712,7 @@ async function onGroupDrop(group: VaultGroup) {
                       <UIcon
                         name="i-lucide-star"
                         class="size-4 shrink-0"
-                        :class="dualShowFavorites ? 'text-primary' : 'text-muted'"
+                        :class="tabs.leftSidebarDualShowFavorites ? 'text-primary' : 'text-muted'"
                       />
                       <span class="truncate text-xs font-medium">{{ $t('sidebar.favorites') }}</span>
                     </div>
@@ -713,11 +724,11 @@ async function onGroupDrop(group: VaultGroup) {
                       v-if="mainVault"
                       class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
                       :class="{
-                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === mainVault.id,
+                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': tabs.leftSidebarDualSelectedVaultId === mainVault.id,
                         'ring-1 ring-inset ring-primary/40 bg-primary/10': dualVaultDropTargetId === mainVault.id,
                       }"
                       :title="mainVault.name"
-                      @click="selectedVaultId = mainVault.id; dualShowFavorites = false"
+                      @click="tabs.updateLeftSidebarDualState(mainVault.id, false)"
                       @dragover="openDualVaultDrop($event, mainVault)"
                       @dragleave="clearDualVaultDrop(mainVault.id)"
                       @drop="dropToVaultRoot($event, mainVault)"
@@ -725,7 +736,7 @@ async function onGroupDrop(group: VaultGroup) {
                       <UIcon
                         name="i-lucide-folder-heart"
                         class="size-4 shrink-0"
-                        :class="selectedVaultId === mainVault.id ? 'text-primary' : 'text-primary/70'"
+                        :class="tabs.leftSidebarDualSelectedVaultId === mainVault.id ? 'text-primary' : 'text-primary/70'"
                       />
                       <span class="truncate text-xs font-medium">{{ mainVault.name }}</span>
                     </div>
@@ -741,11 +752,11 @@ async function onGroupDrop(group: VaultGroup) {
                       :key="vault.id"
                       class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
                       :class="{
-                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id,
+                        'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': tabs.leftSidebarDualSelectedVaultId === vault.id,
                         'ring-1 ring-inset ring-primary/40 bg-primary/10': dualVaultDropTargetId === vault.id,
                       }"
                       :title="vault.name"
-                      @click="selectedVaultId = vault.id; dualShowFavorites = false"
+                      @click="tabs.updateLeftSidebarDualState(vault.id, false)"
                       @dragover="openDualVaultDrop($event, vault)"
                       @dragleave="clearDualVaultDrop(vault.id)"
                       @drop="dropToVaultRoot($event, vault)"
@@ -753,7 +764,7 @@ async function onGroupDrop(group: VaultGroup) {
                       <UIcon
                         :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
                         class="size-4 shrink-0"
-                        :class="selectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
+                        :class="tabs.leftSidebarDualSelectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
                       />
                       <span class="truncate text-xs">{{ vault.name }}</span>
                     </div>
@@ -781,11 +792,11 @@ async function onGroupDrop(group: VaultGroup) {
                           :key="vault.id"
                           class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors ml-2"
                           :class="{
-                            'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': selectedVaultId === vault.id,
+                            'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': tabs.leftSidebarDualSelectedVaultId === vault.id,
                             'ring-1 ring-inset ring-primary/40 bg-primary/10': dualVaultDropTargetId === vault.id,
                           }"
                           :title="vault.name"
-                          @click="selectedVaultId = vault.id; dualShowFavorites = false"
+                          @click="tabs.updateLeftSidebarDualState(vault.id, false)"
                           @dragover="openDualVaultDrop($event, vault)"
                           @dragleave="clearDualVaultDrop(vault.id)"
                           @drop="dropToVaultRoot($event, vault)"
@@ -793,7 +804,7 @@ async function onGroupDrop(group: VaultGroup) {
                           <UIcon
                             :name="vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
                             class="size-4 shrink-0"
-                            :class="selectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
+                            :class="tabs.leftSidebarDualSelectedVaultId === vault.id ? 'text-primary' : 'text-muted'"
                           />
                           <span class="truncate text-xs">{{ vault.name }}</span>
                         </div>
@@ -803,7 +814,7 @@ async function onGroupDrop(group: VaultGroup) {
                 </Pane>
 
                 <Pane class="flex flex-col min-w-0 bg-default relative p-2 overflow-y-auto">
-                  <template v-if="dualShowFavorites">
+                  <template v-if="tabs.leftSidebarDualShowFavorites">
                     <div class="flex items-center gap-1.5 px-2 py-1 mb-1">
                       <UIcon
                         name="i-lucide-star"
@@ -813,14 +824,14 @@ async function onGroupDrop(group: VaultGroup) {
                     </div>
                     <FavoritesList />
                   </template>
-                  <template v-else-if="selectedVaultId && vaults.findById(selectedVaultId)">
+                  <template v-else-if="tabs.leftSidebarDualSelectedVaultId && vaults.findById(tabs.leftSidebarDualSelectedVaultId)">
                     <VaultSidebarItem
-                      :key="selectedVaultId"
-                      :vault="vaults.findById(selectedVaultId)!"
+                      :key="tabs.leftSidebarDualSelectedVaultId"
+                      :vault="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!"
                       :expanded="true"
-                      :nodes="vaults.trees[selectedVaultId] ?? []"
+                      :nodes="vaults.trees[tabs.leftSidebarDualSelectedVaultId] ?? []"
                       :active-path="editor.currentFilePath"
-                      :filters="vaults.findById(selectedVaultId)!.filters"
+                      :filters="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!.filters"
                       :expanded-folders="tabs.expandedFolders"
                       @toggle="() => {}"
                       @toggle-folder="toggleFolder"

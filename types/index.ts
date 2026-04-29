@@ -268,6 +268,10 @@ export interface UiState {
   rightSidebarSize?: number
   leftSidebarMode?: 'single' | 'dual'
   leftSidebarDualFirstColumnSize?: number
+  /** Selected vault in the first column of the dual left sidebar */
+  leftSidebarDualSelectedVaultId?: string | null
+  /** Whether the dual left sidebar is currently showing favorites */
+  leftSidebarDualShowFavorites?: boolean
   /** Active built-in tab in the left sidebar: files, search or favorites */
   leftSidebarTab?: 'files' | 'search' | 'favorites'
   /** Whether the right sidebar is collapsed */
