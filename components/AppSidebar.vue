@@ -77,6 +77,9 @@ const removeVaultClearSettings = ref(false)
 
 const createGroupOpen = ref(false)
 const newGroupName = ref('')
+const renameGroupOpen = ref(false)
+const renameGroupTarget = ref<VaultGroup | null>(null)
+const renameGroupName = ref('')
 const removeGroupConfirmOpen = ref(false)
 const removeGroupConfirmTarget = ref<VaultGroup | null>(null)
 
@@ -299,6 +302,19 @@ async function submitCreateGroup() {
   if (!newGroupName.value.trim()) return
   await vaults.addGroup(newGroupName.value.trim())
   createGroupOpen.value = false
+}
+
+function openRenameGroup(group: VaultGroup) {
+  renameGroupTarget.value = group
+  renameGroupName.value = group.name
+  renameGroupOpen.value = true
+}
+
+async function submitRenameGroup() {
+  if (!renameGroupTarget.value || !renameGroupName.value.trim()) return
+  await vaults.renameGroup(renameGroupTarget.value.id, renameGroupName.value.trim())
+  renameGroupOpen.value = false
+  renameGroupTarget.value = null
 }
 
 function openRemoveGroupConfirm(group: VaultGroup) {
@@ -623,7 +639,10 @@ async function onGroupDrop(group: VaultGroup) {
                   @drop="onGroupDrop(group)"
                 >
                   <UContextMenu
-                    :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
+                    :items="[[
+                      { label: $t('sidebar.renameGroup'), icon: 'i-lucide-pencil', onSelect: () => openRenameGroup(group) },
+                      { label: $t('sidebar.ungroup'), icon: 'i-lucide-folder-x', color: 'error', onSelect: () => openRemoveGroupConfirm(group) },
+                    ]]"
                     :modal="false"
                   >
                     <div
@@ -642,7 +661,10 @@ async function onGroupDrop(group: VaultGroup) {
                       />
                       <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
                       <UDropdownMenu
-                        :items="[[{ label: $t('sidebar.deleteGroup'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => openRemoveGroupConfirm(group) }]]"
+                        :items="[[
+                          { label: $t('sidebar.renameGroup'), icon: 'i-lucide-pencil', onSelect: () => openRenameGroup(group) },
+                          { label: $t('sidebar.ungroup'), icon: 'i-lucide-folder-x', color: 'error', onSelect: () => openRemoveGroupConfirm(group) },
+                        ]]"
                         :modal="false"
                         size="xs"
                       >
@@ -934,6 +956,46 @@ async function onGroupDrop(group: VaultGroup) {
               />
             </div>
           </UFormField>
+
+          <UFormField :label="$t('vault.contentType')">
+            <ButtonGroupToggle
+              v-model="newContentType"
+              :items="contentTypeItems"
+            />
+          </UFormField>
+
+          <p
+            v-if="newContentType === 'vault'"
+            class="text-xs text-muted"
+          >
+            {{ $t('vault.contentTypeVaultDesc') }}
+          </p>
+
+          <template v-if="newContentType === 'blog'">
+            <p class="text-xs text-muted">
+              {{ $t('vault.contentTypeBlogDesc') }}
+            </p>
+          </template>
+
+          <template v-if="newContentType === 'site'">
+            <p class="text-xs text-muted">
+              {{ $t('vault.contentTypeSiteDesc') }}
+            </p>
+            <UFormField :label="$t('vault.siteLangMode')">
+              <URadioGroup
+                v-model="newSiteLangMode"
+                :items="siteLangModeItems"
+              />
+            </UFormField>
+          </template>
+
+          <UFormField
+            v-if="newContentType !== 'vault'"
+            :label="$t('vault.contentFolder')"
+            :hint="$t('vault.contentFolderHint')"
+          >
+            <UInput v-model="newContentFolder" />
+          </UFormField>
         </div>
       </template>
 
@@ -1014,7 +1076,7 @@ async function onGroupDrop(group: VaultGroup) {
           </UFormField>
 
           <UFormField :label="$t('vault.contentType')">
-            <URadioGroup
+            <ButtonGroupToggle
               v-model="newContentType"
               :items="contentTypeItems"
             />
@@ -1181,8 +1243,39 @@ async function onGroupDrop(group: VaultGroup) {
     </UModal>
 
     <UModal
+      v-model:open="renameGroupOpen"
+      :title="$t('sidebar.renameGroup')"
+    >
+      <template #body>
+        <UFormField :label="$t('vault.groupName')">
+          <UInput
+            v-model="renameGroupName"
+            :placeholder="$t('vault.workVaultsPlaceholder')"
+            autofocus
+          />
+        </UFormField>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            :label="$t('vault.cancel')"
+            @click="renameGroupOpen = false"
+          />
+          <UButton
+            :label="$t('vault.save')"
+            :disabled="!renameGroupName.trim()"
+            @click="submitRenameGroup"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <UModal
       v-model:open="removeGroupConfirmOpen"
-      :title="$t('sidebar.deleteGroup')"
+      :title="$t('sidebar.ungroup')"
     >
       <template #body>
         <p class="text-sm">
@@ -1203,7 +1296,7 @@ async function onGroupDrop(group: VaultGroup) {
           />
           <UButton
             color="error"
-            :label="$t('vault.delete')"
+            :label="$t('sidebar.ungroup')"
             @click="submitRemoveGroup"
           />
         </div>

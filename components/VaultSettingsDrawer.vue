@@ -31,6 +31,7 @@ const editExcludes = ref<string[]>([])
 const newExclude = ref('')
 const newCustomExt = ref('')
 const editFiltersOpen = ref(false)
+const showNameInput = ref(false)
 
 let skipNextWatch = false
 
@@ -55,6 +56,7 @@ watch(
     newExclude.value = ''
     newCustomExt.value = ''
     editFiltersOpen.value = false
+    showNameInput.value = false
     nextTick(() => {
       skipNextWatch = false
     })
@@ -174,13 +176,6 @@ const siteLangModeItems = [
           <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
             {{ $t('vault.name') }}
           </h3>
-          <UFormField :label="$t('vault.name')">
-            <UInput
-              v-model="editVaultName"
-              :placeholder="$t('vault.vaultNamePlaceholder')"
-            />
-          </UFormField>
-
           <UFormField :label="$t('vault.folder')">
             <div class="flex items-center gap-2">
               <UInput
@@ -197,6 +192,27 @@ const siteLangModeItems = [
                 @click="browseEditFolder"
               />
             </div>
+          </UFormField>
+
+          <div class="flex items-center gap-2">
+            <UButton
+              v-if="!showNameInput"
+              size="xs"
+              color="neutral"
+              variant="link"
+              :label="$t('vault.setVisibleName')"
+              @click="showNameInput = true"
+            />
+          </div>
+
+          <UFormField
+            v-if="showNameInput"
+            :label="$t('vault.name')"
+          >
+            <ClearableInput
+              v-model="editVaultName"
+              :placeholder="vault?.name ?? $t('vault.vaultNamePlaceholder')"
+            />
           </UFormField>
         </section>
 
@@ -230,7 +246,7 @@ const siteLangModeItems = [
             {{ $t('vault.contentType') }}
           </h3>
           <UFormField :label="$t('vault.contentType')">
-            <URadioGroup
+            <ButtonGroupToggle
               v-model="editContentType"
               :items="contentTypeItems"
             />

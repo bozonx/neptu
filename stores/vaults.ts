@@ -399,6 +399,13 @@ export const useVaultsStore = defineStore('vaults', () => {
     await useSettingsStore().persist()
   }
 
+  async function renameGroup(id: string, name: string) {
+    const group = groups.value.find((g) => g.id === id)
+    if (!group) return
+    group.name = name.trim()
+    await useSettingsStore().persist()
+  }
+
   async function removeGroup(id: string) {
     for (const v of list.value) {
       if (v.groupId === id) {
@@ -457,6 +464,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     refreshTree,
     refreshAllTrees,
     addGroup,
+    renameGroup,
     removeGroup,
     setVaultGroup,
     moveNode,

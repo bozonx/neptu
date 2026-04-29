@@ -118,6 +118,24 @@ function onRemove(event: { data: EditorTab }) {
 
 const { t } = useI18n()
 
+const tabDisplayItems = computed(() => [
+  {
+    label: t('settings.tabDisplaySingleLine'),
+    icon: settingsStore.settings.tabDisplayMode === 'single_line' ? 'i-lucide-check' : undefined,
+    onSelect: () => settingsStore.updateSettings({ tabDisplayMode: 'single_line' }),
+  },
+  {
+    label: t('settings.tabDisplayMultiLine'),
+    icon: settingsStore.settings.tabDisplayMode === 'multi_line' ? 'i-lucide-check' : undefined,
+    onSelect: () => settingsStore.updateSettings({ tabDisplayMode: 'multi_line' }),
+  },
+  {
+    label: t('settings.tabDisplayLeftVertical'),
+    icon: settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'i-lucide-check' : undefined,
+    onSelect: () => settingsStore.updateSettings({ tabDisplayMode: 'left_vertical' }),
+  },
+])
+
 const contextMenuItems = (tab: EditorTab) => [
   [
     {
@@ -177,6 +195,7 @@ const contextMenuItems = (tab: EditorTab) => [
       onSelect: () => props.panelId && tabsStore.duplicateTo(props.panelId, 'bottom', tab),
     },
   ],
+  tabDisplayItems.value,
 ]
 </script>
 

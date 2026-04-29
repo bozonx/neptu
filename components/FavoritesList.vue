@@ -87,10 +87,6 @@ async function onDrop() {
         class="group flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-elevated transition-colors"
         @click="openFile(path)"
       >
-        <UIcon
-          name="i-lucide-star"
-          class="size-4 text-primary shrink-0"
-        />
         <span class="truncate text-xs flex-1">{{ fileName(path) }}</span>
         <span
           v-if="vaultName(path)"

@@ -64,11 +64,30 @@ async function handleCommit() {
   }
 }
 
-async function toggleAutoMessage() {
-  await settingsStore.updateSettings({
-    gitAutoMessage: !settingsStore.settings.gitAutoMessage,
-  })
+const autoMessageLabel = computed(() =>
+  settingsStore.settings.gitAutoMessage ?? true ? t('git.auto') : t('git.manual'),
+)
+
+async function setAutoMessage(value: boolean) {
+  if ((settingsStore.settings.gitAutoMessage ?? true) !== value) {
+    await settingsStore.updateSettings({ gitAutoMessage: value })
+  }
 }
+
+const autoMessageItems = computed(() => [
+  [
+    {
+      label: t('git.auto'),
+      icon: (settingsStore.settings.gitAutoMessage ?? true) ? 'i-lucide-check' : undefined,
+      onSelect: () => setAutoMessage(true),
+    },
+    {
+      label: t('git.manual'),
+      icon: !(settingsStore.settings.gitAutoMessage ?? true) ? 'i-lucide-check' : undefined,
+      onSelect: () => setAutoMessage(false),
+    },
+  ],
+])
 </script>
 
 <template>
@@ -86,12 +105,6 @@ async function toggleAutoMessage() {
     />
 
     <template v-if="isManualGit">
-      <USwitch
-        :model-value="settingsStore.settings.gitAutoMessage ?? true"
-        size="xs"
-        :label="$t('git.autoMessage')"
-        @update:model-value="toggleAutoMessage"
-      />
       <UButton
         icon="i-lucide-git-commit"
         size="xs"
@@ -103,6 +116,19 @@ async function toggleAutoMessage() {
         :loading="committing"
         @click="handleCommit"
       />
+      <UDropdownMenu
+        :items="autoMessageItems"
+        :modal="false"
+        :content="{ side: 'top' }"
+      >
+        <UButton
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          class="px-1 h-5 text-[10px] shrink-0"
+          :label="autoMessageLabel"
+        />
+      </UDropdownMenu>
     </template>
 
     <UButton
