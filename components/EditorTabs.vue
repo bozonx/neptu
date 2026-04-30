@@ -237,8 +237,9 @@ const contextMenuItems = (tab: EditorTab) => [
           v-if="!props.isMobile"
           :items="contextMenuItems(tab)"
         >
-          <button
-            type="button"
+          <div
+            role="button"
+            tabindex="0"
             draggable="true"
             :data-tab-id="tab.id"
             class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
@@ -252,6 +253,7 @@ const contextMenuItems = (tab: EditorTab) => [
             ]"
             :title="tab.filePath"
             @click="handleTabClick(tab)"
+            @keydown.enter.space.prevent="handleTabClick(tab)"
             @dragstart="onTabDragStart($event, tab)"
             @dragend="onTabDragEnd"
           >
@@ -260,18 +262,15 @@ const contextMenuItems = (tab: EditorTab) => [
               class="absolute bg-primary"
               :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'top-0 bottom-0 left-0 w-0.5' : 'bottom-0 left-0 right-0 h-0.5'"
             />
-            <button
-              type="button"
+            <span
               class="tab-sort-handle -ml-1 flex items-center justify-center rounded p-0.5 text-muted/70 hover:text-default cursor-grab active:cursor-grabbing"
               :title="$t('editor.reorderTabs', 'Reorder tabs')"
-              draggable="false"
-              @click.stop
             >
               <UIcon
                 name="i-lucide-grip-vertical"
                 class="size-3"
               />
-            </button>
+            </span>
             <span
               v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
               class="size-1.5 rounded-full bg-primary"
@@ -295,14 +294,15 @@ const contextMenuItems = (tab: EditorTab) => [
               class="size-4 p-0 opacity-0 group-hover:opacity-100"
               @click.stop="handleClose(tab)"
             />
-          </button>
+          </div>
         </UContextMenu>
-        <button
+        <div
           v-else
-          type="button"
+          role="button"
+          tabindex="0"
           draggable="true"
           :data-tab-id="tab.id"
-          class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-xs whitespace-nowrap transition-colors relative"
+          class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
           :class="[
             settingsStore.settings.tabDisplayMode === 'left_vertical'
               ? 'w-full border-b'
@@ -313,6 +313,7 @@ const contextMenuItems = (tab: EditorTab) => [
           ]"
           :title="tab.filePath"
           @click="handleTabClick(tab)"
+          @keydown.enter.space.prevent="handleTabClick(tab)"
           @dragstart="onTabDragStart($event, tab)"
           @dragend="onTabDragEnd"
         >
@@ -321,18 +322,15 @@ const contextMenuItems = (tab: EditorTab) => [
             class="absolute bg-primary"
             :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'top-0 bottom-0 left-0 w-0.5' : 'bottom-0 left-0 right-0 h-0.5'"
           />
-          <button
-            type="button"
+          <span
             class="tab-sort-handle -ml-1 flex items-center justify-center rounded p-0.5 text-muted/70 hover:text-default cursor-grab active:cursor-grabbing"
             :title="$t('editor.reorderTabs', 'Reorder tabs')"
-            draggable="false"
-            @click.stop
           >
             <UIcon
               name="i-lucide-grip-vertical"
               class="size-3"
             />
-          </button>
+          </span>
           <span
             v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
             class="size-1.5 rounded-full bg-primary"
@@ -356,7 +354,7 @@ const contextMenuItems = (tab: EditorTab) => [
             class="size-4 p-0 opacity-0 group-hover:opacity-100"
             @click.stop="handleClose(tab)"
           />
-        </button>
+        </div>
       </template>
     </VueDraggable>
     <div
