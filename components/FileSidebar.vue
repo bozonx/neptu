@@ -6,7 +6,7 @@ const plugins = usePluginsStore()
 <template>
   <div class="flex flex-col h-full bg-default">
     <!-- Right Sidebar Toolbar -->
-    <div class="h-10 border-b border-default flex items-center px-2 shrink-0">
+    <div class="h-9 border-b border-default flex items-center px-2 shrink-0">
       <FileSidebarToolbar class="flex-1" />
     </div>
 

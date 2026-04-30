@@ -77,7 +77,7 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         class="flex flex-col bg-default"
       >
         <!-- Plugin toolbar row -->
-        <div class="border-b border-default flex items-center gap-1 px-2 py-1 shrink-0 bg-elevated/30 flex-wrap">
+        <div class="border-b border-default flex items-center gap-1 px-2 h-9 shrink-0 bg-elevated/30 flex-wrap overflow-hidden">
           <template v-if="leftHeaderButtons.length === 0">
             <UIcon
               name="i-lucide-book-marked"

@@ -219,7 +219,7 @@ async function handleDelete(node: FileNode) {
       class="w-full block"
     >
       <div
-        class="group flex flex-col gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated transition-all"
+        class="group flex flex-col gap-1 px-2.5 py-1.5 rounded-md cursor-pointer bg-elevated transition-all"
         :class="[
           isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary/50' : 'hover:ring-1 hover:ring-inset hover:ring-border/50',
         ]"
@@ -246,7 +246,7 @@ async function handleDelete(node: FileNode) {
         </div>
 
         <div class="flex items-center justify-between gap-1 min-w-0 h-6">
-          <span class="text-xs text-muted capitalize">
+          <span class="text-[11px] text-muted tracking-wide uppercase leading-none">
             {{ vault.type }}{{ vault.contentType && vault.contentType !== 'vault' ? ` / ${$t(`vault.contentType${vault.contentType.charAt(0).toUpperCase() + vault.contentType.slice(1)}`)}` : '' }}{{ vault.path === settings.mainRepoPath ? ` - ${$t('vault.main')}` : '' }}
           </span>
           <div class="flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">

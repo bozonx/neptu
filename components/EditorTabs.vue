@@ -242,7 +242,7 @@ const contextMenuItems = (tab: EditorTab) => [
             tabindex="0"
             draggable="true"
             :data-tab-id="tab.id"
-            class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
+            class="group flex items-center gap-2 shrink-0 h-9 border-default px-3.5 text-sm whitespace-nowrap transition-colors relative cursor-default"
             :class="[
               settingsStore.settings.tabDisplayMode === 'left_vertical'
                 ? 'w-full border-b'
@@ -302,7 +302,7 @@ const contextMenuItems = (tab: EditorTab) => [
           tabindex="0"
           draggable="true"
           :data-tab-id="tab.id"
-          class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-xs whitespace-nowrap transition-colors relative cursor-default"
+          class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-sm whitespace-nowrap transition-colors relative cursor-default"
           :class="[
             settingsStore.settings.tabDisplayMode === 'left_vertical'
               ? 'w-full border-b'

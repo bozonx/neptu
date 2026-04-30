@@ -514,7 +514,7 @@ async function onGroupDrop(group: VaultGroup) {
     <SettingsDialog v-model:open="settings.settingsDialogOpen" />
 
     <!-- Panel switcher toolbar -->
-    <div class="flex items-center gap-0.5 px-1 py-1 border-b border-default shrink-0">
+    <div class="flex items-center gap-0.5 px-1 h-9 border-b border-default shrink-0">
       <UButton
         icon="i-lucide-files"
         size="xs"

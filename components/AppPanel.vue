@@ -3,7 +3,7 @@ const settings = useSettingsStore()
 </script>
 
 <template>
-  <div class="flex items-center justify-end gap-1 px-2 py-1 border-b border-default shrink-0 bg-elevated/30">
+  <div class="flex items-center justify-end gap-1 px-2 h-9 border-b border-default shrink-0 bg-elevated/30">
     <UButton
       icon="i-lucide-settings"
       size="xs"
