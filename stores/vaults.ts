@@ -184,8 +184,7 @@ export const useVaultsStore = defineStore('vaults', () => {
         if (!ok) throw Object.assign(new Error('Selected folder is not a git repository'), { code: 'NOT_GIT_REPO' })
       }
       vault.git = payload.git ?? {
-        commitMode: 'auto',
-        commitDebounceMs: settings.settings.defaultCommitDebounceMs,
+        commitMode: 'respect_config',
       }
     }
 
@@ -253,6 +252,12 @@ export const useVaultsStore = defineStore('vaults', () => {
       // Re-evaluate scheduled commit if mode changed
       if (updates.git.commitMode === 'manual') {
         useGitStore().cancelCommit(vault.id)
+      }
+      else if (updates.git.commitMode === 'respect_config') {
+        // Re-evaluate: if the global default switched to manual, cancel any pending commit
+        if (useSettingsStore().settings.defaultCommitMode === 'manual') {
+          useGitStore().cancelCommit(vault.id)
+        }
       }
     }
 

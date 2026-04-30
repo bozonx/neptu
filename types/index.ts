@@ -4,7 +4,7 @@ export type ContentType = 'vault' | 'blog' | 'site'
 
 export type SiteLangMode = 'monolingual' | 'multilingual'
 
-export type GitCommitMode = 'auto' | 'manual'
+export type GitCommitMode = 'auto' | 'manual' | 'respect_config'
 
 export interface FileFilterExtension {
   ext: string
@@ -76,8 +76,9 @@ export const DEFAULT_FILE_FILTERS: FileFilterSettings = {
 
 export interface GitVaultSettings {
   commitMode: GitCommitMode
-  /** Debounce in milliseconds before an auto-commit fires after the last autosave */
-  commitDebounceMs: number
+  /** Debounce in milliseconds before an auto-commit fires after the last autosave.
+   *  When omitted the global defaultCommitDebounceMs is used. */
+  commitDebounceMs?: number
 }
 
 export interface VaultGroup {
@@ -148,6 +149,8 @@ export interface SharedSettings {
   confirmDeleteGit: boolean
   /** List of enabled plugin ids. Defaults to built-ins when missing. */
   enabledPlugins?: string[]
+  /** Default commit mode for git vaults that are set to follow config. */
+  defaultCommitMode: 'auto' | 'manual'
   /** Use auto-generated message for manual commits (no prompt). */
   gitAutoMessage: boolean
   /** Template for auto-generated commit messages. */
@@ -164,6 +167,7 @@ export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   confirmDeleteLocal: true,
   confirmDeleteGit: true,
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
+  defaultCommitMode: 'auto',
   gitAutoMessage: true,
   gitAutoMessageTemplate: 'Update notes ({files} {fileWord})',
 }

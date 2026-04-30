@@ -20,8 +20,9 @@ const { t } = useI18n()
 
 const editVaultName = ref('')
 const editVaultPath = ref<string | null>(null)
-const editCommitMode = ref<GitCommitMode>('auto')
+const editCommitMode = ref<GitCommitMode>('respect_config')
 const editCommitDebounceSec = ref(5)
+const editingCommitDebounce = ref(false)
 const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
 const editContentType = ref<ContentType>('vault')
 const editContentFolder = ref('src')
@@ -44,8 +45,9 @@ watch(
     skipNextWatch = true
     editVaultName.value = vault.name
     editVaultPath.value = vault.path
-    editCommitMode.value = vault.git?.commitMode ?? 'auto'
+    editCommitMode.value = vault.git?.commitMode ?? 'respect_config'
     editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? settings.settings.defaultCommitDebounceMs) / 1000
+    editingCommitDebounce.value = vault.git?.commitDebounceMs !== undefined
     editContentType.value = vault.contentType ?? 'vault'
     editSiteLangMode.value = vault.siteLangMode ?? 'monolingual'
 
@@ -116,7 +118,7 @@ async function save() {
       git: isGit
         ? {
             commitMode: editCommitMode.value,
-            commitDebounceMs: Math.max(1000, Math.round(editCommitDebounceSec.value * 1000)),
+            ...(editingCommitDebounce.value ? { commitDebounceMs: Math.max(1000, Math.round(editCommitDebounceSec.value * 1000)) } : {}),
           }
         : undefined,
       filters: editingFilters.value ? editFilters.value : null as never,
@@ -138,7 +140,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode, editExcludes, editingContentFolder, editingFilters, editingExcludes],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode, editExcludes, editingContentFolder, editingFilters, editingExcludes, editingCommitDebounce],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -150,7 +152,12 @@ watch(open, (val) => {
   if (!val) emit('close')
 })
 
+const effectiveGlobalModeLabel = computed(() =>
+  settings.settings.defaultCommitMode === 'auto' ? t('vault.autoCommit') : t('vault.manualCommit'),
+)
+
 const commitModeItems = [
+  { label: `${t('vault.respectConfigCommit')} (${effectiveGlobalModeLabel.value})`, value: 'respect_config' as const },
   { label: t('vault.autoCommit'), value: 'auto' as const },
   { label: t('vault.manualCommit'), value: 'manual' as const },
 ]
@@ -228,21 +235,53 @@ const siteLangModeItems = [
               {{ $t('settings.git') }}
             </h3>
             <UFormField :label="$t('vault.commitMode')">
-              <URadioGroup
+              <ButtonGroupToggle
                 v-model="editCommitMode"
                 :items="commitModeItems"
               />
             </UFormField>
-            <UFormField
-              v-if="editCommitMode === 'auto'"
-              :label="$t('vault.commitDebounce')"
-            >
-              <UInput
-                v-model="editCommitDebounceSec"
-                type="number"
-                :min="1"
-                :step="0.5"
-              />
+            <UFormField :label="$t('vault.commitDebounce')">
+              <template v-if="!editingCommitDebounce">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
+                    {{ ((vault?.git?.commitDebounceMs ?? settings.settings.defaultCommitDebounceMs) / 1000).toFixed(1) }}s
+                  </span>
+                  <span
+                    v-if="vault?.git?.commitDebounceMs !== undefined"
+                    class="text-xs text-muted"
+                  >
+                    {{ $t('vault.customValue') }}
+                  </span>
+                  <span
+                    v-else
+                    class="text-xs text-muted"
+                  >
+                    {{ $t('vault.fromConfig') }}
+                  </span>
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    :label="$t('vault.edit')"
+                    @click="editingCommitDebounce = true"
+                  />
+                </div>
+              </template>
+              <template v-else>
+                <UInput
+                  v-model="editCommitDebounceSec"
+                  type="number"
+                  :min="1"
+                  :step="0.5"
+                />
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="link"
+                  :label="$t('vault.resetToConfigDefault')"
+                  @click="editingCommitDebounce = false; editCommitDebounceSec = settings.settings.defaultCommitDebounceMs / 1000"
+                />
+              </template>
             </UFormField>
           </section>
         </template>

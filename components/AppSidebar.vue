@@ -53,7 +53,7 @@ const newVaultName = ref('')
 const newVaultType = ref<VaultType>('local')
 const newVaultPath = ref<string | null>(null)
 const newGitMode = ref<'connect' | 'init'>('connect')
-const newCommitMode = ref<GitCommitMode>('auto')
+const newCommitMode = ref<GitCommitMode>('respect_config')
 const newCommitDebounceSec = ref(5)
 const newContentType = ref<ContentType>('vault')
 const newContentFolder = ref('src')
@@ -96,6 +96,7 @@ const gitModeItems = [
 ]
 
 const commitModeItems = [
+  { label: t('vault.respectConfigCommit'), value: 'respect_config' as const },
   { label: t('vault.autoCommit'), value: 'auto' as const },
   { label: t('vault.manualCommit'), value: 'manual' as const },
 ]
@@ -166,7 +167,7 @@ function resetAddForm(type: VaultType = 'local') {
   newVaultPath.value = null
   newVaultType.value = type
   newGitMode.value = 'connect'
-  newCommitMode.value = 'auto'
+  newCommitMode.value = 'respect_config'
   newCommitDebounceSec.value = settings.settings.defaultCommitDebounceMs / 1000
   newContentType.value = 'vault'
   newContentFolder.value = 'src'
@@ -217,7 +218,7 @@ async function submitNewVault() {
       git: newVaultType.value === 'git'
         ? {
             commitMode: newCommitMode.value,
-            commitDebounceMs: Math.max(0, Math.round(newCommitDebounceSec.value * 1000)),
+            ...(newCommitMode.value !== 'respect_config' ? { commitDebounceMs: Math.max(0, Math.round(newCommitDebounceSec.value * 1000)) } : {}),
           }
         : undefined,
       contentType: newContentType.value,
@@ -1055,14 +1056,14 @@ async function onGroupDrop(group: VaultGroup) {
           </UFormField>
 
           <UFormField :label="$t('vault.commitMode')">
-            <URadioGroup
+            <ButtonGroupToggle
               v-model="newCommitMode"
               :items="commitModeItems"
             />
           </UFormField>
 
           <UFormField
-            v-if="newCommitMode === 'auto'"
+            v-if="newCommitMode !== 'respect_config'"
             :label="$t('vault.commitDebounce')"
             :hint="$t('vault.commitDebounceHint')"
           >

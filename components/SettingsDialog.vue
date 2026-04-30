@@ -62,6 +62,7 @@ const layoutMode = ref<AppSettings['layoutMode']>('desktop')
 const theme = ref<AppSettings['theme']>('system')
 const locale = ref<AppSettings['locale']>('auto')
 const tabDisplayMode = ref<AppSettings['tabDisplayMode']>('single_line')
+const defaultCommitMode = ref<AppSettings['defaultCommitMode']>('auto')
 const confirmDeleteLocal = ref(true)
 const confirmDeleteGit = ref(true)
 const gitAutoMessage = ref(true)
@@ -93,6 +94,7 @@ watch(open, async (value) => {
   theme.value = s.theme
   locale.value = s.locale
   tabDisplayMode.value = s.tabDisplayMode
+  defaultCommitMode.value = s.defaultCommitMode
   confirmDeleteLocal.value = s.confirmDeleteLocal
   confirmDeleteGit.value = s.confirmDeleteGit
   gitAutoMessage.value = s.gitAutoMessage ?? true
@@ -174,6 +176,7 @@ async function save() {
       theme: theme.value,
       locale: locale.value,
       tabDisplayMode: tabDisplayMode.value,
+      defaultCommitMode: defaultCommitMode.value,
       confirmDeleteLocal: confirmDeleteLocal.value,
       confirmDeleteGit: confirmDeleteGit.value,
       gitAutoMessage: gitAutoMessage.value,
@@ -193,7 +196,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, theme, locale, tabDisplayMode, confirmDeleteLocal, confirmDeleteGit, gitAutoMessage, gitAutoMessageTemplate],
+  [autosaveSec, commitSec, authorName, authorEmail, theme, locale, tabDisplayMode, defaultCommitMode, confirmDeleteLocal, confirmDeleteGit, gitAutoMessage, gitAutoMessageTemplate],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -398,6 +401,19 @@ watch(
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
                 {{ $t('settings.git') }}
               </h3>
+              <UFormField :label="$t('settings.defaultCommitMode')">
+                <ButtonGroupToggle
+                  v-model="defaultCommitMode"
+                  :items="[
+                    { label: $t('vault.autoCommit'), value: 'auto' },
+                    { label: $t('vault.manualCommit'), value: 'manual' },
+                  ]"
+                />
+                <p class="text-xs text-muted mt-1">
+                  {{ $t('settings.defaultCommitModeHint') }}
+                </p>
+              </UFormField>
+
               <UFormField :label="$t('settings.defaultCommitDebounce')">
                 <UInput
                   v-model="commitSec"

@@ -1,5 +1,21 @@
 import { defineStore } from 'pinia'
-import type { CommitStatus, GitStatusInfo } from '~/types'
+import type { CommitStatus, GitStatusInfo, Vault } from '~/types'
+
+/** Resolves the effective commit mode for a vault, honouring `respect_config`. */
+function getEffectiveCommitMode(vault: Vault): 'auto' | 'manual' {
+  const mode = vault.git?.commitMode ?? 'respect_config'
+  if (mode !== 'respect_config') return mode
+  const settings = useSettingsStore()
+  return settings.settings.defaultCommitMode
+}
+
+/** Resolves the effective commit debounce for a vault. */
+function getEffectiveCommitDebounceMs(vault: Vault): number {
+  const custom = vault.git?.commitDebounceMs
+  if (custom !== undefined) return Math.max(1000, custom)
+  const settings = useSettingsStore()
+  return Math.max(1000, settings.settings.defaultCommitDebounceMs)
+}
 
 /**
  * Per-vault scheduled commit timers. Lives outside reactive state so that
@@ -76,9 +92,9 @@ export const useGitStore = defineStore('git', () => {
   function scheduleCommit(vaultId: string) {
     const vault = useVaultsStore().findById(vaultId)
     if (!vault || vault.type !== 'git' || !vault.git) return
-    if (vault.git.commitMode !== 'auto') return
+    if (getEffectiveCommitMode(vault) !== 'auto') return
     cancelCommit(vaultId)
-    const delay = Math.max(1000, vault.git.commitDebounceMs)
+    const delay = getEffectiveCommitDebounceMs(vault)
     pendingCommits.value[vaultId] = true
     const handle = setTimeout(() => {
       commitTimers.delete(vaultId)
