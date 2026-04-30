@@ -101,10 +101,16 @@ const commitModeItems = [
   { label: t('vault.manualCommit'), value: 'manual' as const },
 ]
 
+const showCommitDebounce = computed(() =>
+  newCommitMode.value === 'auto'
+  || (newCommitMode.value === 'respect_config' && settings.settings.defaultCommitMode === 'auto'),
+)
+
 const contentTypeItems = [
   { label: t('vault.contentTypeVault'), value: 'vault' as const },
   { label: t('vault.contentTypeBlog'), value: 'blog' as const },
-  { label: t('vault.contentTypeSite'), value: 'site' as const },
+  { label: t('vault.contentTypeSiteLanding'), value: 'site' as const },
+  { label: t('vault.contentTypeCustom'), value: 'custom' as const },
 ]
 
 const siteLangModeItems = [
@@ -223,7 +229,7 @@ async function submitNewVault() {
         : undefined,
       contentType: newContentType.value,
       contentFolder: newContentType.value !== 'vault' ? newContentFolder.value : undefined,
-      siteLangMode: newContentType.value === 'site' ? newSiteLangMode.value : undefined,
+      siteLangMode: newContentType.value === 'custom' ? newSiteLangMode.value : undefined,
     })
     addLocalVaultOpen.value = false
     addGitVaultOpen.value = false
@@ -977,9 +983,9 @@ async function onGroupDrop(group: VaultGroup) {
             </p>
           </template>
 
-          <template v-if="newContentType === 'site'">
+          <template v-if="newContentType === 'custom'">
             <p class="text-xs text-muted">
-              {{ $t('vault.contentTypeSiteDesc') }}
+              {{ $t('vault.contentTypeCustomDesc') }}
             </p>
             <UFormField :label="$t('vault.siteLangMode')">
               <URadioGroup
@@ -1063,7 +1069,7 @@ async function onGroupDrop(group: VaultGroup) {
           </UFormField>
 
           <UFormField
-            v-if="newCommitMode !== 'respect_config'"
+            v-if="showCommitDebounce"
             :label="$t('vault.commitDebounce')"
             :hint="$t('vault.commitDebounceHint')"
           >
@@ -1095,9 +1101,9 @@ async function onGroupDrop(group: VaultGroup) {
             </p>
           </template>
 
-          <template v-if="newContentType === 'site'">
+          <template v-if="newContentType === 'custom'">
             <p class="text-xs text-muted">
-              {{ $t('vault.contentTypeSiteDesc') }}
+              {{ $t('vault.contentTypeCustomDesc') }}
             </p>
             <UFormField :label="$t('vault.siteLangMode')">
               <URadioGroup

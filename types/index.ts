@@ -1,6 +1,6 @@
 export type VaultType = 'local' | 'git'
 
-export type ContentType = 'vault' | 'blog' | 'site'
+export type ContentType = 'vault' | 'blog' | 'site' | 'custom'
 
 export type SiteLangMode = 'monolingual' | 'multilingual'
 
