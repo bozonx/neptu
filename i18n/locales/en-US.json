@@ -115,8 +115,13 @@
     "contentFolder": "Content folder",
     "contentFolderHint": "Default: src",
     "useCustomContentFolder": "Set custom content folder",
+    "edit": "Edit",
+    "fromVaultFile": "From vault file",
+    "customValue": "Custom value",
+    "resetToFileDefaults": "Reset to file defaults",
     "editFilters": "Edit",
     "noExtensions": "None",
+    "noExcludes": "No excluded paths",
     "excludes": "Excluded paths",
     "excludesHint": "Paths relative to vault root that will be hidden from the file tree.",
     "excludePlaceholder": "folder/subfolder or file.md"

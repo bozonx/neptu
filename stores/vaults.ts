@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import {
   DEFAULT_FILE_FILTERS,
-  getVaultScanRoot,
   type AddVaultPayload,
+  type FileFilterSettings,
   type FileNode,
   type GitVaultSettings,
   type Vault,
@@ -90,12 +90,8 @@ export const useVaultsStore = defineStore('vaults', () => {
       mutated = true
     }
 
-    for (const v of vaults) {
-      if (!v.filters) {
-        v.filters = JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
-        mutated = true
-      }
-    }
+    // Vault filters/excludes/contentFolder intentionally left undefined
+    // so that effective values fall back to .neptu-vault.yaml.
 
     list.value = vaults
     groups.value = loadedGroups ?? []
@@ -173,7 +169,6 @@ export const useVaultsStore = defineStore('vaults', () => {
       name: payload.name?.trim() || basename(payload.path),
       type: payload.type,
       path: payload.path,
-      filters: DEFAULT_FILE_FILTERS,
       contentType: payload.contentType ?? 'vault',
       contentFolder: payload.contentFolder,
       siteLangMode: payload.siteLangMode,
@@ -271,7 +266,12 @@ export const useVaultsStore = defineStore('vaults', () => {
       needsRefresh = true
     }
     if (updates.contentFolder !== undefined) {
-      vault.contentFolder = updates.contentFolder
+      if (updates.contentFolder === null) {
+        delete vault.contentFolder
+      }
+      else {
+        vault.contentFolder = updates.contentFolder
+      }
       needsRefresh = true
     }
     if (updates.siteLangMode !== undefined) {
@@ -279,7 +279,21 @@ export const useVaultsStore = defineStore('vaults', () => {
       needsRefresh = true
     }
     if (updates.excludes !== undefined) {
-      vault.excludes = updates.excludes
+      if (updates.excludes === null) {
+        delete vault.excludes
+      }
+      else {
+        vault.excludes = updates.excludes
+      }
+      needsRefresh = true
+    }
+    if (updates.filters !== undefined) {
+      if (updates.filters === null) {
+        delete vault.filters
+      }
+      else {
+        vault.filters = updates.filters
+      }
       needsRefresh = true
     }
 
@@ -368,6 +382,26 @@ export const useVaultsStore = defineStore('vaults', () => {
     }
   }
 
+  function getEffectiveFilters(vault: Vault): FileFilterSettings {
+    const configFilters = vaultConfigs.value[vault.id]?.filters
+    if (vault.filters !== undefined) return JSON.parse(JSON.stringify(vault.filters))
+    if (configFilters !== undefined) return JSON.parse(JSON.stringify(configFilters))
+    return JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
+  }
+
+  function getEffectiveExcludes(vault: Vault): string[] {
+    const configExcludes = vaultConfigs.value[vault.id]?.excludes
+    if (vault.excludes !== undefined) return [...vault.excludes]
+    if (configExcludes !== undefined) return [...configExcludes]
+    return []
+  }
+
+  function getEffectiveContentFolder(vault: Vault): string | undefined {
+    const configRoot = vaultConfigs.value[vault.id]?.contentRoot
+    if (configRoot !== undefined) return configRoot
+    return vault.contentFolder
+  }
+
   async function refreshTree(vault: Vault) {
     const fs = useFs()
     const settingsStore = useSettingsStore()
@@ -375,9 +409,9 @@ export const useVaultsStore = defineStore('vaults', () => {
     try {
       trees.value[vault.id] = await fs.scanMarkdownTree(scanRoot, {
         showHidden: settingsStore.settings.showHiddenFiles,
-        filterSettings: vault.filters,
+        filterSettings: getEffectiveFilters(vault),
         sortMode: settingsStore.settings.fileSortMode,
-        excludes: vault.excludes,
+        excludes: getEffectiveExcludes(vault),
       })
     }
     catch (error) {
@@ -436,16 +470,30 @@ export const useVaultsStore = defineStore('vaults', () => {
   }
 
   /**
-   * Returns the effective content scan root for a vault, preferring
-   * `contentRoot` from `.neptu-vault.yaml` over legacy `vault.contentFolder`.
+   * Returns the absolute path that should be scanned as the content root for a vault.
    */
   function getEffectiveContentRoot(vault: Vault): string {
-    const configRoot = vaultConfigs.value[vault.id]?.contentRoot
-    if (configRoot) {
-      const base = vault.path.replace(/[/\\]+$/, '')
-      return `${base}/${configRoot}`
+    const folder = getEffectiveContentFolder(vault)
+    if (!folder || vault.contentType === 'vault' || !vault.contentType) {
+      return vault.path.replace(/[/\\]+$/, '')
     }
-    return getVaultScanRoot(vault)
+    const base = vault.path.replace(/[/\\]+$/, '')
+    return `${base}/${folder}`
+  }
+
+  async function resetVaultOverrides(
+    id: string,
+    fields: Array<'filters' | 'excludes' | 'contentFolder'>,
+  ) {
+    const vault = findById(id)
+    if (!vault) return
+    for (const field of fields) {
+      if (field === 'filters') delete vault.filters
+      if (field === 'excludes') delete vault.excludes
+      if (field === 'contentFolder') delete vault.contentFolder
+    }
+    await useSettingsStore().persist()
+    await refreshTree(vault)
   }
 
   return {
@@ -476,5 +524,9 @@ export const useVaultsStore = defineStore('vaults', () => {
     loadVaultConfig,
     saveVaultConfig,
     getEffectiveContentRoot,
+    getEffectiveFilters,
+    getEffectiveExcludes,
+    getEffectiveContentFolder,
+    resetVaultOverrides,
   }
 })

@@ -115,8 +115,13 @@
     "contentFolder": "Папка контента",
     "contentFolderHint": "По умолчанию: src",
     "useCustomContentFolder": "Задать свою папку контента",
+    "edit": "Изменить",
+    "fromVaultFile": "Из файла хранилища",
+    "customValue": "Задано вручную",
+    "resetToFileDefaults": "Сбросить к значениям из файла",
     "editFilters": "Изменить",
     "noExtensions": "Нет",
+    "noExcludes": "Нет исключённых путей",
     "excludes": "Исключённые пути",
     "excludesHint": "Пути относительно корня хранилища, которые будут скрыты из дерева файлов.",
     "excludePlaceholder": "папка/подпапка или файл.md"

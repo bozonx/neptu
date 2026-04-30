@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import { getVaultScanRoot } from '~/types'
 import type { ContentType, FileSortMode, GitCommitMode, SiteLangMode, Vault, VaultType, VaultGroup } from '~/types'
 import SettingsDialog from '~/components/SettingsDialog.vue'
 import VaultSidebarItem from '~/components/VaultSidebarItem.vue'
@@ -240,7 +239,7 @@ async function submitNewVault() {
 }
 
 function openCreateNote(vault: Vault, dir?: string) {
-  newNoteCtx.value = { vault, dir: dir ?? getVaultScanRoot(vault) }
+  newNoteCtx.value = { vault, dir: dir ?? vaults.getEffectiveContentRoot(vault) }
   newNoteName.value = ''
   newNoteOpen.value = true
 }
@@ -330,7 +329,7 @@ async function submitRemoveGroup() {
 }
 
 function openCreateFolder(vault: Vault, dir?: string) {
-  newFolderCtx.value = { vault, dir: dir ?? getVaultScanRoot(vault) }
+  newFolderCtx.value = { vault, dir: dir ?? vaults.getEffectiveContentRoot(vault) }
   newFolderName.value = ''
   newFolderOpen.value = true
 }

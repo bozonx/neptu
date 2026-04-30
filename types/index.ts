@@ -312,16 +312,6 @@ export interface AddVaultPayload {
   siteLangMode?: SiteLangMode
 }
 
-/** Returns the absolute path that should be scanned as the content root for a vault */
-export function getVaultScanRoot(vault: Vault): string {
-  if (vault.contentType === 'vault' || !vault.contentType) {
-    return vault.path
-  }
-  const folder = vault.contentFolder ?? 'src'
-  const base = vault.path.replace(/[/\\]+$/, '')
-  return `${base}/${folder}`
-}
-
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 export type CommitStatus = 'idle' | 'committing' | 'committed' | 'error'

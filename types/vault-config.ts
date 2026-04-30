@@ -1,3 +1,5 @@
+import type { FileFilterSettings } from './index'
+
 export type UploadMode = 'adjacent' | 'adjacent-folder' | 'global-folder'
 
 export type ImageFormat = 'webp' | 'jpeg' | 'png' | 'avif'
@@ -122,6 +124,8 @@ export interface VaultConfig {
   contentRoot?: string
   media?: MediaSettings
   schemas?: Schema[]
+  filters?: FileFilterSettings
+  excludes?: string[]
 }
 
 export const DEFAULT_VAULT_CONFIG: VaultConfig = {
@@ -182,6 +186,37 @@ export function isValidVaultConfig(obj: unknown): obj is VaultConfig {
     for (const s of o.schemas) {
       if (!isValidSchema(s)) return false
     }
+  }
+  if (o.filters !== undefined && !isValidFileFilterSettings(o.filters)) return false
+  if (o.excludes !== undefined && !isValidExcludes(o.excludes)) return false
+  return true
+}
+
+function isValidFileFilterSettings(obj: unknown): boolean {
+  if (!obj || typeof obj !== 'object') return false
+  const o = obj as Record<string, unknown>
+  if (!Array.isArray(o.groups)) return false
+  for (const g of o.groups) {
+    if (!g || typeof g !== 'object') return false
+    const group = g as Record<string, unknown>
+    if (typeof group.label !== 'string') return false
+    if (typeof group.enabled !== 'boolean') return false
+    if (typeof group.editable !== 'boolean') return false
+    if (!Array.isArray(group.extensions)) return false
+    for (const e of group.extensions) {
+      if (!e || typeof e !== 'object') return false
+      const ext = e as Record<string, unknown>
+      if (typeof ext.ext !== 'string') return false
+      if (typeof ext.enabled !== 'boolean') return false
+    }
+  }
+  return true
+}
+
+function isValidExcludes(obj: unknown): boolean {
+  if (!Array.isArray(obj)) return false
+  for (const item of obj) {
+    if (typeof item !== 'string') return false
   }
   return true
 }

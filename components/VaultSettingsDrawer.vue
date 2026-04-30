@@ -25,13 +25,15 @@ const editCommitDebounceSec = ref(5)
 const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
 const editContentType = ref<ContentType>('vault')
 const editContentFolder = ref('src')
-const editUseCustomContentFolder = ref(false)
 const editSiteLangMode = ref<SiteLangMode>('monolingual')
 const editExcludes = ref<string[]>([])
 const newExclude = ref('')
 const newCustomExt = ref('')
-const editFiltersOpen = ref(false)
 const showNameInput = ref(false)
+
+const editingContentFolder = ref(false)
+const editingFilters = ref(false)
+const editingExcludes = ref(false)
 
 let skipNextWatch = false
 
@@ -44,18 +46,21 @@ watch(
     editVaultPath.value = vault.path
     editCommitMode.value = vault.git?.commitMode ?? 'auto'
     editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? settings.settings.defaultCommitDebounceMs) / 1000
-    editFilters.value = vault.filters
-      ? JSON.parse(JSON.stringify(vault.filters))
-      : JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
     editContentType.value = vault.contentType ?? 'vault'
-    const configRoot = vaults.vaultConfigs[vault.id]?.contentRoot
-    editUseCustomContentFolder.value = vault.contentFolder !== undefined
-    editContentFolder.value = vault.contentFolder ?? configRoot ?? 'src'
     editSiteLangMode.value = vault.siteLangMode ?? 'monolingual'
-    editExcludes.value = vault.excludes ? [...vault.excludes] : []
+
+    // Initialize from effective values (may come from .neptu-vault.yaml or Vault overrides)
+    editFilters.value = JSON.parse(JSON.stringify(vaults.getEffectiveFilters(vault)))
+    editingFilters.value = vault.filters !== undefined
+
+    editContentFolder.value = vaults.getEffectiveContentFolder(vault) ?? 'src'
+    editingContentFolder.value = vault.contentFolder !== undefined
+
+    editExcludes.value = [...vaults.getEffectiveExcludes(vault)]
+    editingExcludes.value = vault.excludes !== undefined
+
     newExclude.value = ''
     newCustomExt.value = ''
-    editFiltersOpen.value = false
     showNameInput.value = false
     nextTick(() => {
       skipNextWatch = false
@@ -114,11 +119,11 @@ async function save() {
             commitDebounceMs: Math.max(1000, Math.round(editCommitDebounceSec.value * 1000)),
           }
         : undefined,
-      filters: editFilters.value,
+      filters: editingFilters.value ? editFilters.value : null as never,
       contentType: editContentType.value,
-      contentFolder: editUseCustomContentFolder.value ? editContentFolder.value : undefined,
+      contentFolder: editingContentFolder.value ? (editContentFolder.value || undefined) : null as never,
       siteLangMode: editContentType.value === 'site' ? editSiteLangMode.value : undefined,
-      excludes: editExcludes.value,
+      excludes: editingExcludes.value ? editExcludes.value : null as never,
     })
   }
   catch (error) {
@@ -133,7 +138,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editUseCustomContentFolder, editContentFolder, editSiteLangMode, editExcludes],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode, editExcludes, editingContentFolder, editingFilters, editingExcludes],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -280,24 +285,50 @@ const siteLangModeItems = [
         </section>
 
         <section class="space-y-3">
-          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-            {{ $t('vault.contentFolder') }}
-          </h3>
-          <UFormField>
-            <UCheckbox
-              v-model="editUseCustomContentFolder"
-              :label="$t('vault.useCustomContentFolder')"
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+              {{ $t('vault.contentFolder') }}
+            </h3>
+            <UButton
+              v-if="!editingContentFolder"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              :label="$t('vault.edit')"
+              @click="editingContentFolder = true"
             />
-          </UFormField>
-          <UFormField
-            :label="$t('vault.contentFolder')"
-            :hint="$t('vault.contentFolderHint')"
-          >
-            <UInput
-              v-model="editContentFolder"
-              :disabled="!editUseCustomContentFolder"
+          </div>
+          <template v-if="!editingContentFolder">
+            <div class="text-sm flex items-center gap-2">
+              <span class="font-mono text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
+                {{ vaults.getEffectiveContentFolder(vault!) ?? 'src' }}
+              </span>
+              <span
+                v-if="vault?.contentFolder !== undefined"
+                class="text-xs text-muted"
+              >
+                {{ $t('vault.customValue') }}
+              </span>
+              <span
+                v-else
+                class="text-xs text-muted"
+              >
+                {{ $t('vault.fromVaultFile') }}
+              </span>
+            </div>
+          </template>
+          <template v-else>
+            <UFormField :hint="$t('vault.contentFolderHint')">
+              <UInput v-model="editContentFolder" />
+            </UFormField>
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="link"
+              :label="$t('vault.resetToFileDefaults')"
+              @click="editingContentFolder = false; editContentFolder = vaults.getEffectiveContentFolder(vault!) ?? 'src'"
             />
-          </UFormField>
+          </template>
         </section>
 
         <section class="space-y-3">
@@ -306,15 +337,15 @@ const siteLangModeItems = [
               {{ $t('vault.fileFilters') }}
             </h3>
             <UButton
-              v-if="!editFiltersOpen"
+              v-if="!editingFilters"
               size="xs"
               color="neutral"
               variant="ghost"
-              :label="$t('vault.editFilters')"
-              @click="editFiltersOpen = true"
+              :label="$t('vault.edit')"
+              @click="editingFilters = true"
             />
           </div>
-          <template v-if="!editFiltersOpen">
+          <template v-if="!editingFilters">
             <div
               v-for="group in editFilters.groups"
               :key="group.label"
@@ -324,6 +355,18 @@ const siteLangModeItems = [
               <span class="text-muted ml-1">
                 {{ formatEnabledExtensions(group.extensions) || $t('vault.noExtensions') }}
               </span>
+            </div>
+            <div
+              v-if="vault?.filters === undefined"
+              class="text-xs text-muted mt-1"
+            >
+              {{ $t('vault.fromVaultFile') }}
+            </div>
+            <div
+              v-else
+              class="text-xs text-muted mt-1"
+            >
+              {{ $t('vault.customValue') }}
             </div>
           </template>
           <template v-else>
@@ -369,49 +412,107 @@ const siteLangModeItems = [
                 />
               </div>
             </div>
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="link"
+              :label="$t('vault.resetToFileDefaults')"
+              @click="editingFilters = false; editFilters = JSON.parse(JSON.stringify(vaults.getEffectiveFilters(vault!)))"
+            />
           </template>
         </section>
 
         <section class="space-y-3">
-          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-            {{ $t('vault.excludes') }}
-          </h3>
-          <p class="text-xs text-muted">
-            {{ $t('vault.excludesHint') }}
-          </p>
-          <div class="flex items-center gap-2">
-            <UInput
-              v-model="newExclude"
-              :placeholder="$t('vault.excludePlaceholder')"
-              class="flex-1"
-              @keydown.enter="addExclude"
-            />
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+              {{ $t('vault.excludes') }}
+            </h3>
             <UButton
-              icon="i-lucide-plus"
+              v-if="!editingExcludes"
+              size="xs"
               color="neutral"
               variant="ghost"
-              @click="addExclude"
+              :label="$t('vault.edit')"
+              @click="editingExcludes = true"
             />
           </div>
-          <div
-            v-if="editExcludes.length > 0"
-            class="space-y-1"
-          >
-            <div
-              v-for="(item, idx) in editExcludes"
-              :key="idx"
-              class="flex items-center justify-between rounded-md bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-sm"
+          <template v-if="!editingExcludes">
+            <p
+              v-if="editExcludes.length === 0"
+              class="text-sm text-muted"
             >
-              <span class="font-mono text-xs">{{ item }}</span>
+              {{ $t('vault.noExcludes') }}
+            </p>
+            <div
+              v-else
+              class="space-y-1"
+            >
+              <div
+                v-for="item in editExcludes"
+                :key="item"
+                class="font-mono text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded"
+              >
+                {{ item }}
+              </div>
+            </div>
+            <div
+              v-if="vault?.excludes === undefined"
+              class="text-xs text-muted mt-1"
+            >
+              {{ $t('vault.fromVaultFile') }}
+            </div>
+            <div
+              v-else
+              class="text-xs text-muted mt-1"
+            >
+              {{ $t('vault.customValue') }}
+            </div>
+          </template>
+          <template v-else>
+            <p class="text-xs text-muted">
+              {{ $t('vault.excludesHint') }}
+            </p>
+            <div class="flex items-center gap-2">
+              <UInput
+                v-model="newExclude"
+                :placeholder="$t('vault.excludePlaceholder')"
+                class="flex-1"
+                @keydown.enter="addExclude"
+              />
               <UButton
-                icon="i-lucide-x"
-                size="xs"
+                icon="i-lucide-plus"
                 color="neutral"
                 variant="ghost"
-                @click="removeExclude(idx)"
+                @click="addExclude"
               />
             </div>
-          </div>
+            <div
+              v-if="editExcludes.length > 0"
+              class="space-y-1"
+            >
+              <div
+                v-for="(item, idx) in editExcludes"
+                :key="idx"
+                class="flex items-center justify-between rounded-md bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-sm"
+              >
+                <span class="font-mono text-xs">{{ item }}</span>
+                <UButton
+                  icon="i-lucide-x"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  @click="removeExclude(idx)"
+                />
+              </div>
+            </div>
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="link"
+              :label="$t('vault.resetToFileDefaults')"
+              @click="editingExcludes = false; editExcludes = [...vaults.getEffectiveExcludes(vault!)]"
+            />
+          </template>
         </section>
 
         <section
