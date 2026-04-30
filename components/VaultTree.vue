@@ -207,8 +207,8 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
         :modal="false"
       >
         <div
-          class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer"
-          :class="{ 'bg-elevated text-primary': activePath === node.path }"
+          class="group flex items-center gap-1 rounded-md px-2 py-1 text-sm hover:bg-elevated cursor-pointer transition-colors"
+          :class="activePath === node.path ? 'bg-primary/10 text-primary border-l-2 border-primary' : ''"
           :style="{ paddingLeft: `${1.25 + level * 0.75}rem` }"
           draggable="true"
           @click="emit('open', node.path)"
@@ -217,7 +217,8 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
         >
           <UIcon
             :name="getFileIcon(node.name, filters)"
-            class="size-4 text-muted shrink-0"
+            class="size-4 shrink-0"
+            :class="activePath === node.path ? 'text-primary' : 'text-muted'"
           />
           <span class="truncate flex-1">{{ node.name }}</span>
           <UDropdownMenu

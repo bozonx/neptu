@@ -246,10 +246,10 @@ async function handleDelete(node: FileNode) {
         </div>
 
         <div class="flex items-center justify-between gap-1 min-w-0 h-6">
-          <span class="text-xs text-muted capitalize hidden md:block">
+          <span class="text-xs text-muted capitalize">
             {{ vault.type }}{{ vault.contentType && vault.contentType !== 'vault' ? ` / ${$t(`vault.contentType${vault.contentType.charAt(0).toUpperCase() + vault.contentType.slice(1)}`)}` : '' }}{{ vault.path === settings.mainRepoPath ? ` - ${$t('vault.main')}` : '' }}
           </span>
-          <div class="flex items-center gap-1 md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-opacity">
+          <div class="flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
             <UButton
               icon="i-lucide-file-plus"
               size="xs"

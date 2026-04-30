@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import AppSidebar from '~/components/AppSidebar.vue'
-import FileSidebar from '~/components/FileSidebar.vue'
-import FileSidebarToolbar from '~/components/FileSidebarToolbar.vue'
-
 const editor = useEditorStore()
 const tabsStore = useTabsStore()
 const settings = useSettingsStore()

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Splitpanes, Pane } from 'splitpanes'
 import type { Panel } from '~/types'
-import Editor from '~/components/Editor.vue'
 
 const props = defineProps<{
   panel: Panel

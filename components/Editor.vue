@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import EditorTabs from '~/components/EditorTabs.vue'
 import type { EditorTab, Panel, PanelLeaf } from '~/types'
 
 const props = defineProps<{

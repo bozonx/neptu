@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { ContentType, FileSortMode, GitCommitMode, SiteLangMode, Vault, VaultType, VaultGroup } from '~/types'
-import SettingsDialog from '~/components/SettingsDialog.vue'
-import VaultSidebarItem from '~/components/VaultSidebarItem.vue'
 import { Splitpanes, Pane } from 'splitpanes'
 
 const settings = useSettingsStore()

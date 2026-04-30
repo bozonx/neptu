@@ -1,10 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useEditorStore } from '~/stores/editor'
-import { useGitStore } from '~/stores/git'
-import { useSettingsStore } from '~/stores/settings'
-import { useTabsStore } from '~/stores/tabs'
-
 const editorStore = useEditorStore()
 const gitStore = useGitStore()
 const settingsStore = useSettingsStore()

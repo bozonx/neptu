@@ -4,7 +4,15 @@
 
 @theme {
   --color-primary: var(--ui-primary);
+
+  /* Professional desktop typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 }
+
+/* ──────────────────────────────────────
+   Root layout: full-height, no scroll
+   ────────────────────────────────────── */
 
 html,
 body,
@@ -14,7 +22,16 @@ body,
   overflow: hidden;
   background-color: var(--ui-bg);
   color: var(--ui-text);
+  /* Prevent text selection flicker during drag operations */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ──────────────────────────────────────
+   Semantic utility aliases
+   Map Nuxt UI CSS vars to short classes
+   used across the app.
+   ────────────────────────────────────── */
 
 .bg-default { background-color: var(--ui-bg); }
 .text-default { color: var(--ui-text); }
@@ -26,19 +43,61 @@ body,
 .border-r-default { border-right-color: var(--ui-border); }
 .border-l-default { border-left-color: var(--ui-border); }
 
+/* ──────────────────────────────────────
+   Scrollbar styling (thin, themed)
+   ────────────────────────────────────── */
+
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
+/* Thin themed scrollbars for sidebar panels and editors */
+.themed-scrollbar,
+.overflow-auto,
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border) transparent;
+}
+
+.themed-scrollbar::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-track,
+.overflow-auto::-webkit-scrollbar-track,
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb,
+.overflow-auto::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: var(--ui-border);
+  border-radius: 3px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb:hover,
+.overflow-auto::-webkit-scrollbar-thumb:hover,
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ui-text-muted);
+}
+
+/* ──────────────────────────────────────
+   Splitpanes (resizable panels)
+   ────────────────────────────────────── */
+
 .splitpanes__splitter {
   background-color: var(--ui-border);
   position: relative;
   z-index: 50;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s ease;
 }
 
 .splitpanes__splitter:hover {
@@ -47,18 +106,75 @@ body,
 
 .splitpanes--vertical > .splitpanes__splitter {
   width: 1px;
+  min-width: 1px;
   cursor: col-resize;
-  border-right: 1px solid var(--ui-border);
+}
+
+/* Invisible wider hit area for easier grabbing */
+.splitpanes--vertical > .splitpanes__splitter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  right: -3px;
 }
 
 .splitpanes--horizontal > .splitpanes__splitter {
   height: 1px;
+  min-height: 1px;
   cursor: row-resize;
-  border-bottom: 1px solid var(--ui-border);
 }
+
+.splitpanes--horizontal > .splitpanes__splitter::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -3px;
+  bottom: -3px;
+}
+
+/* ──────────────────────────────────────
+   Drag-and-drop cursor override
+   ────────────────────────────────────── */
 
 body.neptu-dnd-copy,
 body.neptu-dnd-copy * {
   cursor: copy !important;
 }
 
+/* ──────────────────────────────────────
+   Search highlight marks
+   ────────────────────────────────────── */
+
+mark {
+  background-color: color-mix(in srgb, var(--ui-primary) 25%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ──────────────────────────────────────
+   Focus-visible rings for keyboard nav
+   ────────────────────────────────────── */
+
+[role="button"]:focus-visible,
+[tabindex]:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+/* ──────────────────────────────────────
+   Textarea editor area
+   ────────────────────────────────────── */
+
+textarea {
+  caret-color: var(--ui-primary);
+}
+
+textarea::selection {
+  background-color: color-mix(in srgb, var(--ui-primary) 30%, transparent);
+}
