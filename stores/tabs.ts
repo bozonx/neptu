@@ -21,7 +21,6 @@ const RIGHT_SIDEBAR_MAX = 30
 const CENTER_MIN = 20
 const LEFT_SIDEBAR_DUAL_FIRST_MIN = 10
 const LEFT_SIDEBAR_DUAL_FIRST_MAX = 60
-const _MAX_SPLIT_DEPTH = 5
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -561,13 +560,6 @@ export const useTabsStore = defineStore('tabs', () => {
   }
 
   async function updatePanelRatio(panelId: string, ratio: number) {
-    const parent = findParent(desktopLayout.value, panelId)
-    if (parent) {
-      // ratio is applied to the first child usually, but we need to know if this panel is first or second
-      // Actually, it's easier to just find the node itself and update its ratio.
-    }
-
-    // Direct search for the node
     const findNode = (p: Panel, id: string): PanelNode | null => {
       if (p.type === 'leaf') return null
       if (p.id === id) return p
@@ -683,6 +675,7 @@ export const useTabsStore = defineStore('tabs', () => {
     dropByPrefix,
     updatePath,
     loadUiState,
+    findLeaf,
     allLeaves,
     updatePanelRatio,
     updateSidebarSizes,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
-import type { EditorTab, Panel, PanelLeaf } from '~/types'
+import type { EditorTab } from '~/types'
 
 const props = defineProps<{
   panelId?: string
@@ -28,7 +28,7 @@ const leaf = computed(() => {
   if (!props.panelId) return null
   return tabsStore.desktopLayout.type === 'leaf' && tabsStore.desktopLayout.id === props.panelId
     ? tabsStore.desktopLayout
-    : findLeaf(tabsStore.desktopLayout, props.panelId)
+    : tabsStore.findLeaf(tabsStore.desktopLayout, props.panelId)
 })
 
 const tabs = computed(() => {
@@ -64,10 +64,7 @@ watch(activeId, (newId) => {
   }
 }, { immediate: true })
 
-function findLeaf(panel: Panel, id: string): PanelLeaf | null {
-  if (panel.type === 'leaf') return panel.id === id ? panel : null
-  return findLeaf(panel.first, id) ?? findLeaf(panel.second, id)
-}
+
 
 function fileName(path: string): string {
   const parts = path.split(/[\\/]/)

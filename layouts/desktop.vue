@@ -36,15 +36,15 @@ watch(() => {
 })
 
 function handleResize(event: Array<{ pane: number, size: number }>) {
-  // We only care about the top-level layout which has panes: [left, center, right]
-  if (event.length >= 1 && event[0] !== undefined) {
-    const left = event[0].size
-    // When right sidebar is collapsed (size 0) preserve its persisted size
-    const right = !tabsStore.rightSidebarCollapsed && event.length === 3 && event[2] !== undefined
-      ? event[2].size
-      : tabsStore.rightSidebarSize
-    tabsStore.updateSidebarSizes(left, right)
-  }
+  if (event.length < 2 || event[0] === undefined) return
+
+  const left = event[0].size
+  /* When right sidebar is visible, Splitpanes has 3 panes and event[2]
+     carries the right sidebar size. When collapsed, only 2 panes exist. */
+  const right = event.length === 3 && event[2] !== undefined
+    ? event[2].size
+    : tabsStore.rightSidebarSize
+  tabsStore.updateSidebarSizes(left, right)
 }
 </script>
 
@@ -66,7 +66,6 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
       v-if="layoutReady"
       id="main-layout"
       class="h-full"
-      :class="{ 'right-collapsed': tabsStore.rightSidebarCollapsed }"
       @resized="handleResize"
     >
       <!-- Left Sidebar -->
@@ -77,7 +76,7 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         class="flex flex-col bg-default"
       >
         <!-- Plugin toolbar row -->
-        <div class="border-b border-default flex items-center gap-1 px-2 h-9 shrink-0 bg-elevated/30 flex-wrap overflow-hidden">
+        <div class="border-b border-default flex items-center gap-1 px-2 h-9 shrink-0 bg-elevated/30 overflow-x-auto overflow-y-hidden">
           <template v-if="leftHeaderButtons.length === 0">
             <UIcon
               name="i-lucide-book-marked"
@@ -96,21 +95,19 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         </div>
       </Pane>
 
-      <!-- Central Content -->
-      <Pane
-        :size="100 - tabsStore.leftSidebarSize - (tabsStore.rightSidebarCollapsed ? 0 : tabsStore.rightSidebarSize)"
-        class="flex flex-col min-w-0 bg-default relative"
-      >
+      <!-- Central Content (auto-sized by Splitpanes) -->
+      <Pane class="flex flex-col min-w-0 bg-default relative">
         <main class="flex-1 flex flex-col min-w-0 bg-default relative">
           <slot />
         </main>
       </Pane>
 
-      <!-- Right Sidebar -->
+      <!-- Right Sidebar (conditionally rendered) -->
       <Pane
-        :size="tabsStore.rightSidebarCollapsed ? 0 : tabsStore.rightSidebarSize"
-        :min-size="tabsStore.rightSidebarCollapsed ? 0 : 10"
-        :max-size="tabsStore.rightSidebarCollapsed ? 0 : 30"
+        v-if="!tabsStore.rightSidebarCollapsed"
+        :size="tabsStore.rightSidebarSize"
+        min-size="10"
+        max-size="30"
         class="flex flex-col bg-default pb-7"
       >
         <AppPanel class="shrink-0" />

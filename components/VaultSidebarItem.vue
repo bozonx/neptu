@@ -79,7 +79,7 @@ function onVaultDragEnd() {
   dnd.onDragEnd()
 }
 
-function vaultMenuItems(): DropdownMenuItem[][] {
+const vaultMenuItems = computed<DropdownMenuItem[][]>(() => {
   const groups: DropdownMenuItem[][] = []
   const top: DropdownMenuItem[] = [
     { label: t('vault.newFolderBtn'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', props.vault) },
@@ -101,7 +101,7 @@ function vaultMenuItems(): DropdownMenuItem[][] {
     ])
   }
   return groups
-}
+})
 
 async function handleSync() {
   if (props.vault.type !== 'git') return
@@ -214,7 +214,7 @@ async function handleDelete(node: FileNode) {
 <template>
   <div>
     <UContextMenu
-      :items="vaultMenuItems()"
+      :items="vaultMenuItems"
       :modal="false"
       class="w-full block"
     >
@@ -279,7 +279,7 @@ async function handleDelete(node: FileNode) {
               @click.stop="handleVaultCommit()"
             />
             <UDropdownMenu
-              :items="vaultMenuItems()"
+              :items="vaultMenuItems"
               :modal="false"
               size="xs"
             >

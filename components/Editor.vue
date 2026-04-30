@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EditorTab, Panel, PanelLeaf } from '~/types'
+import type { EditorTab } from '~/types'
 
 const props = defineProps<{
   panelId?: string
@@ -11,17 +11,12 @@ const editorStore = useEditorStore()
 const settingsStore = useSettingsStore()
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
-function findLeaf(panel: Panel, id: string): PanelLeaf | null {
-  if (panel.type === 'leaf') return panel.id === id ? panel : null
-  return findLeaf(panel.first, id) ?? findLeaf(panel.second, id)
-}
-
 const activeTab = computed(() => {
   if (props.isMobile) {
     return tabsStore.mobileTabs.find((t) => t.id === tabsStore.mobileActiveId)
   }
   if (!props.panelId) return null
-  const leaf = findLeaf(tabsStore.desktopLayout, props.panelId)
+  const leaf = tabsStore.findLeaf(tabsStore.desktopLayout, props.panelId)
   return leaf?.tabs.find((t: EditorTab) => t.id === leaf.activeId)
 })
 
@@ -47,7 +42,7 @@ watch(() => currentFilePath.value ? editorStore.scrollToLineTrigger[currentFileP
     textareaRef.value.focus()
     textareaRef.value.setSelectionRange(charIndex, charIndex)
 
-    const lineHeight = 20
+    const lineHeight = parseFloat(getComputedStyle(textareaRef.value).lineHeight) || 28
     textareaRef.value.scrollTop = line * lineHeight
   }
 })
