@@ -489,14 +489,5 @@ watch(
         </main>
       </div>
     </template>
-
-    <template #footer>
-      <UButton
-        color="neutral"
-        variant="ghost"
-        :label="$t('settings.close')"
-        @click="open = false"
-      />
-    </template>
   </UModal>
 </template>

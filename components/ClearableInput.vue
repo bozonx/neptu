@@ -7,10 +7,12 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
+  (e: 'clear'): void
 }>()
 
 function clear() {
   emit('update:modelValue', '')
+  emit('clear')
 }
 </script>
 

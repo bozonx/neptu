@@ -212,6 +212,7 @@ const siteLangModeItems = [
             <ClearableInput
               v-model="editVaultName"
               :placeholder="vault?.name ?? $t('vault.vaultNamePlaceholder')"
+              @clear="showNameInput = false; editVaultName = vault?.name ?? ''"
             />
           </UFormField>
         </section>
@@ -430,17 +431,6 @@ const siteLangModeItems = [
             @click="open = false; emit('remove', vault)"
           />
         </section>
-      </div>
-    </template>
-
-    <template #footer>
-      <div class="flex justify-end gap-2 w-full">
-        <UButton
-          color="neutral"
-          variant="ghost"
-          :label="$t('settings.close')"
-          @click="open = false"
-        />
       </div>
     </template>
   </USlideover>
