@@ -49,11 +49,11 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col overflow-hidden bg-default text-default">
+  <div class="h-screen relative overflow-hidden bg-default text-default">
     <!-- Loading spinner -->
     <div
       v-if="!layoutReady"
-      class="flex-1 flex items-center justify-center bg-default"
+      class="flex-1 h-full flex items-center justify-center bg-default"
     >
       <UIcon
         name="i-lucide-loader-2"
@@ -65,7 +65,7 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
     <Splitpanes
       v-if="layoutReady"
       id="main-layout"
-      class="flex-1 min-h-0"
+      class="h-full"
       :class="{ 'right-collapsed': tabsStore.rightSidebarCollapsed }"
       @resized="handleResize"
     >
@@ -111,14 +111,14 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         :size="tabsStore.rightSidebarCollapsed ? 0 : tabsStore.rightSidebarSize"
         :min-size="tabsStore.rightSidebarCollapsed ? 0 : 10"
         :max-size="tabsStore.rightSidebarCollapsed ? 0 : 30"
-        class="flex flex-col bg-default"
+        class="flex flex-col bg-default pb-7"
       >
         <AppPanel class="shrink-0" />
         <FileSidebar class="flex-1 min-h-0" />
       </Pane>
     </Splitpanes>
 
-    <!-- Status Bar (flow-based, not fixed) -->
+    <!-- Status Bar (fixed, not flow-based) -->
     <AppStatusBar v-if="layoutReady" />
   </div>
 </template>
