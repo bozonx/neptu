@@ -70,6 +70,12 @@ const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
 const newMainPath = ref('')
 
+const localeItems = [
+  { label: t('settings.auto'), value: 'auto' },
+  { label: 'English', value: 'en-US' },
+  { label: 'Русский', value: 'ru-RU' },
+]
+
 const colorMode = useColorMode()
 
 let skipNextWatch = false
@@ -133,6 +139,12 @@ async function submitChangeMainRepo() {
   }
 }
 
+async function toggleLayoutMode() {
+  layoutMode.value = layoutMode.value === 'desktop' ? 'mobile' : 'desktop'
+  await save()
+  open.value = false
+}
+
 async function copyConfigPath() {
   if (!configPath.value) return
   try {
@@ -181,7 +193,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, layoutMode, theme, locale, tabDisplayMode, confirmDeleteLocal, confirmDeleteGit, gitAutoMessage, gitAutoMessageTemplate],
+  [autosaveSec, commitSec, authorName, authorEmail, theme, locale, tabDisplayMode, confirmDeleteLocal, confirmDeleteGit, gitAutoMessage, gitAutoMessageTemplate],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -228,16 +240,11 @@ watch(
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
                 {{ $t('settings.interface') }}
               </h3>
-              <UFormField
-                :label="$t('settings.language')"
-              >
-                <URadioGroup
+              <UFormField :label="$t('settings.language')">
+                <USelect
                   v-model="locale"
-                  :items="[
-                    { label: $t('settings.auto'), value: 'auto' },
-                    { label: 'English', value: 'en-US' },
-                    { label: 'Русский', value: 'ru-RU' },
-                  ]"
+                  :items="localeItems"
+                  class="w-48"
                 />
               </UFormField>
             </section>
@@ -264,16 +271,14 @@ watch(
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
                 {{ $t('settings.editor') }}
               </h3>
-              <UFormField
-                :label="$t('settings.autosaveDebounce')"
-                :hint="$t('settings.autosaveDebounceHint')"
-              >
+              <UFormField :label="$t('settings.autosaveDebounce')">
                 <UInput
                   v-model="autosaveSec"
                   type="number"
                   :min="0.1"
                   :step="0.1"
                   class="w-32"
+                  :title="$t('settings.autosaveDebounceHint')"
                 />
               </UFormField>
             </section>
@@ -282,10 +287,7 @@ watch(
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
                 {{ $t('settings.mainVault') }}
               </h3>
-              <UFormField
-                :label="$t('settings.currentFolder')"
-                :hint="$t('settings.currentFolderHint')"
-              >
+              <UFormField :label="$t('settings.currentFolder')">
                 <div class="flex items-center gap-2">
                   <UInput
                     :model-value="newMainPath || settingsStore.mainRepoPath || ''"
@@ -306,6 +308,9 @@ watch(
                   />
                 </div>
               </UFormField>
+              <p class="text-xs text-muted mt-1">
+                {{ $t('settings.currentFolderHint') }}
+              </p>
             </section>
 
             <section class="space-y-4">
@@ -344,45 +349,42 @@ watch(
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
                 {{ $t('settings.appearance') }}
               </h3>
-              <UFormField
-                :label="$t('settings.theme')"
-                :hint="$t('settings.themeHint')"
-              >
+              <UFormField :label="$t('settings.theme')">
                 <URadioGroup
                   v-model="theme"
+                  orientation="horizontal"
                   :items="[
                     { label: $t('settings.system'), value: 'system' },
                     { label: $t('settings.light'), value: 'light' },
                     { label: $t('settings.dark'), value: 'dark' },
                   ]"
                 />
+                <p class="text-xs text-muted mt-1">
+                  {{ $t('settings.themeHint') }}
+                </p>
               </UFormField>
 
-              <UFormField
-                :label="$t('settings.layoutMode')"
-                :hint="$t('settings.layoutModeHint')"
-              >
-                <URadioGroup
-                  v-model="layoutMode"
-                  :items="[
-                    { label: $t('settings.desktop'), value: 'desktop' },
-                    { label: $t('settings.mobile'), value: 'mobile' },
-                  ]"
+              <UFormField :label="$t('settings.layoutMode')">
+                <UButton
+                  size="sm"
+                  :label="layoutMode === 'desktop' ? $t('settings.switchToMobile') : $t('settings.switchToDesktop')"
+                  @click="toggleLayoutMode"
                 />
               </UFormField>
 
-              <UFormField
-                :label="$t('settings.tabDisplayMode')"
-                :hint="$t('settings.tabDisplayModeHint')"
-              >
+              <UFormField :label="$t('settings.tabDisplayMode')">
                 <URadioGroup
                   v-model="tabDisplayMode"
+                  orientation="horizontal"
                   :items="[
                     { label: $t('settings.tabDisplaySingleLine'), value: 'single_line' },
                     { label: $t('settings.tabDisplayMultiLine'), value: 'multi_line' },
                     { label: $t('settings.tabDisplayLeftVertical'), value: 'left_vertical' },
                   ]"
                 />
+                <p class="text-xs text-muted mt-1">
+                  {{ $t('settings.tabDisplayModeHint') }}
+                </p>
               </UFormField>
             </section>
           </div>
@@ -396,10 +398,7 @@ watch(
               <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
                 {{ $t('settings.git') }}
               </h3>
-              <UFormField
-                :label="$t('settings.defaultCommitDebounce')"
-                :hint="$t('settings.defaultCommitDebounceHint')"
-              >
+              <UFormField :label="$t('settings.defaultCommitDebounce')">
                 <UInput
                   v-model="commitSec"
                   type="number"
@@ -407,17 +406,20 @@ watch(
                   :step="0.5"
                   class="w-32"
                 />
+                <p class="text-xs text-muted mt-1">
+                  {{ $t('settings.defaultCommitDebounceHint') }}
+                </p>
               </UFormField>
 
-              <UFormField
-                :label="$t('settings.authorName')"
-                :hint="detectedHint"
-              >
+              <UFormField :label="$t('settings.authorName')">
                 <UInput
                   v-model="authorName"
                   :placeholder="$t('settings.authorHint')"
                   class="w-full"
                 />
+                <p class="text-xs text-muted mt-1">
+                  {{ detectedHint }}
+                </p>
               </UFormField>
 
               <UFormField :label="$t('settings.authorEmail')">
@@ -427,24 +429,27 @@ watch(
                   :placeholder="$t('settings.authorHint')"
                   class="w-full"
                 />
+                <p class="text-xs text-muted mt-1">
+                  {{ $t('settings.authorHint') }}
+                </p>
               </UFormField>
 
-              <UFormField
-                :label="$t('settings.gitAutoMessage')"
-                :hint="$t('settings.gitAutoMessageHint')"
-              >
+              <UFormField :label="$t('settings.gitAutoMessage')">
                 <USwitch v-model="gitAutoMessage" />
+                <p class="text-xs text-muted mt-1">
+                  {{ $t('settings.gitAutoMessageHint') }}
+                </p>
               </UFormField>
 
-              <UFormField
-                :label="$t('git.gitAutoMessageTemplate')"
-                :hint="$t('git.gitAutoMessageTemplateHint')"
-              >
+              <UFormField :label="$t('git.gitAutoMessageTemplate')">
                 <UInput
                   v-model="gitAutoMessageTemplate"
                   :placeholder="'Update notes ({files} {fileWord})'"
                   class="w-full"
                 />
+                <p class="text-xs text-muted mt-1">
+                  {{ $t('git.gitAutoMessageTemplateHint') }}
+                </p>
               </UFormField>
             </section>
           </div>

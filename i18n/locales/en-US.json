@@ -144,6 +144,8 @@
     "general": "General",
     "layoutMode": "Layout Mode",
     "layoutModeHint": "Switch between desktop and mobile interfaces.",
+    "switchToMobile": "Switch to mobile view",
+    "switchToDesktop": "Switch to desktop view",
     "auto": "Auto",
     "desktop": "Desktop",
     "mobile": "Mobile",
