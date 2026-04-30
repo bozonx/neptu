@@ -237,124 +237,29 @@ const contextMenuItems = (tab: EditorTab) => [
           v-if="!props.isMobile"
           :items="contextMenuItems(tab)"
         >
-          <div
-            role="button"
-            tabindex="0"
-            draggable="true"
-            :data-tab-id="tab.id"
-            class="group flex items-center gap-2 shrink-0 h-9 border-default px-3.5 text-sm whitespace-nowrap transition-colors relative cursor-default"
-            :class="[
-              settingsStore.settings.tabDisplayMode === 'left_vertical'
-                ? 'w-full border-b'
-                : 'border-r border-b',
-              tab.id === activeId
-                ? 'bg-default text-default'
-                : 'bg-elevated/50 text-muted hover:text-default',
-            ]"
-            :title="tab.filePath"
-            @click="handleTabClick(tab)"
-            @keydown.enter.space.prevent="handleTabClick(tab)"
-            @dragstart="onTabDragStart($event, tab)"
-            @dragend="onTabDragEnd"
-          >
-            <div
-              v-if="tab.id === activeId"
-              class="absolute bg-primary"
-              :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'top-0 bottom-0 left-0 w-0.5' : 'bottom-0 left-0 right-0 h-0.5'"
-            />
-            <span
-              class="tab-sort-handle -ml-1 flex items-center justify-center rounded p-0.5 text-muted/70 hover:text-default cursor-grab active:cursor-grabbing"
-              :title="$t('editor.reorderTabs', 'Reorder tabs')"
-            >
-              <UIcon
-                name="i-lucide-grip-vertical"
-                class="size-3"
-              />
-            </span>
-            <span
-              v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
-              class="size-1.5 rounded-full bg-primary"
-            />
-            <UIcon
-              v-if="tab.pinned"
-              name="i-lucide-pin"
-              class="size-3 text-primary"
-            />
-            <span class="font-medium truncate max-w-[150px]">{{ fileName(tab.filePath) }}</span>
-            <span
-              v-if="vaultName(tab.filePath)"
-              class="text-[10px] text-muted opacity-70"
-            >{{ vaultName(tab.filePath) }}</span>
-            <UButton
-              v-if="!tab.pinned"
-              icon="i-lucide-x"
-              size="xs"
-              variant="ghost"
-              color="neutral"
-              class="size-4 p-0 opacity-0 group-hover:opacity-100"
-              @click.stop="handleClose(tab)"
-            />
-          </div>
+          <EditorTabItem
+            :tab="tab"
+            :active-id="activeId"
+            :file-name="fileName(tab.filePath)"
+            :vault-name="vaultName(tab.filePath)"
+            @click="handleTabClick"
+            @close="handleClose"
+            @drag-start="onTabDragStart"
+            @drag-end="onTabDragEnd"
+          />
         </UContextMenu>
-        <div
+        <EditorTabItem
           v-else
-          role="button"
-          tabindex="0"
-          draggable="true"
-          :data-tab-id="tab.id"
-          class="group flex items-center gap-2 shrink-0 h-10 border-default px-3 text-sm whitespace-nowrap transition-colors relative cursor-default"
-          :class="[
-            settingsStore.settings.tabDisplayMode === 'left_vertical'
-              ? 'w-full border-b'
-              : 'border-r border-b',
-            tab.id === activeId
-              ? 'bg-default text-default'
-              : 'bg-elevated/50 text-muted hover:text-default',
-          ]"
-          :title="tab.filePath"
-          @click="handleTabClick(tab)"
-          @keydown.enter.space.prevent="handleTabClick(tab)"
-          @dragstart="onTabDragStart($event, tab)"
-          @dragend="onTabDragEnd"
-        >
-          <div
-            v-if="tab.id === activeId"
-            class="absolute bg-primary"
-            :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'top-0 bottom-0 left-0 w-0.5' : 'bottom-0 left-0 right-0 h-0.5'"
-          />
-          <span
-            class="tab-sort-handle -ml-1 flex items-center justify-center rounded p-0.5 text-muted/70 hover:text-default cursor-grab active:cursor-grabbing"
-            :title="$t('editor.reorderTabs', 'Reorder tabs')"
-          >
-            <UIcon
-              name="i-lucide-grip-vertical"
-              class="size-3"
-            />
-          </span>
-          <span
-            v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"
-            class="size-1.5 rounded-full bg-primary"
-          />
-          <UIcon
-            v-if="tab.pinned"
-            name="i-lucide-pin"
-            class="size-3 text-primary"
-          />
-          <span class="font-medium truncate max-w-[150px]">{{ fileName(tab.filePath) }}</span>
-          <span
-            v-if="vaultName(tab.filePath)"
-            class="text-[10px] text-muted opacity-70"
-          >{{ vaultName(tab.filePath) }}</span>
-          <UButton
-            v-if="!tab.pinned"
-            icon="i-lucide-x"
-            size="xs"
-            variant="ghost"
-            color="neutral"
-            class="size-4 p-0 opacity-0 group-hover:opacity-100"
-            @click.stop="handleClose(tab)"
-          />
-        </div>
+          :tab="tab"
+          :active-id="activeId"
+          is-mobile
+          :file-name="fileName(tab.filePath)"
+          :vault-name="vaultName(tab.filePath)"
+          @click="handleTabClick"
+          @close="handleClose"
+          @drag-start="onTabDragStart"
+          @drag-end="onTabDragEnd"
+        />
       </template>
     </VueDraggable>
     <div
