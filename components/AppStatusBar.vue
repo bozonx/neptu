@@ -18,12 +18,19 @@ const stats = computed(() => {
 })
 
 const currentVault = computed(() => editorStore.currentVault)
+const isGit = computed(() => currentVault.value?.type === 'git')
 const isManualGit = computed(() => {
   const v = currentVault.value
-  return v?.type === 'git' && v.git?.commitMode === 'manual'
+  if (v?.type !== 'git') return false
+  const mode = v.git?.commitMode ?? 'respect_config'
+  if (mode === 'manual') return true
+  if (mode === 'respect_config') {
+    return settingsStore.settings.defaultCommitMode === 'manual'
+  }
+  return false
 })
 const showCommit = computed(() => {
-  if (!isManualGit.value || !currentVault.value) return false
+  if (!isGit.value || !currentVault.value) return false
   const vId = currentVault.value.id
   return gitStore.status[vId]?.dirty ?? false
 })
@@ -98,7 +105,7 @@ const autoMessageItems = computed(() => [
       :title="$t('git.pendingCommit')"
     />
 
-    <template v-if="isManualGit">
+    <template v-if="isGit">
       <UButton
         icon="i-lucide-git-commit"
         size="xs"
