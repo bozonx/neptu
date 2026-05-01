@@ -124,6 +124,8 @@
     "changeTypeHint": "This replaces the .neptu-vault.yaml configuration file with the template for the new type. Any per-vault overrides you set will be cleared.",
     "typeChanged": "Vault type changed",
     "typeChangeFailed": "Failed to change vault type",
+    "openVaultFile": "Open vault configuration file",
+    "openVaultFileFailed": "Failed to open vault configuration file",
     "creationOverridesHint": "By default the vault follows values from .neptu-vault.yaml. Enable overrides below to set your own preferences for this device.",
     "overrideContentFolder": "Override content folder",
     "overrideFileFilters": "Override file filters",

@@ -1,5 +1,5 @@
 import { DEFAULT_FILE_FILTERS } from '~/types'
-import type { ContentType, FileFilterSettings, FileNode, GitCommitMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
+import type { ContentType, FileFilterGroup, FileFilterSettings, FileNode, GitCommitMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
 
 /**
  * Composable that manages all sidebar dialog state and CRUD actions.
@@ -32,6 +32,7 @@ export function useSidebarDialogs() {
   const newFilters = ref<FileFilterSettings>(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
   const newExcludes = ref<string[]>([])
   const newExcludeInput = ref('')
+  const newCustomExt = ref('')
 
   const gitModeItems = [
     { label: t('vault.connectExisting'), value: 'connect' as const },
@@ -52,7 +53,7 @@ export function useSidebarDialogs() {
   const contentTypeItems = [
     { label: t('vault.contentTypeVault'), value: 'vault' as const },
     { label: t('vault.contentTypeBlog'), value: 'blog' as const },
-    { label: t('vault.contentTypeSiteLanding'), value: 'site' as const },
+    { label: t('vault.contentTypeSite'), value: 'site' as const },
     { label: t('vault.contentTypeCustom'), value: 'custom' as const },
   ]
 
@@ -77,6 +78,42 @@ export function useSidebarDialogs() {
     newFilters.value = JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
     newExcludes.value = []
     newExcludeInput.value = ''
+    newCustomExt.value = ''
+  }
+
+  function formatEnabledExtensions(extensions: { ext: string, enabled: boolean }[]): string {
+    return extensions.filter((e) => e.enabled).map((e) => `.${e.ext}`).join(', ')
+  }
+
+  function setNewCustomExt(value: string) {
+    newCustomExt.value = value
+  }
+
+  function findNewFilterGroup(label: string): FileFilterGroup | null {
+    return newFilters.value.groups.find((group) => group.label === label) ?? null
+  }
+
+  function setNewFilterGroupEnabled(label: string, value: boolean | 'indeterminate') {
+    if (typeof value !== 'boolean') return
+    const group = findNewFilterGroup(label)
+    if (group) group.enabled = value
+  }
+
+  function setNewFilterExtensionEnabled(label: string, ext: string, value: boolean | 'indeterminate') {
+    if (typeof value !== 'boolean') return
+    const group = findNewFilterGroup(label)
+    const extension = group?.extensions.find((entry) => entry.ext === ext)
+    if (extension) extension.enabled = value
+  }
+
+  function addNewCustomExtension(label: string) {
+    const raw = newCustomExt.value.trim().toLowerCase().replace(/^\.+/, '')
+    const group = findNewFilterGroup(label)
+    if (!raw) return
+    if (group && !group.extensions.some((e) => e.ext === raw)) {
+      group.extensions.push({ ext: raw, enabled: true })
+    }
+    newCustomExt.value = ''
   }
 
   watch(addLocalVaultOpen, (value) => {
@@ -323,11 +360,17 @@ export function useSidebarDialogs() {
     newFilters,
     newExcludes,
     newExcludeInput,
+    newCustomExt,
     gitModeItems,
     commitModeItems,
     showCommitDebounce,
     contentTypeItems,
     siteLangModeItems,
+    formatEnabledExtensions,
+    setNewCustomExt,
+    setNewFilterGroupEnabled,
+    setNewFilterExtensionEnabled,
+    addNewCustomExtension,
     browseFolder,
     submitNewVault,
     /* Create note */

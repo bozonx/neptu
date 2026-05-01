@@ -15,6 +15,7 @@ const emit = defineEmits<{
 
 const settings = useSettingsStore()
 const vaults = useVaultsStore()
+const tabs = useTabsStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -167,6 +168,18 @@ watch(editContentType, (newVal, oldVal) => {
   }
 })
 
+async function openVaultFile() {
+  if (!props.vault) return
+  try {
+    const fs = useFs()
+    const path = await fs.join(props.vault.path, '.neptu-vault.yaml')
+    await tabs.openFile(path)
+  }
+  catch (error) {
+    toast.add({ title: t('vault.openVaultFileFailed'), description: String(error), color: 'error' })
+  }
+}
+
 async function confirmChangeType() {
   if (!props.vault || !pendingContentType.value) return
   try {
@@ -203,7 +216,7 @@ const showCommitDebounce = computed(() =>
 const contentTypeItems = [
   { label: t('vault.contentTypeVault'), value: 'vault' as const },
   { label: t('vault.contentTypeBlog'), value: 'blog' as const },
-  { label: t('vault.contentTypeSiteLanding'), value: 'site' as const },
+  { label: t('vault.contentTypeSite'), value: 'site' as const },
   { label: t('vault.contentTypeCustom'), value: 'custom' as const },
 ]
 
@@ -352,6 +365,12 @@ const siteLangModeItems = [
             </p>
           </template>
 
+          <template v-if="editContentType === 'site'">
+            <p class="text-xs text-muted">
+              {{ $t('vault.contentTypeSiteDesc') }}
+            </p>
+          </template>
+
           <template v-if="editContentType === 'custom'">
             <p class="text-xs text-muted">
               {{ $t('vault.contentTypeCustomDesc') }}
@@ -363,6 +382,18 @@ const siteLangModeItems = [
               />
             </UFormField>
           </template>
+        </section>
+
+        <section class="space-y-3">
+          <UButton
+            icon="i-lucide-file-code-2"
+            color="neutral"
+            variant="soft"
+            size="sm"
+            block
+            :label="$t('vault.openVaultFile')"
+            @click="openVaultFile"
+          />
         </section>
 
         <section class="space-y-6">

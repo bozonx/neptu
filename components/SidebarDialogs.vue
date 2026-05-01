@@ -58,6 +58,12 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           </p>
         </template>
 
+        <template v-if="ctx.newContentType.value === 'site'">
+          <p class="text-xs text-muted">
+            {{ $t('vault.contentTypeSiteDesc') }}
+          </p>
+        </template>
+
         <template v-if="ctx.newContentType.value === 'custom'">
           <p class="text-xs text-muted">
             {{ $t('vault.contentTypeCustomDesc') }}
@@ -100,6 +106,54 @@ defineProps<{ ctx: SidebarDialogsContext }>()
               v-model="ctx.newOverrideFilters.value"
               :label="$t('vault.overrideFileFilters')"
             />
+            <div
+              v-if="ctx.newOverrideFilters.value"
+              class="mt-2 space-y-3"
+            >
+              <div
+                v-for="group in ctx.newFilters.value.groups"
+                :key="group.label"
+                class="space-y-2"
+              >
+                <UCheckbox
+                  :label="$t(`filters.${group.label}`)"
+                  :model-value="group.enabled"
+                  @update:model-value="(v: boolean | 'indeterminate') => ctx.setNewFilterGroupEnabled(group.label, v)"
+                />
+                <div
+                  v-if="group.enabled"
+                  class="flex flex-wrap gap-2 ml-6"
+                >
+                  <UCheckbox
+                    v-for="ext in group.extensions"
+                    :key="ext.ext"
+                    :label="`.${ext.ext}`"
+                    :model-value="ext.enabled"
+                    @update:model-value="(v: boolean | 'indeterminate') => ctx.setNewFilterExtensionEnabled(group.label, ext.ext, v)"
+                  />
+                </div>
+                <div
+                  v-if="group.editable && group.enabled"
+                  class="flex items-center gap-2 ml-6"
+                >
+                  <UInput
+                    :model-value="ctx.newCustomExt.value"
+                    :placeholder="$t('vault.addCustomExtension')"
+                    size="xs"
+                    class="w-36"
+                    @update:model-value="(value: string | number) => ctx.setNewCustomExt(String(value))"
+                    @keydown.enter="ctx.addNewCustomExtension(group.label)"
+                  />
+                  <UButton
+                    icon="i-lucide-plus"
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    @click="ctx.addNewCustomExtension(group.label)"
+                  />
+                </div>
+              </div>
+            </div>
           </UFormField>
 
           <UFormField>
@@ -242,6 +296,12 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           </p>
         </template>
 
+        <template v-if="ctx.newContentType.value === 'site'">
+          <p class="text-xs text-muted">
+            {{ $t('vault.contentTypeSiteDesc') }}
+          </p>
+        </template>
+
         <template v-if="ctx.newContentType.value === 'custom'">
           <p class="text-xs text-muted">
             {{ $t('vault.contentTypeCustomDesc') }}
@@ -284,6 +344,54 @@ defineProps<{ ctx: SidebarDialogsContext }>()
               v-model="ctx.newOverrideFilters.value"
               :label="$t('vault.overrideFileFilters')"
             />
+            <div
+              v-if="ctx.newOverrideFilters.value"
+              class="mt-2 space-y-3"
+            >
+              <div
+                v-for="group in ctx.newFilters.value.groups"
+                :key="group.label"
+                class="space-y-2"
+              >
+                <UCheckbox
+                  :label="$t(`filters.${group.label}`)"
+                  :model-value="group.enabled"
+                  @update:model-value="(v: boolean | 'indeterminate') => ctx.setNewFilterGroupEnabled(group.label, v)"
+                />
+                <div
+                  v-if="group.enabled"
+                  class="flex flex-wrap gap-2 ml-6"
+                >
+                  <UCheckbox
+                    v-for="ext in group.extensions"
+                    :key="ext.ext"
+                    :label="`.${ext.ext}`"
+                    :model-value="ext.enabled"
+                    @update:model-value="(v: boolean | 'indeterminate') => ctx.setNewFilterExtensionEnabled(group.label, ext.ext, v)"
+                  />
+                </div>
+                <div
+                  v-if="group.editable && group.enabled"
+                  class="flex items-center gap-2 ml-6"
+                >
+                  <UInput
+                    :model-value="ctx.newCustomExt.value"
+                    :placeholder="$t('vault.addCustomExtension')"
+                    size="xs"
+                    class="w-36"
+                    @update:model-value="(value: string | number) => ctx.setNewCustomExt(String(value))"
+                    @keydown.enter="ctx.addNewCustomExtension(group.label)"
+                  />
+                  <UButton
+                    icon="i-lucide-plus"
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    @click="ctx.addNewCustomExtension(group.label)"
+                  />
+                </div>
+              </div>
+            </div>
           </UFormField>
 
           <UFormField>
