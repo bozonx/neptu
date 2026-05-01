@@ -113,13 +113,65 @@ watch(currentFilePath, () => {
   restoreCursorState()
   editorStore.activeSelectionText = ''
 })
+
+const dnd = useDnd()
+const isDropTarget = ref(false)
+
+function onDragOver(event: DragEvent) {
+  if (props.isMobile || !dnd.draggedPath.value || dnd.draggedIsDir.value) return
+  event.preventDefault()
+  isDropTarget.value = true
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+function onDragLeave() {
+  isDropTarget.value = false
+}
+
+async function onDrop() {
+  isDropTarget.value = false
+  if (props.isMobile || !dnd.draggedPath.value || dnd.draggedIsDir.value) return
+  
+  const path = dnd.draggedPath.value
+  dnd.onDragEnd()
+  
+  if (props.panelId) {
+    // Check if the file is already open in this panel
+    const leaf = tabsStore.findLeaf(tabsStore.desktopLayout, props.panelId)
+    if (leaf) {
+      const existingTab = leaf.tabs.find(t => t.filePath === path)
+      if (existingTab) {
+        tabsStore.activateTab(props.panelId, existingTab.id)
+        return
+      }
+    }
+    
+    // Add the tab to the current panel and activate it
+    const newTab: EditorTab = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, filePath: path }
+    if (leaf) {
+      leaf.tabs.push(newTab)
+      leaf.activeId = newTab.id
+      tabsStore.activeDesktopPanelId = props.panelId
+      await editorStore.openFile(path)
+      await editorStore.saveUiState()
+    }
+  }
+}
 </script>
 
 <template>
   <div
-    class="flex h-full bg-default overflow-hidden"
-    :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'flex-row' : 'flex-col'"
+    class="flex h-full bg-default overflow-hidden transition-colors"
+    :class="[
+      settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'flex-row' : 'flex-col',
+      isDropTarget ? 'ring-2 ring-inset ring-primary/50 bg-primary/5' : ''
+    ]"
     @mousedown="handleFocus"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
   >
     <!-- Panel Header (Tabs) -->
     <div

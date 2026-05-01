@@ -85,7 +85,10 @@ async function onDrop() {
     >
       <div
         class="group flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-elevated transition-colors"
+        draggable="true"
         @click="openFile(path)"
+        @dragstart="dnd.onPathDragStart($event, path, { isDir: false, source: 'tree' })"
+        @dragend="dnd.onDragEnd()"
       >
         <span class="truncate text-xs flex-1">{{ fileName(path) }}</span>
         <span

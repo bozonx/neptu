@@ -206,8 +206,12 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
       />
       <div
         v-if="node.isDir && expandedFolders?.[node.path] && (!node.children || node.children.length === 0)"
-        class="text-xs text-muted/50 italic py-1 truncate pointer-events-none"
+        class="text-xs text-muted/50 italic py-1 truncate transition-colors rounded-md border border-transparent"
+        :class="{ 'bg-primary/20 border-primary/50 text-primary': dropTarget === node.path }"
         :style="{ paddingLeft: `${1.25 + level * 0.75}rem` }"
+        @dragover="onDragOver($event, node)"
+        @dragleave="onDragLeave"
+        @drop="onDrop($event, node)"
       >
         {{ $t('vault.emptyFolder', 'Empty folder') }}
       </div>
