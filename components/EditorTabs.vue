@@ -43,7 +43,18 @@ const draggableTabs = computed({
       tabsStore.mobileTabs = val
     }
     else if (leaf.value) {
+      // Find added or removed tabs during a cross-panel drag
+      const added = val.find(t => !leaf.value!.tabs.some(existing => existing.id === t.id))
+      const removed = leaf.value.tabs.find(t => !val.some(newT => newT.id === t.id))
+      
       leaf.value.tabs = val
+      
+      if (added && props.panelId) {
+        tabsStore.handleTabAdd(props.panelId, added)
+      }
+      if (removed && props.panelId) {
+        tabsStore.handleTabRemove(props.panelId, removed)
+      }
     }
   },
 })
@@ -101,17 +112,8 @@ function onTabDragEnd() {
   dnd.onDragEnd()
 }
 
-function onAdd(event: { data: EditorTab }) {
-  if (!props.isMobile && props.panelId) {
-    tabsStore.handleTabAdd(props.panelId, event.data)
-  }
-}
-
-function onRemove(event: { data: EditorTab }) {
-  if (!props.isMobile && props.panelId) {
-    tabsStore.handleTabRemove(props.panelId, event.data)
-  }
-}
+// Handled natively by the computed setter now to avoid event.data bugs
+// with vue-draggable-plus.
 
 const { t } = useI18n()
 
@@ -223,8 +225,6 @@ const contextMenuItems = (tab: EditorTab) => [
             : 'flex-row items-center h-full',
       ]"
       :ghost-class="'opacity-50'"
-      @add="onAdd"
-      @remove="onRemove"
     >
       <template
         v-for="tab in tabs"

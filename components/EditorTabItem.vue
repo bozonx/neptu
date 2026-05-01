@@ -38,6 +38,7 @@ const editorStore = useEditorStore()
     ]"
     :title="tab.filePath"
     @click="emit('click', tab)"
+    @auxclick.prevent="($event.button === 1 && !tab.pinned) ? emit('close', tab) : null"
     @keydown.enter.space.prevent="emit('click', tab)"
     @dragstart="emit('dragStart', $event, tab)"
     @dragend="emit('dragEnd')"
