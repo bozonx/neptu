@@ -87,12 +87,6 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           >
             {{ $t('vault.contentStructureCustomDesc') }}
           </p>
-          <UFormField :label="$t('vault.siteLangMode')">
-            <URadioGroup
-              v-model="ctx.newSiteLangMode.value"
-              :items="ctx.siteLangModeItems"
-            />
-          </UFormField>
         </template>
 
         <USeparator class="my-2" />
@@ -381,12 +375,6 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           >
             {{ $t('vault.contentStructureCustomDesc') }}
           </p>
-          <UFormField :label="$t('vault.siteLangMode')">
-            <URadioGroup
-              v-model="ctx.newSiteLangMode.value"
-              :items="ctx.siteLangModeItems"
-            />
-          </UFormField>
         </template>
 
         <USeparator class="my-2" />

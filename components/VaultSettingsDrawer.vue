@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_FILE_FILTERS } from '~/types'
-import type { ContentType, FileFilterGroup, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, SiteLangMode, Vault } from '~/types'
+import type { ContentType, FileFilterGroup, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, Vault } from '~/types'
 
 const props = defineProps<{
   vault: Vault | null
@@ -29,7 +29,6 @@ const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
 const editContentType = ref<ContentType>('vault')
 const editContentStructureId = ref('custom')
 const editContentFolder = ref('src')
-const editSiteLangMode = ref<SiteLangMode>('monolingual')
 const editExcludes = ref<string[]>([])
 const editMediaMode = ref<MediaUploadMode>('adjacent-folder')
 const editMediaFolder = ref('media')
@@ -60,7 +59,6 @@ watch(
     editingCommitDebounce.value = vault.git?.commitDebounceMs !== undefined
     editContentType.value = vault.contentType ?? 'vault'
     editContentStructureId.value = vault.contentStructureId ?? 'custom'
-    editSiteLangMode.value = vault.siteLangMode ?? 'monolingual'
 
     // Initialize from effective values (may come from .neptu-vault.yaml or Vault overrides)
     editFilters.value = JSON.parse(JSON.stringify(vaults.getEffectiveFilters(vault)))
@@ -141,7 +139,6 @@ async function save() {
       contentType: editContentType.value,
       contentStructureId: editContentType.value === 'custom' && editContentStructureId.value !== 'custom' ? editContentStructureId.value : null as never,
       contentFolder: editingContentFolder.value ? (editContentFolder.value || undefined) : null as never,
-      siteLangMode: editContentType.value === 'custom' ? editSiteLangMode.value : undefined,
       excludes: editingExcludes.value ? editExcludes.value : null as never,
       mediaDir: editingMediaDir.value
         ? {
@@ -164,7 +161,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentStructureId, editContentFolder, editSiteLangMode, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentStructureId, editContentFolder, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -276,11 +273,6 @@ const selectedEditContentStructureDescription = computed(() => {
   if (!structure) return ''
   return structure.descriptionKey ? t(structure.descriptionKey) : structure.description ?? ''
 })
-
-const siteLangModeItems = [
-  { label: t('vault.siteLangMonolingual'), value: 'monolingual' as const },
-  { label: t('vault.siteLangMultilingual'), value: 'multilingual' as const },
-]
 
 const mediaModeItems = [
   { label: t('vault.mediaModeGlobal'), value: 'global-folder' as const },
@@ -462,12 +454,6 @@ const mediaNamingItems = [
             >
               {{ $t('vault.contentStructureCustomDesc') }}
             </p>
-            <UFormField :label="$t('vault.siteLangMode')">
-              <URadioGroup
-                v-model="editSiteLangMode"
-                :items="siteLangModeItems"
-              />
-            </UFormField>
           </template>
         </section>
 

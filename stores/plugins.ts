@@ -12,115 +12,6 @@ import type {
   SidebarButtonLocation,
 } from '~/types/plugin'
 
-const coreContentStructures: RegisteredContentStructure[] = [
-  {
-    id: 'astro-content',
-    pluginId: 'core',
-    fqid: 'core:astro-content',
-    label: 'Astro Content',
-    descriptionKey: 'vault.contentStructureAstroDesc',
-    order: 10,
-    config: {
-      version: 1,
-      contentRoot: 'src/content',
-      mediaDir: {
-        mode: 'global-folder',
-        folder: 'public/media',
-        naming: 'document-index',
-      },
-      excludes: ['node_modules', 'dist', '.astro'],
-    },
-  },
-  {
-    id: 'nuxt-content',
-    pluginId: 'core',
-    fqid: 'core:nuxt-content',
-    label: 'Nuxt Content',
-    descriptionKey: 'vault.contentStructureNuxtContentDesc',
-    order: 20,
-    config: {
-      version: 1,
-      contentRoot: 'content',
-      mediaDir: {
-        mode: 'global-folder',
-        folder: 'public/media',
-        naming: 'document-index',
-      },
-      excludes: ['node_modules', '.nuxt', '.output'],
-    },
-  },
-  {
-    id: 'docusaurus',
-    pluginId: 'core',
-    fqid: 'core:docusaurus',
-    label: 'Docusaurus',
-    descriptionKey: 'vault.contentStructureDocusaurusDesc',
-    order: 30,
-    config: {
-      version: 1,
-      mediaDir: {
-        mode: 'global-folder',
-        folder: 'static/img',
-        naming: 'document-index',
-      },
-      excludes: ['node_modules', 'build', '.docusaurus'],
-    },
-  },
-  {
-    id: 'hugo',
-    pluginId: 'core',
-    fqid: 'core:hugo',
-    label: 'Hugo',
-    descriptionKey: 'vault.contentStructureHugoDesc',
-    order: 40,
-    config: {
-      version: 1,
-      contentRoot: 'content',
-      mediaDir: {
-        mode: 'global-folder',
-        folder: 'static/media',
-        naming: 'document-index',
-      },
-      excludes: ['public', 'resources', 'node_modules'],
-    },
-  },
-  {
-    id: 'jekyll',
-    pluginId: 'core',
-    fqid: 'core:jekyll',
-    label: 'Jekyll',
-    descriptionKey: 'vault.contentStructureJekyllDesc',
-    order: 50,
-    config: {
-      version: 1,
-      mediaDir: {
-        mode: 'global-folder',
-        folder: 'assets/media',
-        naming: 'document-index',
-      },
-      excludes: ['_site', '.jekyll-cache', 'vendor', 'node_modules'],
-    },
-  },
-  {
-    id: 'eleventy',
-    pluginId: 'core',
-    fqid: 'core:eleventy',
-    label: 'Eleventy',
-    descriptionKey: 'vault.contentStructureEleventyDesc',
-    order: 60,
-    config: {
-      version: 1,
-      contentRoot: 'src',
-      mediaDir: {
-        mode: 'global-folder',
-        folder: 'src/assets/media',
-        naming: 'document-index',
-      },
-      excludes: ['_site', 'node_modules'],
-    },
-  },
-]
-
 interface LoadedPlugin {
   manifest: PluginManifest
   cleanups: Array<() => void>
@@ -145,7 +36,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   const leftSidebarViews = shallowRef<RegisteredLeftSidebarView[]>([])
   const rightSidebarViews = shallowRef<RegisteredRightSidebarView[]>([])
   const settingsTabs = shallowRef<RegisteredSettingsTab[]>([])
-  const contentStructures = shallowRef<RegisteredContentStructure[]>(coreContentStructures)
+  const contentStructures = shallowRef<RegisteredContentStructure[]>([])
   const modals = shallowRef<RegisteredModal[]>([])
   const activeLeftSidebarView = ref<string | null>(null)
   const activeRightSidebarView = ref<string | null>(null)

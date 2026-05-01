@@ -114,8 +114,6 @@ export interface Vault {
   contentStructureId?: string
   /** Relative folder inside the vault that is treated as the content root (e.g. "src") */
   contentFolder?: string
-  /** Language mode for informational sites */
-  siteLangMode?: SiteLangMode
   /** Paths relative to vault root to exclude from the file tree */
   excludes?: string[]
   /** Local override for media uploads. Does not write to .neptu-vault.yaml. */
@@ -184,7 +182,7 @@ export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   confirmDeleteLocal: true,
   confirmDeleteGit: true,
   useTrash: true,
-  enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
+  enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history', 'com.neptu.content-types'],
   defaultCommitMode: 'auto',
   gitAutoMessage: true,
   gitAutoMessageTemplate: 'Update notes ({files} {fileWord})',

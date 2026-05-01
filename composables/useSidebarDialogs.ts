@@ -1,5 +1,5 @@
 import { DEFAULT_FILE_FILTERS } from '~/types'
-import type { ContentType, FileFilterGroup, FileFilterSettings, FileNode, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
+import type { ContentType, FileFilterGroup, FileFilterSettings, FileNode, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, Vault, VaultGroup, VaultType } from '~/types'
 
 /**
  * Composable that manages all sidebar dialog state and CRUD actions.
@@ -27,7 +27,6 @@ export function useSidebarDialogs() {
   const newContentType = ref<ContentType>('vault')
   const newContentStructureId = ref('custom')
   const newContentFolder = ref('src')
-  const newSiteLangMode = ref<SiteLangMode>('monolingual')
   const newOverrideFilters = ref(false)
   const newOverrideExcludes = ref(false)
   const newOverrideContentFolder = ref(false)
@@ -81,11 +80,6 @@ export function useSidebarDialogs() {
     return structure.descriptionKey ? t(structure.descriptionKey) : structure.description ?? ''
   })
 
-  const siteLangModeItems = [
-    { label: t('vault.siteLangMonolingual'), value: 'monolingual' as const },
-    { label: t('vault.siteLangMultilingual'), value: 'multilingual' as const },
-  ]
-
   const mediaModeItems = [
     { label: t('vault.mediaModeGlobal'), value: 'global-folder' as const },
     { label: t('vault.mediaModeAdjacent'), value: 'adjacent' as const },
@@ -108,7 +102,6 @@ export function useSidebarDialogs() {
     newContentType.value = 'vault'
     newContentStructureId.value = 'custom'
     newContentFolder.value = 'src'
-    newSiteLangMode.value = 'monolingual'
     newOverrideFilters.value = false
     newOverrideExcludes.value = false
     newOverrideContentFolder.value = false
@@ -232,7 +225,6 @@ export function useSidebarDialogs() {
         contentFolder: newContentType.value !== 'vault' && newOverrideContentFolder.value
           ? newContentFolder.value
           : undefined,
-        siteLangMode: newContentType.value === 'custom' ? newSiteLangMode.value : undefined,
         filters: newOverrideFilters.value ? newFilters.value : undefined,
         excludes: newOverrideExcludes.value ? newExcludes.value : undefined,
         mediaDir: newOverrideMediaDir.value
@@ -426,7 +418,6 @@ export function useSidebarDialogs() {
     newCommitDebounceSec,
     newContentType,
     newContentFolder,
-    newSiteLangMode,
     newOverrideFilters,
     newOverrideExcludes,
     newOverrideContentFolder,
@@ -446,7 +437,6 @@ export function useSidebarDialogs() {
     selectedNewContentStructure,
     selectedNewContentStructureDescription,
     newContentStructureId,
-    siteLangModeItems,
     mediaModeItems,
     mediaNamingItems,
     formatEnabledExtensions,
