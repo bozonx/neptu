@@ -7,6 +7,15 @@ export type EditorViewType
     | 'unsupported'
     | 'virtual'
 
+const IMAGE_EXTENSIONS = ['avif', 'webp', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico']
+
+export function isImageFile(filePath: string): boolean {
+  const name = filePath.split(/[/\\]/).pop() || ''
+  const lastDot = name.lastIndexOf('.')
+  if (lastDot <= 0) return false
+  return IMAGE_EXTENSIONS.includes(name.substring(lastDot + 1).toLowerCase())
+}
+
 export function getEditorViewType(filePath: string | null): EditorViewType {
   if (!filePath) return 'unsupported'
 
@@ -15,7 +24,7 @@ export function getEditorViewType(filePath: string | null): EditorViewType {
     return 'virtual'
   }
 
-  const name = filePath.split(/[\/\\]/).pop() || ''
+  const name = filePath.split(/[/\\]/).pop() || ''
   const lowerName = name.toLowerCase()
 
   if (lowerName === '.neptu-vault.yaml' || lowerName === '.neptu-vault.yml') {
@@ -33,8 +42,7 @@ export function getEditorViewType(filePath: string | null): EditorViewType {
   const textExts = ['md', 'txt', 'yaml', 'yml', 'json', 'js', 'ts', 'vue', 'html', 'css', 'rs', 'toml']
   if (textExts.includes(ext)) return 'text'
 
-  const imageExts = ['avif', 'webp', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico']
-  if (imageExts.includes(ext)) return 'image'
+  if (IMAGE_EXTENSIONS.includes(ext)) return 'image'
 
   const videoExts = ['avi', 'mp4', 'mkv', 'webm', 'mov']
   if (videoExts.includes(ext)) return 'video'

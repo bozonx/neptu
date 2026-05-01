@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { CursorPosition, SaveStatus, Vault } from '~/types'
 import type { Schema } from '~/types/vault-config'
+import { isImageFile } from '~/utils/fileTypes'
 import {
   findSchemaForFile,
   parseFrontmatter,
@@ -420,18 +421,15 @@ export const useEditorStore = defineStore('editor', () => {
     insertTrigger.value = { path, text, id: Date.now() }
   }
 
-  function insertImportedFiles(files: Array<string | { path: string, markdownPath: string }>) {
-    const currentPath = currentFilePath.value
-    if (!currentPath) return
+  function insertImportedFiles(files: Array<string | { path: string, markdownPath: string }>, targetPath = currentFilePath.value) {
+    if (!targetPath) return
 
     let insertedText = ''
     for (const file of files) {
       const path = typeof file === 'string' ? file : file.path
       const markdownPath = typeof file === 'string' ? `./${basename(path)}` : file.markdownPath
       const name = path.split(/[/\\]/).pop() || ''
-      const ext = name.split('.').pop()?.toLowerCase() || ''
-      const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)
-      if (isImage) {
+      if (isImageFile(path)) {
         insertedText += `\n![${name}](${markdownPath})\n`
       }
       else {
@@ -440,7 +438,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     if (insertedText) {
-      insertText(currentPath, insertedText.trim() + '\n')
+      insertText(targetPath, insertedText.trim() + '\n')
     }
   }
 

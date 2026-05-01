@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { basename, dirname, fileExt, relativePath } from '~/utils/paths'
+import { basename, dirname, relativePath } from '~/utils/paths'
+import { isImageFile } from '~/utils/fileTypes'
 
 const props = defineProps<{
   filePath: string
@@ -230,10 +231,7 @@ function onDrop(event: DragEvent) {
   const relPath = relativePath(currentDir, draggedPath)
 
   const name = basename(draggedPath)
-  const ext = fileExt(name).slice(1)
-  const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'ico'].includes(ext)
-
-  const inserted = isImage ? `![${name}](${relPath})` : `[${name}](${relPath})`
+  const inserted = isImageFile(draggedPath) ? `![${name}](${relPath})` : `[${name}](${relPath})`
 
   const newContent = before + inserted + after
   editorStore.setContent(props.filePath, newContent)
@@ -272,7 +270,10 @@ watch(() => editorStore.insertTrigger, (trigger) => {
 </script>
 
 <template>
-  <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+  <div
+    class="flex-1 overflow-hidden flex flex-col min-h-0"
+    :data-editor-file-path="props.filePath"
+  >
     <FrontmatterForm :file-path="props.filePath" />
     <input
       ref="titleInputRef"
@@ -288,6 +289,7 @@ watch(() => editorStore.insertTrigger, (trigger) => {
       :value="buffer?.content ?? ''"
       class="w-full flex-1 resize-none bg-transparent outline-none px-8 pb-8 font-mono text-base leading-7 text-default"
       spellcheck="false"
+      :data-editor-file-path="props.filePath"
       :placeholder="$t('editor.startWriting')"
       @input="onInput"
       @keydown="onTextareaKeydown"

@@ -110,11 +110,14 @@ export function useDnd() {
             const zone = dropZone.getAttribute('data-drop-zone')
             if (zone === 'editor') {
               const editor = useEditorStore()
-              if (editor.currentFilePath) {
-                const importedPaths = await useVaultsStore().importMediaFilesForDocument(paths, editor.currentFilePath)
+              const targetPath = targetElement.closest('[data-editor-file-path]')?.getAttribute('data-editor-file-path')
+                || dropZone.getAttribute('data-editor-file-path')
+                || editor.currentFilePath
+              if (targetPath) {
+                const importedPaths = await useVaultsStore().importMediaFilesForDocument(paths, targetPath)
 
                 if (importedPaths.length > 0) {
-                  editor.insertImportedFiles(importedPaths)
+                  editor.insertImportedFiles(importedPaths, targetPath)
                 }
               }
             }

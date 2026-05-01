@@ -84,6 +84,7 @@ async function onDrop() {
       isDropTarget ? 'ring-2 ring-inset ring-primary/50 bg-primary/5' : '',
     ]"
     data-drop-zone="editor"
+    :data-editor-file-path="currentFilePath ?? undefined"
     @mousedown="handleFocus"
     @dragover="onDragOver"
     @dragleave="onDragLeave"
