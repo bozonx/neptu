@@ -80,22 +80,34 @@ export const useEditorStore = defineStore('editor', () => {
   async function openFile(path: string) {
     if (buffers.value[path]) return buffers.value[path]
 
-    const fs = useFs()
-    if (!(await fs.exists(path))) {
-      throw new Error(`File not found: ${path}`)
-    }
-    const rawContent = await fs.readText(path)
+    const viewType = getEditorViewType(path)
+    let rawContent = ''
+    let schema = null
 
-    const vault = findVaultForPath(path)
-    const vaultsStore = useVaultsStore()
-    const vaultConfig = vault ? vaultsStore.vaultConfigs[vault.id] : null
-    const schema = findSchemaForFile(path, vault?.path ?? '', vaultConfig)
+    if (viewType === 'virtual') {
+      // Virtual pages don't exist on disk, no content to read
+    } else {
+      const fs = useFs()
+      if (!(await fs.exists(path))) {
+        throw new Error(`File not found: ${path}`)
+      }
+      
+      // Only read text for types that are actually text-based
+      if (viewType === 'text' || viewType === 'vault-config') {
+        rawContent = await fs.readText(path)
+      }
+
+      const vault = findVaultForPath(path)
+      const vaultsStore = useVaultsStore()
+      const vaultConfig = vault ? vaultsStore.vaultConfigs[vault.id] : null
+      schema = findSchemaForFile(path, vault?.path ?? '', vaultConfig)
+    }
 
     let content = rawContent
     let frontmatter: Record<string, unknown> | undefined
     let extraFrontmatter: Record<string, unknown> | undefined
 
-    if (schema) {
+    if (schema && rawContent) {
       const parsed = parseFrontmatter(rawContent)
       if (parsed.frontmatter) {
         const split = splitFrontmatter(parsed.frontmatter, schema)
