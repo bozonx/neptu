@@ -215,7 +215,12 @@ export const useEditorStore = defineStore('editor', () => {
     delete buffers.value[payload.path]
 
     await useTabsStore().dropByPath(payload.path)
-    await fs.deleteFile(payload.path)
+    if (payload.vault.type === 'local' && settings.settings.useTrash) {
+      await fs.moveToTrash(payload.path, payload.vault.path)
+    }
+    else {
+      await fs.deleteFile(payload.path)
+    }
     useSearchStore().removeFile(payload.path)
     const vaults = useVaultsStore()
     await vaults.refreshTree(payload.vault)

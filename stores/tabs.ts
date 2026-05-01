@@ -56,7 +56,7 @@ export const useTabsStore = defineStore('tabs', () => {
   const leftSidebarDualFirstColumnSize = ref(20)
   const leftSidebarDualSelectedVaultId = ref<string | null>(null)
   const leftSidebarDualShowFavorites = ref(false)
-  const leftSidebarTab = ref<'files' | 'search' | 'favorites'>('files')
+  const leftSidebarTab = ref<'files' | 'search' | 'favorites' | 'trash'>('files')
 
   const expandedGroups = ref<Record<string, boolean>>({})
   const expandedVaults = ref<Record<string, boolean>>({})
@@ -516,7 +516,7 @@ export const useTabsStore = defineStore('tabs', () => {
     leftSidebarDualSelectedVaultId.value = state.leftSidebarDualSelectedVaultId ?? null
     leftSidebarDualShowFavorites.value = state.leftSidebarDualShowFavorites ?? false
     if (state.leftSidebarTab) {
-      const validTabs: Array<'files' | 'search' | 'favorites'> = ['files', 'search', 'favorites']
+      const validTabs: Array<'files' | 'search' | 'favorites' | 'trash'> = ['files', 'search', 'favorites', 'trash']
       if (validTabs.includes(state.leftSidebarTab)) {
         leftSidebarTab.value = state.leftSidebarTab
       }

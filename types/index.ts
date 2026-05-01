@@ -147,6 +147,8 @@ export interface SharedSettings {
   confirmDeleteLocal: boolean
   /** Whether to confirm before deleting files/folders in git vaults */
   confirmDeleteGit: boolean
+  /** Whether to move deleted files in local vaults to a .trash folder instead of permanently deleting them */
+  useTrash: boolean
   /** List of enabled plugin ids. Defaults to built-ins when missing. */
   enabledPlugins?: string[]
   /** Default commit mode for git vaults that are set to follow config. */
@@ -166,6 +168,7 @@ export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   showHiddenFiles: false,
   confirmDeleteLocal: true,
   confirmDeleteGit: true,
+  useTrash: true,
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history'],
   defaultCommitMode: 'auto',
   gitAutoMessage: true,
@@ -287,8 +290,8 @@ export interface UiState {
   leftSidebarDualSelectedVaultId?: string | null
   /** Whether the dual left sidebar is currently showing favorites */
   leftSidebarDualShowFavorites?: boolean
-  /** Active built-in tab in the left sidebar: files, search or favorites */
-  leftSidebarTab?: 'files' | 'search' | 'favorites'
+  /** Active built-in tab in the left sidebar: files, search, favorites or trash */
+  leftSidebarTab?: 'files' | 'search' | 'favorites' | 'trash'
   /** Whether the right sidebar is collapsed */
   rightSidebarCollapsed?: boolean
   /** Whether to auto-reveal the active file in the file tree */

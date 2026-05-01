@@ -10,14 +10,14 @@ import {
   writeTextFile,
 } from '@tauri-apps/plugin-fs'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
-import { join } from '@tauri-apps/api/path'
+import { dirname, join } from '@tauri-apps/api/path'
 import { load, dump } from 'js-yaml'
 import { globToRegex } from '~/utils/glob'
 import type { FileFilterSettings, FileNode, FileSortMode } from '~/types'
 
 // Non-hidden directories we still want to skip while scanning vaults.
 // Dot-prefixed directories are filtered by `startsWith('.')`.
-const SKIP_DIRS = new Set(['node_modules'])
+const SKIP_DIRS = new Set(['node_modules', '.git'])
 
 /**
  * Native filesystem helpers backed by Tauri plugins.
@@ -85,9 +85,40 @@ export function useFs() {
     }
   }
 
+  function basename(path: string): string {
+    const parts = path.split(/[\\/]/)
+    return parts[parts.length - 1] ?? path
+  }
+
   async function moveFile(src: string, dest: string) {
     // rename works for both files and folders
     await rename(src, dest)
+  }
+
+  async function moveToTrash(filePath: string, vaultPath: string) {
+    const normalizedVault = vaultPath.replace(/[/\\]+$/, '')
+    const sep = filePath.includes('\\') ? '\\' : '/'
+    const relativePath = filePath.startsWith(normalizedVault + sep)
+      ? filePath.slice(normalizedVault.length + 1)
+      : filePath
+    const trashDir = await join(normalizedVault, '.trash')
+    let destPath = await join(trashDir, relativePath)
+
+    // If destination exists, append timestamp to filename
+    if (await exists(destPath)) {
+      const name = basename(destPath)
+      const lastDot = name.lastIndexOf('.')
+      const baseName = lastDot > 0 ? name.slice(0, lastDot) : name
+      const ext = lastDot > 0 ? name.slice(lastDot) : ''
+      const timestamp = Date.now()
+      const newName = `${baseName}-${timestamp}${ext}`
+      const destDir = await dirname(destPath)
+      destPath = await join(destDir, newName)
+    }
+
+    const destDir = await dirname(destPath)
+    await ensureDir(destDir)
+    await rename(filePath, destPath)
   }
 
   async function createMarkdown(dirPath: string, fileName: string) {
@@ -226,6 +257,55 @@ export function useFs() {
     return walk(normRoot)
   }
 
+  /**
+   * Recursively scans a directory and returns a tree of all folders and files.
+   * No filtering is applied — everything except `.git` is returned.
+   */
+  async function scanDir(rootPath: string): Promise<FileNode[]> {
+    const normRoot = rootPath.replace(/[/]+$/, '')
+
+    async function walk(dirPath: string): Promise<FileNode[]> {
+      const entries = await readDir(dirPath)
+      const nodes: FileNode[] = []
+
+      for (const entry of entries) {
+        if (!entry.name) continue
+        if (entry.name === '.git') continue
+        const childPath = await join(dirPath, entry.name)
+        if (entry.isDirectory) {
+          const children = await walk(childPath)
+          const info = await stat(childPath).catch(() => null)
+          nodes.push({
+            name: entry.name,
+            path: childPath,
+            isDir: true,
+            mtime: info?.mtime ? info.mtime.getTime() : undefined,
+            birthtime: info?.birthtime ? info.birthtime.getTime() : undefined,
+            children,
+          })
+        }
+        else if (entry.isFile) {
+          const info = await stat(childPath).catch(() => null)
+          nodes.push({
+            name: entry.name,
+            path: childPath,
+            isDir: false,
+            mtime: info?.mtime ? info.mtime.getTime() : undefined,
+            birthtime: info?.birthtime ? info.birthtime.getTime() : undefined,
+          })
+        }
+      }
+
+      nodes.sort((a, b) => {
+        if (a.isDir !== b.isDir) return a.isDir ? -1 : 1
+        return a.name.localeCompare(b.name)
+      })
+      return nodes
+    }
+
+    return walk(normRoot)
+  }
+
   return {
     pickDirectory,
     ensureDir,
@@ -239,9 +319,11 @@ export function useFs() {
     copyFile,
     copyFolder,
     moveFile,
+    moveToTrash,
     createMarkdown,
     createFolder,
     scanMarkdownTree,
+    scanDir,
     stat,
     join,
   }

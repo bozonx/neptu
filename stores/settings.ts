@@ -59,6 +59,7 @@ function pickSharedSettings(s: AppSettings): SharedSettings {
     showHiddenFiles: s.showHiddenFiles,
     confirmDeleteLocal: s.confirmDeleteLocal,
     confirmDeleteGit: s.confirmDeleteGit,
+    useTrash: s.useTrash,
     enabledPlugins: s.enabledPlugins,
     defaultCommitMode: s.defaultCommitMode,
     gitAutoMessage: s.gitAutoMessage,

@@ -43,6 +43,10 @@
     "showRightSidebar": "Show right sidebar",
     "showHiddenFiles": "Show hidden files",
     "hideHiddenFiles": "Hide hidden files",
+    "trash": "Trash",
+    "noTrash": "Trash is empty",
+    "restore": "Restore",
+    "deletePermanently": "Delete permanently",
     "expandAll": "Expand all",
     "collapseAll": "Collapse all",
     "autoRevealFile": "Auto reveal file in sidebar"
@@ -180,6 +184,7 @@
     "confirmDeleteLocal": "Confirm deletion in local vaults",
     "confirmDeleteGit": "Confirm deletion in git vaults",
     "confirmDeleteHint": "Show a confirmation dialog before deleting files or folders.",
+    "useTrash": "Move deleted files to trash (.trash folder) in local vaults",
     "close": "Close",
     "mainVault": "Main vault",
     "currentFolder": "Current folder",

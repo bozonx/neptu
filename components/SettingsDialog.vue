@@ -65,6 +65,7 @@ const tabDisplayMode = ref<AppSettings['tabDisplayMode']>('single_line')
 const defaultCommitMode = ref<AppSettings['defaultCommitMode']>('auto')
 const confirmDeleteLocal = ref(true)
 const confirmDeleteGit = ref(true)
+const useTrash = ref(true)
 const gitAutoMessage = ref(true)
 const gitAutoMessageTemplate = ref('')
 const detectedAuthor = ref<GitAuthor | null>(null)
@@ -97,6 +98,7 @@ watch(open, async (value) => {
   defaultCommitMode.value = s.defaultCommitMode
   confirmDeleteLocal.value = s.confirmDeleteLocal
   confirmDeleteGit.value = s.confirmDeleteGit
+  useTrash.value = s.useTrash
   gitAutoMessage.value = s.gitAutoMessage ?? true
   gitAutoMessageTemplate.value = s.gitAutoMessageTemplate ?? 'Update notes ({files} {fileWord})'
   newMainPath.value = ''
@@ -179,6 +181,7 @@ async function save() {
       defaultCommitMode: defaultCommitMode.value,
       confirmDeleteLocal: confirmDeleteLocal.value,
       confirmDeleteGit: confirmDeleteGit.value,
+      useTrash: useTrash.value,
       gitAutoMessage: gitAutoMessage.value,
       gitAutoMessageTemplate: gitAutoMessageTemplate.value,
     })
@@ -196,7 +199,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, theme, locale, tabDisplayMode, defaultCommitMode, confirmDeleteLocal, confirmDeleteGit, gitAutoMessage, gitAutoMessageTemplate],
+  [autosaveSec, commitSec, authorName, authorEmail, theme, locale, tabDisplayMode, defaultCommitMode, confirmDeleteLocal, confirmDeleteGit, useTrash, gitAutoMessage, gitAutoMessageTemplate],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -265,6 +268,10 @@ watch(
                   <label class="flex items-center gap-2">
                     <USwitch v-model="confirmDeleteGit" />
                     <span class="text-sm">{{ $t('settings.confirmDeleteGit') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <USwitch v-model="useTrash" />
+                    <span class="text-sm">{{ $t('settings.useTrash') }}</span>
                   </label>
                 </div>
               </UFormField>

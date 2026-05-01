@@ -60,6 +60,16 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
         @click="tabs.leftSidebarTab = 'search'; plugins.setActiveLeftSidebarView(null)"
       />
       <UButton
+        v-if="settings.settings.useTrash && vaults.list.some((v) => v.type === 'local')"
+        icon="i-lucide-trash-2"
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        :class="{ 'bg-primary/10 text-primary': tabs.leftSidebarTab === 'trash' && !plugins.resolvedActiveLeftSidebarView }"
+        :title="$t('sidebar.trash')"
+        @click="tabs.leftSidebarTab = 'trash'; plugins.setActiveLeftSidebarView(null)"
+      />
+      <UButton
         v-for="view in plugins.sortedLeftSidebarViews"
         :key="view.fqid"
         :icon="view.icon"
@@ -77,6 +87,9 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
       <template v-if="!plugins.resolvedActiveLeftSidebarView">
         <template v-if="tabs.leftSidebarTab === 'search'">
           <SearchPanel class="flex-1 overflow-hidden" />
+        </template>
+        <template v-else-if="tabs.leftSidebarTab === 'trash'">
+          <TrashPanel class="flex-1 overflow-hidden" />
         </template>
         <template v-else>
           <UContextMenu
