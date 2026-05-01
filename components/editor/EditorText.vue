@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { basename, dirname, fileExt, relativePath } from '~/utils/paths'
+
 const props = defineProps<{
   filePath: string
 }>()
@@ -19,7 +21,7 @@ function onInput(event: Event) {
 
 watch(() => props.filePath, (path) => {
   if (path) {
-    const name = path.split(/[\/\\]/).pop() || ''
+    const name = path.split(/[/\\]/).pop() || ''
     const lastDot = name.lastIndexOf('.')
     if (lastDot > 0) {
       title.value = name.substring(0, lastDot)
@@ -100,7 +102,7 @@ async function renameCurrentFile() {
   const vault = editorStore.currentVault
   if (!vault) return
 
-  const name = path.split(/[\/\\]/).pop() || ''
+  const name = path.split(/[/\\]/).pop() || ''
   const lastDot = name.lastIndexOf('.')
   const ext = lastDot > 0 ? name.substring(lastDot) : ''
   const oldTitle = lastDot > 0 ? name.substring(0, lastDot) : name
@@ -206,6 +208,46 @@ watch(() => props.filePath, () => {
   editorStore.activeSelectionText = ''
 })
 
+function onDrop(event: DragEvent) {
+  const dnd = useDnd()
+  const draggedPath = event.dataTransfer?.getData('application/x-neptu-path') || dnd.draggedPath.value
+  if (!draggedPath || dnd.draggedIsDir.value || !textareaRef.value || !props.filePath) return
+
+  if (!event.dataTransfer?.getData('application/x-neptu-path') && !dnd.draggedPath.value) return
+
+  event.preventDefault()
+  event.stopPropagation()
+  dnd.onDragEnd()
+
+  const el = textareaRef.value
+  const start = el.selectionStart
+  const end = el.selectionEnd
+  const text = el.value
+  const before = text.substring(0, start)
+  const after = text.substring(end)
+
+  const currentDir = dirname(props.filePath)
+  const relPath = relativePath(currentDir, draggedPath)
+
+  const name = basename(draggedPath)
+  const ext = fileExt(name).slice(1)
+  const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif', 'ico'].includes(ext)
+
+  const inserted = isImage ? `![${name}](${relPath})` : `[${name}](${relPath})`
+
+  const newContent = before + inserted + after
+  editorStore.setContent(props.filePath, newContent)
+
+  nextTick(() => {
+    if (textareaRef.value) {
+      const newPos = start + inserted.length
+      textareaRef.value.focus()
+      textareaRef.value.setSelectionRange(newPos, newPos)
+      saveCursorState()
+    }
+  })
+}
+
 watch(() => editorStore.insertTrigger, (trigger) => {
   if (trigger && trigger.path === props.filePath && textareaRef.value) {
     const el = textareaRef.value
@@ -250,6 +292,8 @@ watch(() => editorStore.insertTrigger, (trigger) => {
       @input="onInput"
       @keydown="onTextareaKeydown"
       @blur="saveCursorState"
+      @dragover.prevent
+      @drop="onDrop"
     />
   </div>
 </template>
