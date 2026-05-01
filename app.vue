@@ -8,6 +8,7 @@ const tabsStore = useTabsStore()
 const colorMode = useColorMode()
 const { locale, setLocale } = useI18n()
 const { isTauri, isMobile } = useTauri()
+const dnd = useDnd()
 
 const availableLocales = ['en-US', 'ru-RU'] as const
 type AppLocale = typeof availableLocales[number]
@@ -143,5 +144,17 @@ onBeforeUnmount(() => {
     />
 
     <PluginModalHost />
+
+    <div
+      v-if="dnd.isOsDragging.value"
+      class="fixed inset-0 z-50 pointer-events-none bg-primary/5 border-4 border-dashed border-primary/50 flex items-center justify-center transition-all"
+    >
+      <div class="bg-elevated px-6 py-4 rounded-xl shadow-2xl border border-default flex flex-col items-center gap-3">
+        <div class="p-3 bg-primary/10 rounded-full">
+          <UIcon name="i-lucide-download" class="size-8 text-primary" />
+        </div>
+        <span class="text-lg font-medium">{{ $t('dnd.dropFilesHere', 'Drop files to upload') }}</span>
+      </div>
+    </div>
   </UApp>
 </template>

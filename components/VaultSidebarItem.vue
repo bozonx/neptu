@@ -225,6 +225,8 @@ async function handleDelete(node: FileNode) {
           isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary/50' : 'hover:ring-1 hover:ring-inset hover:ring-border/50',
         ]"
         :draggable="allowVaultDrag"
+        data-drop-zone="vault-root"
+        :data-vault-id="vault.id"
         @click="emit('toggle')"
         @dragstart="onVaultDragStart"
         @dragend="onVaultDragEnd"
@@ -330,6 +332,8 @@ async function handleDelete(node: FileNode) {
       <div
         class="w-full h-8 flex items-center justify-center opacity-0 hover:opacity-100 text-xs text-muted/50 cursor-context-menu"
         :class="[isDropTarget ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : '']"
+        data-drop-zone="vault-root"
+        :data-vault-id="vault.id"
         @dragover="onDragOver"
         @dragleave="onDragLeave"
         @drop="onDrop"

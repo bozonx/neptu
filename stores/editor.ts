@@ -401,6 +401,33 @@ export const useEditorStore = defineStore('editor', () => {
     if (vault?.type === 'git') useGitStore().cancelCommit(vault.id)
   }
 
+  const insertTrigger = ref<{ path: string, text: string, id: number } | null>(null)
+
+  function insertText(path: string, text: string) {
+    insertTrigger.value = { path, text, id: Date.now() }
+  }
+
+  function insertImportedFiles(paths: string[]) {
+    const currentPath = currentFilePath.value
+    if (!currentPath) return
+
+    let insertedText = ''
+    for (const path of paths) {
+      const name = path.split(/[\/\\]/).pop() || ''
+      const ext = name.split('.').pop()?.toLowerCase() || ''
+      const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)
+      if (isImage) {
+         insertedText += `\n![${name}](./${name})\n`
+      } else {
+         insertedText += `\n[${name}](./${name})\n`
+      }
+    }
+    
+    if (insertedText) {
+      insertText(currentPath, insertedText.trim() + '\n')
+    }
+  }
+
   return {
     buffers,
     currentFilePath,
@@ -424,5 +451,8 @@ export const useEditorStore = defineStore('editor', () => {
     loadUiState,
     saveUiState,
     onPathMigrated,
+    insertTrigger,
+    insertText,
+    insertImportedFiles,
   }
 })

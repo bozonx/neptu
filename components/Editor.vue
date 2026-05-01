@@ -83,6 +83,7 @@ async function onDrop() {
       settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'flex-row' : 'flex-col',
       isDropTarget ? 'ring-2 ring-inset ring-primary/50 bg-primary/5' : ''
     ]"
+    data-drop-zone="editor"
     @mousedown="handleFocus"
     @dragover="onDragOver"
     @dragleave="onDragLeave"

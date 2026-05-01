@@ -448,6 +448,102 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (favoritesChanged) await useSettingsStore().persist()
   }
 
+  async function importExternalFiles(paths: string[], targetDir: string): Promise<string[]> {
+    const fs = useFs()
+    const vault = findVaultForPath(targetDir)
+    if (!vault) return []
+    
+    const importedPaths: string[] = []
+    const hiddenPaths: string[] = []
+    const filters = getEffectiveFilters(vault)
+    const excludes = getEffectiveExcludes(vault)
+    const settingsStore = useSettingsStore()
+    const showHidden = settingsStore.settings.showHiddenFiles
+
+    for (const sourcePath of paths) {
+      try {
+        const name = basename(sourcePath)
+        const destPath = await fs.join(targetDir, name)
+        
+        if (sourcePath === destPath) continue
+
+        if (await fs.exists(destPath)) {
+           // Skip or replace? Let's assume we skip if it exists, or we could add a suffix.
+           // For simplicity, skip if already exists to prevent data loss.
+           const { useToast } = await import('#imports')
+           const toast = useToast()
+           toast.add({ title: 'File already exists', description: `Skipped ${name}`, color: 'error' })
+           continue
+        }
+
+        const info = await fs.stat(sourcePath)
+        if (info.isDirectory) {
+          await fs.copyFolder(sourcePath, destPath)
+        } else {
+          await fs.copyFile(sourcePath, destPath)
+        }
+        importedPaths.push(destPath)
+
+        // Check if it's visible
+        let isVisible = true
+        if (!showHidden && name.startsWith('.')) {
+          isVisible = false
+        } else {
+          const extMatch = name.match(/\.([^.]+)$/)
+          const ext = extMatch ? extMatch[1]?.toLowerCase() ?? '' : ''
+          const isExcluded = excludes.some(pattern => name.includes(pattern)) // Basic exclude check
+          
+          if (isExcluded) {
+            isVisible = false
+          } else if (filters && ext) {
+            let matchesGroup = false
+            let hasAnyEnabledGroup = false
+            for (const group of filters.groups) {
+               if (group.enabled) {
+                  hasAnyEnabledGroup = true
+                  if (group.extensions.some(e => e.ext.toLowerCase() === ext)) {
+                     matchesGroup = true
+                     break
+                  }
+               }
+            }
+            if (hasAnyEnabledGroup && !matchesGroup) {
+               isVisible = false
+            }
+          }
+        }
+        
+        if (!isVisible) {
+          hiddenPaths.push(name)
+        }
+
+      } catch (e) {
+        console.error('Failed to import file', sourcePath, e)
+      }
+    }
+
+    if (importedPaths.length > 0) {
+       await refreshTree(vault)
+       if (vault.type === 'git') {
+         const git = useGitStore()
+         await git.commit(vault.id)
+         await git.refreshStatus(vault.id)
+       }
+    }
+
+    if (hiddenPaths.length > 0) {
+      const { useToast } = await import('#imports')
+      const toast = useToast()
+      toast.add({
+         title: 'Hidden files imported',
+         description: `${hiddenPaths.join(', ')} were copied but are hidden by your file filters.`,
+         color: 'warning'
+      })
+    }
+
+    return importedPaths
+  }
+
   function getEffectiveFilters(vault: Vault): FileFilterSettings {
     const configFilters = vaultConfigs.value[vault.id]?.filters
     if (vault.filters !== undefined) return JSON.parse(JSON.stringify(vault.filters))
@@ -603,6 +699,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     addVault,
     removeVault,
     updateVault,
+    importExternalFiles,
     createVaultFolder,
     refreshTree,
     refreshAllTrees,

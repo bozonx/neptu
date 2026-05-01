@@ -199,6 +199,27 @@ watch(() => props.filePath, () => {
   restoreCursorState()
   editorStore.activeSelectionText = ''
 })
+
+watch(() => editorStore.insertTrigger, (trigger) => {
+  if (trigger && trigger.path === props.filePath && textareaRef.value) {
+    const el = textareaRef.value
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const text = el.value
+    const before = text.substring(0, start)
+    const after = text.substring(end)
+    const newContent = before + trigger.text + after
+    editorStore.setContent(props.filePath, newContent)
+    nextTick(() => {
+       if (textareaRef.value) {
+         textareaRef.value.focus()
+         textareaRef.value.selectionStart = start + trigger.text.length
+         textareaRef.value.selectionEnd = start + trigger.text.length
+         saveCursorState()
+       }
+    })
+  }
+})
 </script>
 
 <template>

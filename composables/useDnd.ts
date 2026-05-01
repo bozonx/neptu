@@ -10,6 +10,9 @@ const isCopyMode = ref(false)
 const shiftPressed = ref(false)
 let listenersInstalled = false
 
+const isOsDragging = ref(false)
+const osDragPosition = ref<{ x: number, y: number } | null>(null)
+
 function hasActiveDrag() {
   return Boolean(draggedPath.value || draggedVaultId.value)
 }
@@ -67,6 +70,67 @@ export function useDnd() {
       if (!hasActiveDrag()) return
       resetDragState()
     })
+
+    if ('__TAURI_INTERNALS__' in window) {
+      import('@tauri-apps/api/event').then(({ listen }) => {
+        listen('tauri://drag-enter', () => {
+          isOsDragging.value = true
+        })
+        
+        listen<{ x: number, y: number }>('tauri://drag-over', (event) => {
+          isOsDragging.value = true
+          osDragPosition.value = event.payload
+        })
+        
+        listen('tauri://drag-leave', () => {
+          isOsDragging.value = false
+          osDragPosition.value = null
+        })
+        
+        listen<{ paths: string[], position: { x: number, y: number } }>('tauri://drag-drop', async (event) => {
+          isOsDragging.value = false
+          osDragPosition.value = null
+          
+          const { paths, position } = event.payload
+          if (!paths || paths.length === 0) return
+          
+          const targetElement = document.elementFromPoint(position.x, position.y) as HTMLElement | null
+          if (!targetElement) return
+          
+          const dropPath = targetElement.closest('[data-drop-path]') as HTMLElement | null
+          const dropZone = targetElement.closest('[data-drop-zone]') as HTMLElement | null
+          
+          if (dropPath) {
+            const targetDir = dropPath.getAttribute('data-drop-path')
+            if (targetDir) {
+               await useVaultsStore().importExternalFiles(paths, targetDir)
+            }
+          } else if (dropZone) {
+            const zone = dropZone.getAttribute('data-drop-zone')
+            if (zone === 'editor') {
+               const editor = useEditorStore()
+               if (editor.currentFilePath) {
+                 const fs = useFs()
+                 const targetDir = await fs.dirname(editor.currentFilePath)
+                 const importedPaths = await useVaultsStore().importExternalFiles(paths, targetDir)
+                 
+                 if (importedPaths.length > 0) {
+                   editor.insertImportedFiles(importedPaths)
+                 }
+               }
+            } else if (zone === 'vault-root') {
+               const vaultId = dropZone.getAttribute('data-vault-id')
+               if (vaultId) {
+                  const vault = useVaultsStore().findById(vaultId)
+                  if (vault) {
+                     await useVaultsStore().importExternalFiles(paths, vault.path)
+                  }
+               }
+            }
+          }
+        })
+      }).catch(console.error)
+    }
   }
 
   function onPathDragStart(event: DragEvent, path: string, options?: { isDir?: boolean, source?: DraggedPathSource }) {
@@ -139,5 +203,7 @@ export function useDnd() {
     onDragEnd,
     updateCopyMode,
     handleAutoScroll,
+    isOsDragging,
+    osDragPosition,
   }
 }
