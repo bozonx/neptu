@@ -517,6 +517,35 @@ export const useVaultsStore = defineStore('vaults', () => {
     await useSettingsStore().persist()
   }
 
+  async function updateGroupsOrder(newGroups: VaultGroup[]) {
+    groups.value = newGroups
+    await useSettingsStore().persist()
+  }
+
+  async function updateVaultsOrder(newOrder: Vault[]) {
+    const orderMap = new Map<string, number>()
+    newOrder.forEach((v, idx) => orderMap.set(v.id, idx))
+    
+    const indices: number[] = []
+    const items: Vault[] = []
+    
+    for (let i = 0; i < list.value.length; i++) {
+      const v = list.value[i]!
+      if (orderMap.has(v.id)) {
+        indices.push(i)
+        items.push(v)
+      }
+    }
+    
+    items.sort((a, b) => orderMap.get(a.id)! - orderMap.get(b.id)!)
+    
+    for (let i = 0; i < indices.length; i++) {
+      list.value[indices[i]!] = items[i]!
+    }
+    
+    await useSettingsStore().persist()
+  }
+
   async function setVaultGroup(vaultId: string, groupId?: string | null) {
     const vault = findById(vaultId)
     if (!vault) return
@@ -595,5 +624,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     getEffectiveExcludes,
     getEffectiveContentFolder,
     resetVaultOverrides,
+    updateGroupsOrder,
+    updateVaultsOrder,
   }
 })

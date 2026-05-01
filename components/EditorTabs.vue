@@ -104,14 +104,6 @@ function handleClose(tab: EditorTab) {
   }
 }
 
-function onTabDragStart(event: DragEvent, tab: EditorTab) {
-  dnd.onPathDragStart(event, tab.filePath, { isDir: false, source: 'tab' })
-}
-
-function onTabDragEnd() {
-  dnd.onDragEnd()
-}
-
 // Handled natively by the computed setter now to avoid event.data bugs
 // with vue-draggable-plus.
 
@@ -241,8 +233,6 @@ const contextMenuItems = (tab: EditorTab) => [
             :vault-name="vaultName(tab.filePath)"
             @click="handleTabClick"
             @close="handleClose"
-            @drag-start="onTabDragStart"
-            @drag-end="onTabDragEnd"
           />
         </UContextMenu>
         <EditorTabItem
@@ -254,8 +244,6 @@ const contextMenuItems = (tab: EditorTab) => [
           :vault-name="vaultName(tab.filePath)"
           @click="handleTabClick"
           @close="handleClose"
-          @drag-start="onTabDragStart"
-          @drag-end="onTabDragEnd"
         />
       </template>
     </VueDraggable>

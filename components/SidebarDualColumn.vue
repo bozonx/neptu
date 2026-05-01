@@ -290,22 +290,30 @@ watchEffect(() => {
         <FavoritesList />
       </template>
       <template v-else-if="tabs.leftSidebarDualSelectedVaultId && vaults.findById(tabs.leftSidebarDualSelectedVaultId)">
-        <VaultSidebarItem
-          :key="tabs.leftSidebarDualSelectedVaultId"
-          :vault="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!"
-          :expanded="true"
-          :nodes="vaults.trees[tabs.leftSidebarDualSelectedVaultId] ?? []"
-          :active-path="editor.currentFilePath"
-          :filters="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!.filters"
-          :expanded-folders="tabs.expandedFolders"
-          @toggle="() => {}"
-          @toggle-folder="toggleFolder"
-          @create-note="(v, d) => emit('createNote', v, d)"
-          @create-folder="(v, d) => emit('createFolder', v, d)"
-          @rename-node="(v, n) => emit('renameNode', v, n)"
-          @edit-vault="(v) => emit('editVault', v)"
-          @remove-vault="(v) => emit('removeVault', v)"
-        />
+        <div
+          class="flex flex-col flex-1 min-h-0 rounded-md transition-colors"
+          :class="dualVaultDropTargetId === tabs.leftSidebarDualSelectedVaultId ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : ''"
+          @dragover="openDualVaultDrop($event, vaults.findById(tabs.leftSidebarDualSelectedVaultId!)!)"
+          @dragleave="clearDualVaultDrop(tabs.leftSidebarDualSelectedVaultId!)"
+          @drop="dropToVaultRoot($event, vaults.findById(tabs.leftSidebarDualSelectedVaultId!)!)"
+        >
+          <VaultSidebarItem
+            :key="tabs.leftSidebarDualSelectedVaultId"
+            :vault="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!"
+            :expanded="true"
+            :nodes="vaults.trees[tabs.leftSidebarDualSelectedVaultId] ?? []"
+            :active-path="editor.currentFilePath"
+            :filters="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!.filters"
+            :expanded-folders="tabs.expandedFolders"
+            @toggle="() => {}"
+            @toggle-folder="toggleFolder"
+            @create-note="(v, d) => emit('createNote', v, d)"
+            @create-folder="(v, d) => emit('createFolder', v, d)"
+            @rename-node="(v, n) => emit('renameNode', v, n)"
+            @edit-vault="(v) => emit('editVault', v)"
+            @remove-vault="(v) => emit('removeVault', v)"
+          />
+        </div>
       </template>
       <div
         v-else

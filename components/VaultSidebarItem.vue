@@ -234,6 +234,10 @@ async function handleDelete(node: FileNode) {
       >
         <div class="flex items-center gap-1 min-w-0">
           <UIcon
+            name="i-lucide-grip-vertical"
+            class="size-3.5 text-muted/50 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0 vault-sort-handle"
+          />
+          <UIcon
             :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
             class="size-4 shrink-0"
             :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"

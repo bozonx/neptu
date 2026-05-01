@@ -1,4 +1,4 @@
-<script setup lang="ts">
+import { VueDraggable } from 'vue-draggable-plus'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { FileNode, Vault, VaultGroup } from '~/types'
 
@@ -48,6 +48,16 @@ function toggleGroup(group: VaultGroup) {
   tabs.expandedGroups[group.id] = !tabs.expandedGroups[group.id]
   void editor.saveUiState()
 }
+
+const draggableGroups = computed({
+  get: () => vaults.groups,
+  set: (val) => vaults.updateGroupsOrder(val)
+})
+
+const draggableUngroupedVaults = computed({
+  get: () => otherUngroupedVaults.value,
+  set: (val) => vaults.updateVaultsOrder(val)
+})
 
 /* ── Vault-to-group DnD ─────────────────────────── */
 
@@ -176,36 +186,49 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
         class="my-2 border-t border-default"
       />
 
-      <VaultSidebarItem
-        v-for="vault in otherUngroupedVaults"
-        :key="vault.id"
-        class="mb-2"
-        :vault="vault"
-        :expanded="tabs.expandedVaults[vault.id] ?? false"
-        :nodes="vaults.trees[vault.id] ?? []"
-        :active-path="editor.currentFilePath"
-        :filters="vault.filters"
-        :expanded-folders="tabs.expandedFolders"
-        :allow-vault-drag="isVaultCardDraggable(vault)"
-        @toggle="toggleVault(vault)"
-        @toggle-folder="toggleFolder"
-        @create-note="(v, d) => emit('createNote', v, d)"
-        @create-folder="(v, d) => emit('createFolder', v, d)"
-        @rename-node="(v, n) => emit('renameNode', v, n)"
-        @edit-vault="(v) => emit('editVault', v)"
-        @remove-vault="(v) => emit('removeVault', v)"
-      />
+      <VueDraggable
+        v-model="draggableUngroupedVaults"
+        group="ungrouped-vaults"
+        handle=".vault-sort-handle"
+        :animation="150"
+      >
+        <VaultSidebarItem
+          v-for="vault in draggableUngroupedVaults"
+          :key="vault.id"
+          class="mb-2"
+          :vault="vault"
+          :expanded="tabs.expandedVaults[vault.id] ?? false"
+          :nodes="vaults.trees[vault.id] ?? []"
+          :active-path="editor.currentFilePath"
+          :filters="vault.filters"
+          :expanded-folders="tabs.expandedFolders"
+          :allow-vault-drag="isVaultCardDraggable(vault)"
+          @toggle="toggleVault(vault)"
+          @toggle-folder="toggleFolder"
+          @create-note="(v, d) => emit('createNote', v, d)"
+          @create-folder="(v, d) => emit('createFolder', v, d)"
+          @rename-node="(v, n) => emit('renameNode', v, n)"
+          @edit-vault="(v) => emit('editVault', v)"
+          @remove-vault="(v) => emit('removeVault', v)"
+        />
+      </VueDraggable>
     </div>
 
     <!-- Groups -->
-    <div
-      v-for="group in vaults.groups"
-      :key="group.id"
-      class="mb-2"
-      @dragover="onGroupDragOver($event, group)"
-      @dragleave="onGroupDragLeave(group.id)"
-      @drop="onGroupDrop(group)"
+    <VueDraggable
+      v-model="draggableGroups"
+      group="vault-groups"
+      handle=".group-sort-handle"
+      :animation="150"
     >
+      <div
+        v-for="group in draggableGroups"
+        :key="group.id"
+        class="mb-2"
+        @dragover="onGroupDragOver($event, group)"
+        @dragleave="onGroupDragLeave(group.id)"
+        @drop="onGroupDrop(group)"
+      >
       <UContextMenu
         :items="groupMenuItems(group)"
         :modal="false"
@@ -215,6 +238,10 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
           :class="singleGroupDropTargetId === group.id ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : ''"
           @click="toggleGroup(group)"
         >
+          <UIcon
+            name="i-lucide-grip-vertical"
+            class="size-3.5 text-muted/50 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0 group-sort-handle"
+          />
           <UIcon
             name="i-lucide-chevron-right"
             class="size-4 text-muted shrink-0 transition-transform"
@@ -246,26 +273,35 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
         v-if="tabs.expandedGroups[group.id]"
         class="pl-3 mt-1 space-y-1"
       >
-        <VaultSidebarItem
-          v-for="vault in vaultsInGroup(group.id)"
-          :key="vault.id"
-          class="mb-2"
-          :vault="vault"
-          :expanded="tabs.expandedVaults[vault.id] ?? false"
-          :nodes="vaults.trees[vault.id] ?? []"
-          :active-path="editor.currentFilePath"
-          :filters="vault.filters"
-          :expanded-folders="tabs.expandedFolders"
-          :allow-vault-drag="isVaultCardDraggable(vault)"
-          @toggle="toggleVault(vault)"
-          @toggle-folder="toggleFolder"
-          @create-note="(v, d) => emit('createNote', v, d)"
-          @create-folder="(v, d) => emit('createFolder', v, d)"
-          @rename-node="(v, n) => emit('renameNode', v, n)"
-          @edit-vault="(v) => emit('editVault', v)"
-          @remove-vault="(v) => emit('removeVault', v)"
-        />
+        <VueDraggable
+          :model-value="vaultsInGroup(group.id)"
+          @update:model-value="vaults.updateVaultsOrder($event)"
+          :group="`group-vaults-${group.id}`"
+          handle=".vault-sort-handle"
+          :animation="150"
+        >
+          <VaultSidebarItem
+            v-for="vault in vaultsInGroup(group.id)"
+            :key="vault.id"
+            class="mb-2"
+            :vault="vault"
+            :expanded="tabs.expandedVaults[vault.id] ?? false"
+            :nodes="vaults.trees[vault.id] ?? []"
+            :active-path="editor.currentFilePath"
+            :filters="vault.filters"
+            :expanded-folders="tabs.expandedFolders"
+            :allow-vault-drag="isVaultCardDraggable(vault)"
+            @toggle="toggleVault(vault)"
+            @toggle-folder="toggleFolder"
+            @create-note="(v, d) => emit('createNote', v, d)"
+            @create-folder="(v, d) => emit('createFolder', v, d)"
+            @rename-node="(v, n) => emit('renameNode', v, n)"
+            @edit-vault="(v) => emit('editVault', v)"
+            @remove-vault="(v) => emit('removeVault', v)"
+          />
+        </VueDraggable>
       </div>
     </div>
+    </VueDraggable>
   </div>
 </template>

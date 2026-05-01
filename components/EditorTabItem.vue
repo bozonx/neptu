@@ -12,8 +12,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   click: [tab: EditorTab]
   close: [tab: EditorTab]
-  dragStart: [event: DragEvent, tab: EditorTab]
-  dragEnd: []
 }>()
 
 const settingsStore = useSettingsStore()
@@ -24,7 +22,6 @@ const editorStore = useEditorStore()
   <div
     role="button"
     tabindex="0"
-    draggable="true"
     :data-tab-id="tab.id"
     class="group flex items-center gap-2 shrink-0 border-default text-sm whitespace-nowrap transition-colors relative cursor-default"
     :class="[
@@ -40,8 +37,6 @@ const editorStore = useEditorStore()
     @click="emit('click', tab)"
     @auxclick.prevent="($event.button === 1 && !tab.pinned) ? emit('close', tab) : null"
     @keydown.enter.space.prevent="emit('click', tab)"
-    @dragstart="emit('dragStart', $event, tab)"
-    @dragend="emit('dragEnd')"
   >
     <!-- Active indicator bar -->
     <div
