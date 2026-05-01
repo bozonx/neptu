@@ -306,7 +306,42 @@
     "duplicateLeft": "Дублировать влево",
     "duplicateTop": "Дублировать вверх",
     "duplicateBottom": "Дублировать вниз",
-    "untitled": "Без названия"
+    "untitled": "Без названия",
+    "characters": "символов",
+    "words": "слов",
+    "apply": "Применить",
+    "toolbar": {
+      "markdown": "MD",
+      "bold": "Жирный",
+      "italic": "Курсив",
+      "strike": "Зачёркнутый",
+      "code": "Код в строке",
+      "codeBlock": "Блок кода",
+      "bulletList": "Маркированный список",
+      "orderedList": "Нумерованный список",
+      "quote": "Цитата",
+      "divider": "Разделитель",
+      "link": "Ссылка",
+      "unlink": "Убрать ссылку",
+      "table": "Таблица",
+      "undo": "Отменить",
+      "redo": "Повторить"
+    },
+    "table": {
+      "addColumnBefore": "Добавить столбец слева",
+      "addColumnAfter": "Добавить столбец справа",
+      "deleteColumn": "Удалить столбец",
+      "addRowBefore": "Добавить строку выше",
+      "addRowAfter": "Добавить строку ниже",
+      "deleteRow": "Удалить строку",
+      "deleteTable": "Удалить таблицу"
+    },
+    "ai": {
+      "write": "Написать",
+      "rewrite": "Переписать",
+      "translate": "Перевести",
+      "placeholder": "Вызовы AI пока не подключены. Это кнопка-заглушка."
+    }
   },
   "error": {
     "tauriRequired": "Требуется Tauri",
