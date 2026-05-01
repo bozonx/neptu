@@ -100,6 +100,15 @@ function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
       }
     }
   }
+  
+  const imageExts = ['avif', 'webp', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico']
+  const videoExts = ['avi', 'mp4', 'mkv', 'webm', 'mov']
+  const audioExts = ['weba', 'mp3', 'aac', 'm4a', 'opus', 'wav', 'ogg']
+
+  if (imageExts.includes(ext)) return 'i-lucide-image'
+  if (videoExts.includes(ext)) return 'i-lucide-video'
+  if (audioExts.includes(ext)) return 'i-lucide-music'
+
   return 'i-lucide-file-text'
 }
 
