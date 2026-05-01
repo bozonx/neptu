@@ -1,11 +1,11 @@
-export type EditorViewType =
-  | 'text'
-  | 'image'
-  | 'video'
-  | 'audio'
-  | 'vault-config'
-  | 'unsupported'
-  | 'virtual'
+export type EditorViewType
+  = | 'text'
+    | 'image'
+    | 'video'
+    | 'audio'
+    | 'vault-config'
+    | 'unsupported'
+    | 'virtual'
 
 export function getEditorViewType(filePath: string | null): EditorViewType {
   if (!filePath) return 'unsupported'

@@ -5,7 +5,7 @@ const props = defineProps<{
 
 const parsedLines = computed(() => {
   if (!props.diff) return []
-  return props.diff.split('\n').map(line => {
+  return props.diff.split('\n').map((line) => {
     if (line.startsWith('diff --git')) return { type: 'header', text: line }
     if (line.startsWith('---') || line.startsWith('+++') || line.startsWith('index ')) return { type: 'file', text: line }
     if (line.startsWith('@@')) return { type: 'chunk', text: line }
@@ -27,7 +27,7 @@ const parsedLines = computed(() => {
         'text-muted': line.type === 'file' || line.type === 'context',
         'text-blue-500 bg-blue-500/10 my-1': line.type === 'chunk',
         'text-green-600 dark:text-green-400 bg-green-500/10': line.type === 'add',
-        'text-red-600 dark:text-red-400 bg-red-500/10': line.type === 'del'
+        'text-red-600 dark:text-red-400 bg-red-500/10': line.type === 'del',
       }"
     >
       {{ line.text || ' ' }}

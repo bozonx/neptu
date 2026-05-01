@@ -291,6 +291,8 @@ export interface UiState {
   leftSidebarTab?: 'files' | 'search' | 'favorites'
   /** Whether the right sidebar is collapsed */
   rightSidebarCollapsed?: boolean
+  /** Whether to auto-reveal the active file in the file tree */
+  autoRevealFile?: boolean
   cursorPositions?: Record<string, CursorPosition>
   /** Expanded state of vault groups in the sidebar */
   expandedGroups?: Record<string, boolean>

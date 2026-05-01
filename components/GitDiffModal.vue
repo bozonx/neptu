@@ -19,28 +19,48 @@ watch(isOpen, async (val) => {
       if (vault) {
         diffText.value = await diff(vault.path)
       }
-    } catch (e) {
+    }
+    catch (e) {
       console.error(e)
       diffText.value = 'Failed to load diff.'
-    } finally {
+    }
+    finally {
       loading.value = false
     }
-  } else {
+  }
+  else {
     diffText.value = ''
   }
 })
 </script>
 
 <template>
-  <UModal v-model:open="isOpen" :title="$t('git.uncommittedChanges')" :ui="{ content: 'sm:max-w-4xl' }">
+  <UModal
+    v-model:open="isOpen"
+    :title="$t('git.uncommittedChanges')"
+    :ui="{ content: 'sm:max-w-4xl' }"
+  >
     <template #body>
-      <div v-if="loading" class="flex justify-center p-8">
-        <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
+      <div
+        v-if="loading"
+        class="flex justify-center p-8"
+      >
+        <UIcon
+          name="i-lucide-loader-circle"
+          class="size-6 animate-spin text-muted"
+        />
       </div>
-      <div v-else-if="!diffText" class="p-8 text-center text-muted">
+      <div
+        v-else-if="!diffText"
+        class="p-8 text-center text-muted"
+      >
         {{ $t('git.noChanges') }}
       </div>
-      <GitDiffViewer v-else :diff="diffText" class="max-h-[60vh] overflow-y-auto" />
+      <GitDiffViewer
+        v-else
+        :diff="diffText"
+        class="max-h-[60vh] overflow-y-auto"
+      />
     </template>
   </UModal>
 </template>

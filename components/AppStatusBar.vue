@@ -153,6 +153,9 @@ const showDiffModal = ref(false)
       @click="tabsStore.rightSidebarCollapsed = !tabsStore.rightSidebarCollapsed"
     />
 
-    <GitDiffModal v-model:open="showDiffModal" :vault-id="currentVault?.id" />
+    <GitDiffModal
+      v-model:open="showDiffModal"
+      :vault-id="currentVault?.id"
+    />
   </div>
 </template>

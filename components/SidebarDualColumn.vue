@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Splitpanes, Pane } from 'splitpanes'
-import type { Vault, VaultGroup } from '~/types'
+import type { FileNode, Vault, VaultGroup } from '~/types'
 
 const emit = defineEmits<{
   createNote: [vault: Vault, dir?: string]

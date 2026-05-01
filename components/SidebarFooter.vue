@@ -75,6 +75,22 @@ const addMenuItems = [
           :title="$t('sidebar.sortBy')"
         />
       </UDropdownMenu>
+      <UButton
+        :icon="tabs.expandAllActive ? 'i-lucide-folder-closed' : 'i-lucide-folder-open'"
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        :title="tabs.expandAllActive ? $t('sidebar.collapseAll') : $t('sidebar.expandAll')"
+        @click="tabs.toggleExpandAll()"
+      />
+      <UButton
+        :icon="tabs.autoRevealFile ? 'i-lucide-eye' : 'i-lucide-eye-off'"
+        size="xs"
+        :color="tabs.autoRevealFile ? 'primary' : 'neutral'"
+        variant="ghost"
+        :title="$t('sidebar.autoRevealFile')"
+        @click="tabs.toggleAutoReveal()"
+      />
       <PluginButtons location="left-sidebar-footer" />
     </div>
     <UButton

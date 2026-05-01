@@ -42,7 +42,10 @@
     "hideRightSidebar": "Hide right sidebar",
     "showRightSidebar": "Show right sidebar",
     "showHiddenFiles": "Show hidden files",
-    "hideHiddenFiles": "Hide hidden files"
+    "hideHiddenFiles": "Hide hidden files",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "autoRevealFile": "Auto reveal file in sidebar"
   },
   "vault": {
     "name": "Name",

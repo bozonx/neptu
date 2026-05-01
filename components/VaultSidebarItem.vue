@@ -324,7 +324,7 @@ async function handleDelete(node: FileNode) {
       v-if="expanded"
       :items="[[
         { label: $t('vault.newNoteBtn', 'New Note'), icon: 'i-lucide-file-plus', onSelect: () => emit('createNote', vault) },
-        { label: $t('vault.newFolderBtn', 'New Folder'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', vault) }
+        { label: $t('vault.newFolderBtn', 'New Folder'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', vault) },
       ]]"
       :modal="false"
       class="w-full"

@@ -59,7 +59,8 @@ watch(() => props.filePath, (path) => {
   if (path) {
     // Convert absolute path to a Tauri asset URL
     assetUrl.value = convertFileSrc(path)
-  } else {
+  }
+  else {
     assetUrl.value = ''
   }
 }, { immediate: true })
@@ -70,7 +71,7 @@ watch(() => props.filePath, (path) => {
     <template v-if="props.viewType === 'image'">
       <UContextMenu
         :items="[
-          [{ label: 'Сбросить pan и zoom', icon: 'i-lucide-maximize', onSelect: resetView }]
+          [{ label: 'Сбросить pan и zoom', icon: 'i-lucide-maximize', onSelect: resetView }],
         ]"
         :modal="false"
         class="w-full h-full flex items-center justify-center"
@@ -105,7 +106,10 @@ watch(() => props.filePath, (path) => {
     </template>
     <template v-else-if="props.viewType === 'audio'">
       <div class="w-full max-w-md bg-default p-6 rounded-lg shadow-sm border border-default text-center">
-        <UIcon name="i-lucide-music" class="size-16 mx-auto mb-6 text-primary opacity-80" />
+        <UIcon
+          name="i-lucide-music"
+          class="size-16 mx-auto mb-6 text-primary opacity-80"
+        />
         <audio
           v-if="assetUrl"
           :src="assetUrl"

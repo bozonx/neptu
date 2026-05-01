@@ -452,7 +452,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     const fs = useFs()
     const vault = findVaultForPath(targetDir)
     if (!vault) return []
-    
+
     const importedPaths: string[] = []
     const hiddenPaths: string[] = []
     const filters = getEffectiveFilters(vault)
@@ -464,21 +464,22 @@ export const useVaultsStore = defineStore('vaults', () => {
       try {
         const name = basename(sourcePath)
         const destPath = await fs.join(targetDir, name)
-        
+
         if (sourcePath === destPath) {
           importedPaths.push(destPath)
           continue
         }
 
         if (await fs.exists(destPath)) {
-           importedPaths.push(destPath)
-           continue
+          importedPaths.push(destPath)
+          continue
         }
 
         const info = await fs.stat(sourcePath)
         if (info.isDirectory) {
           await fs.copyFolder(sourcePath, destPath)
-        } else {
+        }
+        else {
           await fs.copyFile(sourcePath, destPath)
         }
         importedPaths.push(destPath)
@@ -487,56 +488,58 @@ export const useVaultsStore = defineStore('vaults', () => {
         let isVisible = true
         if (!showHidden && name.startsWith('.')) {
           isVisible = false
-        } else {
+        }
+        else {
           const extMatch = name.match(/\.([^.]+)$/)
           const ext = extMatch ? extMatch[1]?.toLowerCase() ?? '' : ''
-          const isExcluded = excludes.some(pattern => name.includes(pattern)) // Basic exclude check
-          
+          const isExcluded = excludes.some((pattern) => name.includes(pattern)) // Basic exclude check
+
           if (isExcluded) {
             isVisible = false
-          } else if (filters && ext) {
+          }
+          else if (filters && ext) {
             let matchesGroup = false
             let hasAnyEnabledGroup = false
             for (const group of filters.groups) {
-               if (group.enabled) {
-                  hasAnyEnabledGroup = true
-                  if (group.extensions.some(e => e.ext.toLowerCase() === ext)) {
-                     matchesGroup = true
-                     break
-                  }
-               }
+              if (group.enabled) {
+                hasAnyEnabledGroup = true
+                if (group.extensions.some((e) => e.ext.toLowerCase() === ext)) {
+                  matchesGroup = true
+                  break
+                }
+              }
             }
             if (hasAnyEnabledGroup && !matchesGroup) {
-               isVisible = false
+              isVisible = false
             }
           }
         }
-        
+
         if (!isVisible) {
           hiddenPaths.push(name)
         }
-
-      } catch (e) {
+      }
+      catch (e) {
         console.error('Failed to import file', sourcePath, e)
       }
     }
 
     if (importedPaths.length > 0) {
-       await refreshTree(vault)
-       if (vault.type === 'git') {
-         const git = useGitStore()
-         await git.commit(vault.id)
-         await git.refreshStatus(vault.id)
-       }
+      await refreshTree(vault)
+      if (vault.type === 'git') {
+        const git = useGitStore()
+        await git.commit(vault.id)
+        await git.refreshStatus(vault.id)
+      }
     }
 
     if (hiddenPaths.length > 0) {
       const { useToast } = await import('#imports')
       const toast = useToast()
       toast.add({
-         title: 'Hidden files imported',
-         description: `${hiddenPaths.join(', ')} were copied but are hidden by your file filters.`,
-         color: 'warning'
+        title: 'Hidden files imported',
+        description: `${hiddenPaths.join(', ')} were copied but are hidden by your file filters.`,
+        color: 'warning',
       })
     }
 
@@ -620,10 +623,10 @@ export const useVaultsStore = defineStore('vaults', () => {
   async function updateVaultsOrder(newOrder: Vault[]) {
     const orderMap = new Map<string, number>()
     newOrder.forEach((v, idx) => orderMap.set(v.id, idx))
-    
+
     const indices: number[] = []
     const items: Vault[] = []
-    
+
     for (let i = 0; i < list.value.length; i++) {
       const v = list.value[i]!
       if (orderMap.has(v.id)) {
@@ -631,13 +634,13 @@ export const useVaultsStore = defineStore('vaults', () => {
         items.push(v)
       }
     }
-    
+
     items.sort((a, b) => orderMap.get(a.id)! - orderMap.get(b.id)!)
-    
+
     for (let i = 0; i < indices.length; i++) {
       list.value[indices[i]!] = items[i]!
     }
-    
+
     await useSettingsStore().persist()
   }
 

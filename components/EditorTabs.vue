@@ -44,11 +44,11 @@ const draggableTabs = computed({
     }
     else if (leaf.value) {
       // Find added or removed tabs during a cross-panel drag
-      const added = val.find(t => !leaf.value!.tabs.some(existing => existing.id === t.id))
-      const removed = leaf.value.tabs.find(t => !val.some(newT => newT.id === t.id))
-      
+      const added = val.find((t) => !leaf.value!.tabs.some((existing) => existing.id === t.id))
+      const removed = leaf.value.tabs.find((t) => !val.some((newT) => newT.id === t.id))
+
       leaf.value.tabs = val
-      
+
       if (added && props.panelId) {
         tabsStore.handleTabAdd(props.panelId, added)
       }
@@ -74,8 +74,6 @@ watch(activeId, (newId) => {
     })
   }
 }, { immediate: true })
-
-
 
 function fileName(path: string): string {
   const parts = path.split(/[\\/]/)

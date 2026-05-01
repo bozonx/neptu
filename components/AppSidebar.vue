@@ -9,6 +9,8 @@ const { t } = useI18n()
 
 const dialogs = useSidebarDialogs()
 
+useAutoReveal()
+
 function toggleLeftSidebarMode() {
   tabs.updateLeftSidebarMode(tabs.leftSidebarMode === 'single' ? 'dual' : 'single')
 }

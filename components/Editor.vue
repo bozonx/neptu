@@ -48,21 +48,21 @@ function onDragLeave() {
 async function onDrop() {
   isDropTarget.value = false
   if (props.isMobile || !dnd.draggedPath.value || dnd.draggedIsDir.value) return
-  
+
   const path = dnd.draggedPath.value
   dnd.onDragEnd()
-  
+
   if (props.panelId) {
     // Check if the file is already open in this panel
     const leaf = tabsStore.findLeaf(tabsStore.desktopLayout, props.panelId)
     if (leaf) {
-      const existingTab = leaf.tabs.find(t => t.filePath === path)
+      const existingTab = leaf.tabs.find((t) => t.filePath === path)
       if (existingTab) {
         tabsStore.activateTab(props.panelId, existingTab.id)
         return
       }
     }
-    
+
     // Add the tab to the current panel and activate it
     const newTab: EditorTab = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, filePath: path }
     if (leaf) {
@@ -81,7 +81,7 @@ async function onDrop() {
     class="flex h-full bg-default overflow-hidden transition-colors"
     :class="[
       settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'flex-row' : 'flex-col',
-      isDropTarget ? 'ring-2 ring-inset ring-primary/50 bg-primary/5' : ''
+      isDropTarget ? 'ring-2 ring-inset ring-primary/50 bg-primary/5' : '',
     ]"
     data-drop-zone="editor"
     @mousedown="handleFocus"
@@ -127,11 +127,27 @@ async function onDrop() {
       </div>
 
       <template v-else>
-        <EditorVirtual v-if="viewType === 'virtual'" :file-path="currentFilePath" />
-        <EditorVaultConfig v-else-if="viewType === 'vault-config'" :file-path="currentFilePath" />
-        <EditorMedia v-else-if="viewType === 'image' || viewType === 'video' || viewType === 'audio'" :file-path="currentFilePath" :view-type="viewType" />
-        <EditorText v-else-if="viewType === 'text'" :file-path="currentFilePath" />
-        <EditorUnsupported v-else :file-path="currentFilePath" />
+        <EditorVirtual
+          v-if="viewType === 'virtual'"
+          :file-path="currentFilePath"
+        />
+        <EditorVaultConfig
+          v-else-if="viewType === 'vault-config'"
+          :file-path="currentFilePath"
+        />
+        <EditorMedia
+          v-else-if="viewType === 'image' || viewType === 'video' || viewType === 'audio'"
+          :file-path="currentFilePath"
+          :view-type="viewType"
+        />
+        <EditorText
+          v-else-if="viewType === 'text'"
+          :file-path="currentFilePath"
+        />
+        <EditorUnsupported
+          v-else
+          :file-path="currentFilePath"
+        />
       </template>
 
       <!-- Mobile Bottom Toolbar Placeholder -->

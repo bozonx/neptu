@@ -43,7 +43,10 @@
     "showRightSidebar": "Показать правый сайдбар",
     "showHiddenFiles": "Показать скрытые файлы",
     "hideHiddenFiles": "Скрыть скрытые файлы",
-    "vaultOverrides": "Переопределения параметров хранилища"
+    "vaultOverrides": "Переопределения параметров хранилища",
+    "expandAll": "Развернуть все",
+    "collapseAll": "Свернуть все",
+    "autoRevealFile": "Автопоказ файла в боковой панели"
   },
   "vault": {
     "name": "Название",

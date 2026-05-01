@@ -100,7 +100,7 @@ function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
       }
     }
   }
-  
+
   const imageExts = ['avif', 'webp', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico']
   const videoExts = ['avi', 'mp4', 'mkv', 'webm', 'mov']
   const audioExts = ['weba', 'mp3', 'aac', 'm4a', 'opus', 'wav', 'ogg']
@@ -237,6 +237,7 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
           :class="activePath === node.path ? 'bg-primary/10 text-primary border-l-2 border-primary' : ''"
           :style="{ paddingLeft: `${1.25 + level * 0.75}rem` }"
           draggable="true"
+          :data-active-file="activePath === node.path ? '' : undefined"
           @click="emit('open', node.path)"
           @dragstart="onDragStart($event, node)"
           @dragend="onDragEnd"

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { EditorTab, Panel, PanelLeaf, PanelNode, SplitDirection, UiState } from '~/types'
+import type { EditorTab, FileNode, Panel, PanelLeaf, PanelNode, SplitDirection, UiState } from '~/types'
 
 function generateId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -61,6 +61,9 @@ export const useTabsStore = defineStore('tabs', () => {
   const expandedGroups = ref<Record<string, boolean>>({})
   const expandedVaults = ref<Record<string, boolean>>({})
   const expandedFolders = ref<Record<string, boolean>>({})
+
+  const autoRevealFile = ref(false)
+  const expandAllActive = ref(false)
 
   const { isMobile } = useTauri()
 
@@ -501,6 +504,7 @@ export const useTabsStore = defineStore('tabs', () => {
     leftSidebarSize.value = normalizedSizes.left
     rightSidebarSize.value = normalizedSizes.right
     if (typeof state.rightSidebarCollapsed === 'boolean') rightSidebarCollapsed.value = state.rightSidebarCollapsed
+    if (typeof state.autoRevealFile === 'boolean') autoRevealFile.value = state.autoRevealFile
     if (state.leftSidebarMode) leftSidebarMode.value = state.leftSidebarMode
     if (typeof state.leftSidebarDualFirstColumnSize === 'number') {
       leftSidebarDualFirstColumnSize.value = clamp(
@@ -643,6 +647,75 @@ export const useTabsStore = defineStore('tabs', () => {
     await useEditorStore().saveUiState()
   }
 
+  function collectFolderPaths(nodes: FileNode[]): string[] {
+    const result: string[] = []
+    for (const node of nodes) {
+      if (node.isDir) {
+        result.push(node.path)
+        result.push(...collectFolderPaths(node.children ?? []))
+      }
+    }
+    return result
+  }
+
+  function getParentFolderPaths(filePath: string): string[] {
+    const sep = filePath.includes('\\') ? '\\' : '/'
+    const parts = filePath.split(sep)
+    const parents: string[] = []
+    let prefix = parts[0]!
+    for (let i = 1; i < parts.length - 1; i++) {
+      prefix = prefix + sep + parts[i]
+      parents.push(prefix)
+    }
+    return parents
+  }
+
+  function toggleExpandAll() {
+    const vaults = useVaultsStore()
+    if (!expandAllActive.value) {
+      for (const g of vaults.groups) expandedGroups.value[g.id] = true
+      for (const v of vaults.list) expandedVaults.value[v.id] = true
+      for (const nodes of Object.values(vaults.trees)) {
+        for (const path of collectFolderPaths(nodes)) {
+          expandedFolders.value[path] = true
+        }
+      }
+      expandAllActive.value = true
+    }
+    else {
+      expandedVaults.value = {}
+      expandedFolders.value = {}
+      expandAllActive.value = false
+    }
+    void useEditorStore().saveUiState()
+  }
+
+  async function toggleAutoReveal() {
+    autoRevealFile.value = !autoRevealFile.value
+    await useEditorStore().saveUiState()
+  }
+
+  function revealFile(path: string) {
+    const vaults = useVaultsStore()
+    const vault = vaults.findVaultForPath(path)
+    if (!vault) return
+
+    if (leftSidebarMode.value === 'dual') {
+      leftSidebarDualShowFavorites.value = false
+      leftSidebarDualSelectedVaultId.value = vault.id
+    }
+
+    expandedVaults.value[vault.id] = true
+
+    if (vault.groupId) {
+      expandedGroups.value[vault.groupId] = true
+    }
+
+    for (const folderPath of getParentFolderPaths(path)) {
+      expandedFolders.value[folderPath] = true
+    }
+  }
+
   return {
     desktopLayout,
     activeDesktopPanelId,
@@ -659,6 +732,8 @@ export const useTabsStore = defineStore('tabs', () => {
     expandedGroups,
     expandedVaults,
     expandedFolders,
+    autoRevealFile,
+    expandAllActive,
     openFile,
     activateTab,
     activateMobileTab,
@@ -684,5 +759,8 @@ export const useTabsStore = defineStore('tabs', () => {
     updateLeftSidebarDualState,
     handleTabAdd,
     handleTabRemove,
+    toggleExpandAll,
+    toggleAutoReveal,
+    revealFile,
   }
 })

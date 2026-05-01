@@ -86,12 +86,13 @@ export const useEditorStore = defineStore('editor', () => {
 
     if (viewType === 'virtual') {
       // Virtual pages don't exist on disk, no content to read
-    } else {
+    }
+    else {
       const fs = useFs()
       if (!(await fs.exists(path))) {
         throw new Error(`File not found: ${path}`)
       }
-      
+
       // Only read text for types that are actually text-based
       if (viewType === 'text' || viewType === 'vault-config') {
         rawContent = await fs.readText(path)
@@ -375,6 +376,7 @@ export const useEditorStore = defineStore('editor', () => {
       leftSidebarDualSelectedVaultId: tabs.leftSidebarDualSelectedVaultId,
       leftSidebarDualShowFavorites: tabs.leftSidebarDualShowFavorites,
       leftSidebarTab: tabs.leftSidebarTab,
+      autoRevealFile: tabs.autoRevealFile,
       cursorPositions: positions,
       expandedGroups: tabs.expandedGroups,
       expandedVaults: tabs.expandedVaults,
@@ -421,12 +423,13 @@ export const useEditorStore = defineStore('editor', () => {
       const ext = name.split('.').pop()?.toLowerCase() || ''
       const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)
       if (isImage) {
-         insertedText += `\n![${name}](./${name})\n`
-      } else {
-         insertedText += `\n[${name}](./${name})\n`
+        insertedText += `\n![${name}](./${name})\n`
+      }
+      else {
+        insertedText += `\n[${name}](./${name})\n`
       }
     }
-    
+
     if (insertedText) {
       insertText(currentPath, insertedText.trim() + '\n')
     }

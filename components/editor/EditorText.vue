@@ -23,10 +23,12 @@ watch(() => props.filePath, (path) => {
     const lastDot = name.lastIndexOf('.')
     if (lastDot > 0) {
       title.value = name.substring(0, lastDot)
-    } else {
+    }
+    else {
       title.value = name
     }
-  } else {
+  }
+  else {
     title.value = ''
   }
 }, { immediate: true })
@@ -44,7 +46,8 @@ function onTextareaKeydown(event: KeyboardEvent) {
         }
       })
     }
-  } else if (event.key === 'ArrowUp') {
+  }
+  else if (event.key === 'ArrowUp') {
     const textBefore = textareaRef.value.value.substring(0, textareaRef.value.selectionStart)
     if (!textBefore.includes('\n')) {
       event.preventDefault()
@@ -66,14 +69,16 @@ function onTitleKeydown(event: KeyboardEvent) {
     textareaRef.value.focus()
     textareaRef.value.selectionStart = 0
     textareaRef.value.selectionEnd = 0
-  } else if (event.key === 'ArrowRight') {
+  }
+  else if (event.key === 'ArrowRight') {
     if (titleInputRef.value.selectionStart === title.value.length && titleInputRef.value.selectionEnd === title.value.length) {
       event.preventDefault()
       textareaRef.value.focus()
       textareaRef.value.selectionStart = 0
       textareaRef.value.selectionEnd = 0
     }
-  } else if (event.key === 'Enter') {
+  }
+  else if (event.key === 'Enter') {
     event.preventDefault()
     if (props.filePath) {
       const content = buffer.value?.content ?? ''
@@ -94,18 +99,18 @@ async function renameCurrentFile() {
   if (!path) return
   const vault = editorStore.currentVault
   if (!vault) return
-  
+
   const name = path.split(/[\/\\]/).pop() || ''
   const lastDot = name.lastIndexOf('.')
   const ext = lastDot > 0 ? name.substring(lastDot) : ''
   const oldTitle = lastDot > 0 ? name.substring(0, lastDot) : name
-  
+
   const newTitle = title.value.trim()
   if (!newTitle || newTitle === oldTitle) {
     title.value = oldTitle
     return
   }
-  
+
   const invalidChars = /[<>:"/\\|?*]/g
   if (invalidChars.test(newTitle)) {
     title.value = oldTitle
@@ -113,11 +118,12 @@ async function renameCurrentFile() {
   }
 
   const newName = newTitle + ext
-  
+
   try {
     const vaultsStore = useVaultsStore()
     await vaultsStore.renameNode(vault.id, path, newName)
-  } catch (err) {
+  }
+  catch (err) {
     console.error(err)
     title.value = oldTitle
   }
@@ -212,12 +218,12 @@ watch(() => editorStore.insertTrigger, (trigger) => {
     const newContent = before + trigger.text + after
     editorStore.setContent(props.filePath, newContent)
     nextTick(() => {
-       if (textareaRef.value) {
-         textareaRef.value.focus()
-         textareaRef.value.selectionStart = start + trigger.text.length
-         textareaRef.value.selectionEnd = start + trigger.text.length
-         saveCursorState()
-       }
+      if (textareaRef.value) {
+        textareaRef.value.focus()
+        textareaRef.value.selectionStart = start + trigger.text.length
+        textareaRef.value.selectionEnd = start + trigger.text.length
+        saveCursorState()
+      }
     })
   }
 })

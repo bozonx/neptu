@@ -151,7 +151,10 @@ onBeforeUnmount(() => {
     >
       <div class="bg-elevated px-6 py-4 rounded-xl shadow-2xl border border-default flex flex-col items-center gap-3">
         <div class="p-3 bg-primary/10 rounded-full">
-          <UIcon name="i-lucide-download" class="size-8 text-primary" />
+          <UIcon
+            name="i-lucide-download"
+            class="size-8 text-primary"
+          />
         </div>
         <span class="text-lg font-medium">{{ $t('dnd.dropFilesHere', 'Drop files to upload') }}</span>
       </div>
