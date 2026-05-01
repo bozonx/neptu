@@ -143,7 +143,7 @@ function removeExclude(idx: number) {
     <!-- UI Mode -->
     <div
       v-if="mode === 'ui'"
-      class="flex-1 overflow-y-auto p-8 min-h-0"
+      class="flex-1 h-0 overflow-y-auto p-8 min-h-0"
     >
       <div
         v-if="loading"

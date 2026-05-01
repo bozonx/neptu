@@ -147,6 +147,9 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
       <FavoritesList />
     </div>
 
+    <!-- Daily Notes -->
+    <DailyNotesTree class="mb-2" />
+
     <!-- Ungrouped vaults area -->
     <div
       class="rounded-lg transition-colors"

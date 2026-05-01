@@ -49,7 +49,13 @@
     "deletePermanently": "Delete permanently",
     "expandAll": "Expand all",
     "collapseAll": "Collapse all",
-    "autoRevealFile": "Auto reveal file in sidebar"
+    "autoRevealFile": "Auto reveal file in sidebar",
+    "dailyNotes": "Daily Notes",
+    "createDailyNote": "Create daily note",
+    "loading": "Loading",
+    "noDailyNotes": "No daily notes yet",
+    "deleteFile": "Delete file",
+    "deleteFolder": "Delete folder"
   },
   "vault": {
     "name": "Name",
@@ -224,7 +230,10 @@
     "change": "Change",
     "language": "Language",
     "plugins": "Plugins",
-    "systemPlugins": "System plugins"
+    "systemPlugins": "System plugins",
+    "dailyNotes": "Daily Notes",
+    "dailyNotesPath": "Daily notes folder",
+    "dailyNotesPathHint": "Relative path inside the main vault. Changing this migrates existing notes."
   },
   "plugins": {
     "addPlugins": "Add plugins"

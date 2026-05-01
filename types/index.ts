@@ -170,6 +170,8 @@ export interface SharedSettings {
   gitAutoMessage: boolean
   /** Template for auto-generated commit messages. */
   gitAutoMessageTemplate: string
+  /** Relative path inside the main repository for daily notes. */
+  dailyNotesPath: string
 }
 
 export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
@@ -180,6 +182,7 @@ export const DEFAULT_SHARED_SETTINGS: SharedSettings = {
   fileSortMode: 'nameAsc',
   showHiddenFiles: false,
   confirmDeleteLocal: true,
+  dailyNotesPath: '.neptu/daily_notes',
   confirmDeleteGit: true,
   useTrash: true,
   enabledPlugins: ['com.neptu.outline', 'com.neptu.file-info', 'com.neptu.history', 'com.neptu.content-types'],
@@ -303,8 +306,10 @@ export interface UiState {
   leftSidebarDualSelectedVaultId?: string | null
   /** Whether the dual left sidebar is currently showing favorites */
   leftSidebarDualShowFavorites?: boolean
-  /** Active built-in tab in the left sidebar: files, search, favorites or trash */
-  leftSidebarTab?: 'files' | 'search' | 'favorites' | 'trash'
+  /** Whether the dual left sidebar is currently showing daily notes */
+  leftSidebarDualShowDailyNotes?: boolean
+  /** Active built-in tab in the left sidebar: files, search, favorites, trash or dailyNotes */
+  leftSidebarTab?: 'files' | 'search' | 'favorites' | 'trash' | 'dailyNotes'
   /** Whether the right sidebar is collapsed */
   rightSidebarCollapsed?: boolean
   /** Whether to auto-reveal the active file in the file tree */

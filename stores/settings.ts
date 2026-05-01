@@ -64,6 +64,7 @@ function pickSharedSettings(s: AppSettings): SharedSettings {
     defaultCommitMode: s.defaultCommitMode,
     gitAutoMessage: s.gitAutoMessage,
     gitAutoMessageTemplate: s.gitAutoMessageTemplate,
+    dailyNotesPath: s.dailyNotesPath,
   }
 }
 
@@ -142,6 +143,24 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   async function updateSettings(patch: Partial<AppSettings>) {
+    const oldDailyPath = settings.value.dailyNotesPath
+    const newDailyPath = patch.dailyNotesPath
+    if (newDailyPath !== undefined && newDailyPath !== oldDailyPath && mainRepoPath.value) {
+      const dn = useDailyNotes()
+      const oldBase = dn.getBaseDir(mainRepoPath.value, oldDailyPath)
+      const newBase = dn.getBaseDir(mainRepoPath.value, newDailyPath)
+      if (oldBase && newBase && oldBase !== newBase) {
+        try {
+          await dn.moveDailyNotes(oldBase, newBase)
+          if (mainRepoPath.value) {
+            await dn.commitIfGit(mainRepoPath.value)
+          }
+        }
+        catch (error) {
+          console.error('Failed to migrate daily notes', error)
+        }
+      }
+    }
     settings.value = { ...settings.value, ...patch }
     await persist()
   }

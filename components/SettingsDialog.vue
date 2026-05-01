@@ -71,6 +71,7 @@ const gitAutoMessageTemplate = ref('')
 const detectedAuthor = ref<GitAuthor | null>(null)
 const configPath = ref('')
 const newMainPath = ref('')
+const dailyNotesPath = ref('.neptu/daily_notes')
 
 const localeItems = [
   { label: t('settings.auto'), value: 'auto' },
@@ -101,6 +102,7 @@ watch(open, async (value) => {
   useTrash.value = s.useTrash
   gitAutoMessage.value = s.gitAutoMessage ?? true
   gitAutoMessageTemplate.value = s.gitAutoMessageTemplate ?? 'Update notes ({files} {fileWord})'
+  dailyNotesPath.value = s.dailyNotesPath ?? '.neptu/daily_notes'
   newMainPath.value = ''
   try {
     const git = useGit()
@@ -184,6 +186,7 @@ async function save() {
       useTrash: useTrash.value,
       gitAutoMessage: gitAutoMessage.value,
       gitAutoMessageTemplate: gitAutoMessageTemplate.value,
+      dailyNotesPath: dailyNotesPath.value.trim() || '.neptu/daily_notes',
     })
     colorMode.preference = theme.value
   }
@@ -199,7 +202,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [autosaveSec, commitSec, authorName, authorEmail, theme, locale, tabDisplayMode, defaultCommitMode, confirmDeleteLocal, confirmDeleteGit, useTrash, gitAutoMessage, gitAutoMessageTemplate],
+  [autosaveSec, commitSec, authorName, authorEmail, theme, locale, tabDisplayMode, defaultCommitMode, confirmDeleteLocal, confirmDeleteGit, useTrash, gitAutoMessage, gitAutoMessageTemplate, dailyNotesPath],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -320,6 +323,22 @@ watch(
               </UFormField>
               <p class="text-xs text-muted mt-1">
                 {{ $t('settings.currentFolderHint') }}
+              </p>
+            </section>
+
+            <section class="space-y-4">
+              <h3 class="text-sm font-bold text-muted uppercase tracking-wider">
+                {{ $t('settings.dailyNotes') }}
+              </h3>
+              <UFormField :label="$t('settings.dailyNotesPath')">
+                <UInput
+                  v-model="dailyNotesPath"
+                  class="w-full"
+                  :placeholder="'.neptu/daily_notes'"
+                />
+              </UFormField>
+              <p class="text-xs text-muted mt-1">
+                {{ $t('settings.dailyNotesPathHint') }}
               </p>
             </section>
 

@@ -385,6 +385,7 @@ export const useEditorStore = defineStore('editor', () => {
       leftSidebarDualFirstColumnSize: tabs.leftSidebarDualFirstColumnSize,
       leftSidebarDualSelectedVaultId: tabs.leftSidebarDualSelectedVaultId,
       leftSidebarDualShowFavorites: tabs.leftSidebarDualShowFavorites,
+      leftSidebarDualShowDailyNotes: tabs.leftSidebarDualShowDailyNotes,
       leftSidebarTab: tabs.leftSidebarTab,
       autoRevealFile: tabs.autoRevealFile,
       cursorPositions: positions,

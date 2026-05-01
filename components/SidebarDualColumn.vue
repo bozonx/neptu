@@ -127,6 +127,7 @@ watchEffect(() => {
   const selectedVaultExists = selectedVaultId ? Boolean(vaults.findById(selectedVaultId)) : false
 
   if (tabs.leftSidebarDualShowFavorites) return
+  if (tabs.leftSidebarDualShowDailyNotes) return
   if (selectedVaultExists) return
 
   if (vaults.list.length === 0) {
@@ -176,6 +177,21 @@ watchEffect(() => {
             :class="tabs.leftSidebarDualShowFavorites ? 'text-primary' : 'text-muted'"
           />
           <span class="truncate text-xs font-medium">{{ $t('sidebar.favorites') }}</span>
+        </div>
+
+        <!-- Daily Notes -->
+        <div
+          class="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer rounded-md hover:bg-elevated transition-colors"
+          :class="{ 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30': tabs.leftSidebarDualShowDailyNotes }"
+          :title="$t('sidebar.dailyNotes')"
+          @click="tabs.updateLeftSidebarDualState(null, false, true)"
+        >
+          <UIcon
+            name="i-lucide-calendar-days"
+            class="size-4 shrink-0"
+            :class="tabs.leftSidebarDualShowDailyNotes ? 'text-primary' : 'text-muted'"
+          />
+          <span class="truncate text-xs font-medium">{{ $t('sidebar.dailyNotes') }}</span>
         </div>
 
         <div class="my-1 mx-2 border-t border-default shrink-0" />
@@ -288,6 +304,9 @@ watchEffect(() => {
           <span class="text-[10px] font-semibold text-muted uppercase tracking-wider">{{ $t('sidebar.favorites') }}</span>
         </div>
         <FavoritesList />
+      </template>
+      <template v-else-if="tabs.leftSidebarDualShowDailyNotes">
+        <DailyNotesTree />
       </template>
       <template v-else-if="tabs.leftSidebarDualSelectedVaultId && vaults.findById(tabs.leftSidebarDualSelectedVaultId)">
         <div

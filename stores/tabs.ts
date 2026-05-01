@@ -56,7 +56,8 @@ export const useTabsStore = defineStore('tabs', () => {
   const leftSidebarDualFirstColumnSize = ref(20)
   const leftSidebarDualSelectedVaultId = ref<string | null>(null)
   const leftSidebarDualShowFavorites = ref(false)
-  const leftSidebarTab = ref<'files' | 'search' | 'favorites' | 'trash'>('files')
+  const leftSidebarDualShowDailyNotes = ref(false)
+  const leftSidebarTab = ref<'files' | 'search' | 'favorites' | 'trash' | 'dailyNotes'>('files')
 
   const expandedGroups = ref<Record<string, boolean>>({})
   const expandedVaults = ref<Record<string, boolean>>({})
@@ -515,8 +516,9 @@ export const useTabsStore = defineStore('tabs', () => {
     }
     leftSidebarDualSelectedVaultId.value = state.leftSidebarDualSelectedVaultId ?? null
     leftSidebarDualShowFavorites.value = state.leftSidebarDualShowFavorites ?? false
+    leftSidebarDualShowDailyNotes.value = state.leftSidebarDualShowDailyNotes ?? false
     if (state.leftSidebarTab) {
-      const validTabs: Array<'files' | 'search' | 'favorites' | 'trash'> = ['files', 'search', 'favorites', 'trash']
+      const validTabs: Array<'files' | 'search' | 'favorites' | 'trash' | 'dailyNotes'> = ['files', 'search', 'favorites', 'trash', 'dailyNotes']
       if (validTabs.includes(state.leftSidebarTab)) {
         leftSidebarTab.value = state.leftSidebarTab
       }
@@ -594,9 +596,10 @@ export const useTabsStore = defineStore('tabs', () => {
     await useEditorStore().saveUiState()
   }
 
-  async function updateLeftSidebarDualState(selectedVaultId: string | null, showFavorites: boolean) {
+  async function updateLeftSidebarDualState(selectedVaultId: string | null, showFavorites: boolean, showDailyNotes = false) {
     leftSidebarDualSelectedVaultId.value = selectedVaultId
     leftSidebarDualShowFavorites.value = showFavorites
+    leftSidebarDualShowDailyNotes.value = showDailyNotes
     await useEditorStore().saveUiState()
   }
 
@@ -728,6 +731,7 @@ export const useTabsStore = defineStore('tabs', () => {
     leftSidebarDualFirstColumnSize,
     leftSidebarDualSelectedVaultId,
     leftSidebarDualShowFavorites,
+    leftSidebarDualShowDailyNotes,
     leftSidebarTab,
     expandedGroups,
     expandedVaults,

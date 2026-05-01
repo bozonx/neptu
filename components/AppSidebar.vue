@@ -70,6 +70,15 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
         @click="tabs.leftSidebarTab = 'trash'; plugins.setActiveLeftSidebarView(null)"
       />
       <UButton
+        icon="i-lucide-calendar-days"
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        :class="{ 'bg-primary/10 text-primary': tabs.leftSidebarTab === 'dailyNotes' && !plugins.resolvedActiveLeftSidebarView }"
+        :title="$t('sidebar.dailyNotes')"
+        @click="tabs.leftSidebarTab = 'dailyNotes'; plugins.setActiveLeftSidebarView(null)"
+      />
+      <UButton
         v-for="view in plugins.sortedLeftSidebarViews"
         :key="view.fqid"
         :icon="view.icon"
@@ -90,6 +99,9 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
         </template>
         <template v-else-if="tabs.leftSidebarTab === 'trash'">
           <TrashPanel class="flex-1 overflow-hidden" />
+        </template>
+        <template v-else-if="tabs.leftSidebarTab === 'dailyNotes'">
+          <DailyNotesTree class="flex-1 overflow-hidden" />
         </template>
         <template v-else>
           <UContextMenu
