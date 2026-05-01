@@ -235,8 +235,8 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
           :modal="false"
         >
           <div
-            class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/50 hover:ring-1 hover:ring-inset hover:ring-border/50"
-            :class="singleGroupDropTargetId === group.id ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : ''"
+            class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/30 border-l-2 border-l-primary/20 hover:bg-elevated/50 hover:border-l-primary/40 transition-colors"
+            :class="singleGroupDropTargetId === group.id ? 'bg-primary/10 ring-1 ring-inset ring-primary/40 border-l-primary/40' : ''"
             @click="toggleGroup(group)"
           >
             <UIcon
@@ -247,10 +247,6 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
               name="i-lucide-chevron-right"
               class="size-4 text-muted shrink-0 transition-transform"
               :class="{ 'rotate-90': tabs.expandedGroups[group.id] }"
-            />
-            <UIcon
-              name="i-lucide-folder-closed"
-              class="size-4 text-muted shrink-0"
             />
             <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
             <UDropdownMenu
@@ -272,8 +268,9 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
 
         <div
           v-if="tabs.expandedGroups[group.id]"
-          class="pl-3 mt-1 space-y-1"
+          class="pl-3 mt-1 space-y-1 relative"
         >
+          <div class="absolute left-1 top-0 bottom-0 w-px bg-border/40" />
           <VueDraggable
             :model-value="vaultsInGroup(group.id)"
             :group="`group-vaults-${group.id}`"
