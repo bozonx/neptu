@@ -233,30 +233,16 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
           :modal="false"
         >
           <div
-            class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer bg-elevated/30 border-l-2 border-l-primary/20 hover:bg-elevated/50 hover:border-l-primary/40 transition-colors"
+            class="group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer border-l-2 border-l-primary/20 hover:border-l-primary/40 transition-colors"
             :class="singleGroupDropTargetId === group.id ? 'bg-primary/10 ring-1 ring-inset ring-primary/40 border-l-primary/40' : ''"
             @click="toggleGroup(group)"
           >
+            <span class="truncate text-xs text-muted flex-1">{{ group.name }}</span>
             <UIcon
               name="i-lucide-chevron-right"
-              class="size-4 text-muted shrink-0 transition-transform"
+              class="size-3 text-muted shrink-0 transition-transform"
               :class="{ 'rotate-90': tabs.expandedGroups[group.id] }"
             />
-            <span class="truncate text-sm font-medium flex-1">{{ group.name }}</span>
-            <UDropdownMenu
-              :items="groupMenuItems(group)"
-              :modal="false"
-              size="xs"
-            >
-              <UButton
-                icon="i-lucide-ellipsis-vertical"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                :title="$t('vault.more')"
-                @click.stop
-              />
-            </UDropdownMenu>
           </div>
         </UContextMenu>
 
