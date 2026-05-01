@@ -44,16 +44,6 @@ const editorStore = useEditorStore()
       class="absolute bg-primary"
       :class="settingsStore.settings.tabDisplayMode === 'left_vertical' ? 'top-0 bottom-0 left-0 w-0.5' : 'bottom-0 left-0 right-0 h-0.5'"
     />
-    <!-- Drag handle -->
-    <span
-      class="tab-sort-handle -ml-1 flex items-center justify-center rounded p-0.5 text-muted/70 hover:text-default cursor-grab active:cursor-grabbing"
-      :title="$t('editor.reorderTabs', 'Reorder tabs')"
-    >
-      <UIcon
-        name="i-lucide-grip-vertical"
-        class="size-3"
-      />
-    </span>
     <!-- Dirty indicator -->
     <span
       v-if="tab.id === activeId && editorStore.buffers[tab.filePath]?.isDirty"

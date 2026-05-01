@@ -205,7 +205,6 @@ const contextMenuItems = (tab: EditorTab) => [
       v-model="draggableTabs"
       group="editor-tabs"
       :animation="150"
-      handle=".tab-sort-handle"
       class="flex flex-1 min-w-4"
       :class="[
         settingsStore.settings.tabDisplayMode === 'left_vertical'

@@ -190,7 +190,6 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
       <VueDraggable
         v-model="draggableUngroupedVaults"
         group="ungrouped-vaults"
-        handle=".vault-sort-handle"
         :animation="150"
       >
         <VaultSidebarItem
@@ -219,7 +218,6 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
     <VueDraggable
       v-model="draggableGroups"
       group="vault-groups"
-      handle=".group-sort-handle"
       :animation="150"
     >
       <div
@@ -239,10 +237,6 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
             :class="singleGroupDropTargetId === group.id ? 'bg-primary/10 ring-1 ring-inset ring-primary/40 border-l-primary/40' : ''"
             @click="toggleGroup(group)"
           >
-            <UIcon
-              name="i-lucide-grip-vertical"
-              class="size-3.5 text-muted/50 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing shrink-0 group-sort-handle"
-            />
             <UIcon
               name="i-lucide-chevron-right"
               class="size-4 text-muted shrink-0 transition-transform"
@@ -274,7 +268,6 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
           <VueDraggable
             :model-value="vaultsInGroup(group.id)"
             :group="`group-vaults-${group.id}`"
-            handle=".vault-sort-handle"
             :animation="150"
             @update:model-value="vaults.updateVaultsOrder($event)"
           >
