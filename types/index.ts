@@ -110,6 +110,8 @@ export interface Vault {
   groupId?: string
   /** Content structure type */
   contentType?: ContentType
+  /** FQID of a registered content structure used when contentType is custom */
+  contentStructureId?: string
   /** Relative folder inside the vault that is treated as the content root (e.g. "src") */
   contentFolder?: string
   /** Language mode for informational sites */
@@ -330,6 +332,7 @@ export interface AddVaultPayload {
   gitMode?: 'init' | 'connect'
   git?: GitVaultSettings
   contentType?: ContentType
+  contentStructureId?: string
   contentFolder?: string
   siteLangMode?: SiteLangMode
   filters?: FileFilterSettings

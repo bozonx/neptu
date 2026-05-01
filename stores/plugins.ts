@@ -3,6 +3,7 @@ import { shallowRef, ref, computed } from 'vue'
 import type {
   Plugin,
   PluginManifest,
+  RegisteredContentStructure,
   RegisteredLeftSidebarView,
   RegisteredModal,
   RegisteredRightSidebarView,
@@ -10,6 +11,115 @@ import type {
   RegisteredSidebarButton,
   SidebarButtonLocation,
 } from '~/types/plugin'
+
+const coreContentStructures: RegisteredContentStructure[] = [
+  {
+    id: 'astro-content',
+    pluginId: 'core',
+    fqid: 'core:astro-content',
+    label: 'Astro Content',
+    descriptionKey: 'vault.contentStructureAstroDesc',
+    order: 10,
+    config: {
+      version: 1,
+      contentRoot: 'src/content',
+      mediaDir: {
+        mode: 'global-folder',
+        folder: 'public/media',
+        naming: 'document-index',
+      },
+      excludes: ['node_modules', 'dist', '.astro'],
+    },
+  },
+  {
+    id: 'nuxt-content',
+    pluginId: 'core',
+    fqid: 'core:nuxt-content',
+    label: 'Nuxt Content',
+    descriptionKey: 'vault.contentStructureNuxtContentDesc',
+    order: 20,
+    config: {
+      version: 1,
+      contentRoot: 'content',
+      mediaDir: {
+        mode: 'global-folder',
+        folder: 'public/media',
+        naming: 'document-index',
+      },
+      excludes: ['node_modules', '.nuxt', '.output'],
+    },
+  },
+  {
+    id: 'docusaurus',
+    pluginId: 'core',
+    fqid: 'core:docusaurus',
+    label: 'Docusaurus',
+    descriptionKey: 'vault.contentStructureDocusaurusDesc',
+    order: 30,
+    config: {
+      version: 1,
+      mediaDir: {
+        mode: 'global-folder',
+        folder: 'static/img',
+        naming: 'document-index',
+      },
+      excludes: ['node_modules', 'build', '.docusaurus'],
+    },
+  },
+  {
+    id: 'hugo',
+    pluginId: 'core',
+    fqid: 'core:hugo',
+    label: 'Hugo',
+    descriptionKey: 'vault.contentStructureHugoDesc',
+    order: 40,
+    config: {
+      version: 1,
+      contentRoot: 'content',
+      mediaDir: {
+        mode: 'global-folder',
+        folder: 'static/media',
+        naming: 'document-index',
+      },
+      excludes: ['public', 'resources', 'node_modules'],
+    },
+  },
+  {
+    id: 'jekyll',
+    pluginId: 'core',
+    fqid: 'core:jekyll',
+    label: 'Jekyll',
+    descriptionKey: 'vault.contentStructureJekyllDesc',
+    order: 50,
+    config: {
+      version: 1,
+      mediaDir: {
+        mode: 'global-folder',
+        folder: 'assets/media',
+        naming: 'document-index',
+      },
+      excludes: ['_site', '.jekyll-cache', 'vendor', 'node_modules'],
+    },
+  },
+  {
+    id: 'eleventy',
+    pluginId: 'core',
+    fqid: 'core:eleventy',
+    label: 'Eleventy',
+    descriptionKey: 'vault.contentStructureEleventyDesc',
+    order: 60,
+    config: {
+      version: 1,
+      contentRoot: 'src',
+      mediaDir: {
+        mode: 'global-folder',
+        folder: 'src/assets/media',
+        naming: 'document-index',
+      },
+      excludes: ['_site', 'node_modules'],
+    },
+  },
+]
 
 interface LoadedPlugin {
   manifest: PluginManifest
@@ -35,6 +145,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   const leftSidebarViews = shallowRef<RegisteredLeftSidebarView[]>([])
   const rightSidebarViews = shallowRef<RegisteredRightSidebarView[]>([])
   const settingsTabs = shallowRef<RegisteredSettingsTab[]>([])
+  const contentStructures = shallowRef<RegisteredContentStructure[]>(coreContentStructures)
   const modals = shallowRef<RegisteredModal[]>([])
   const activeLeftSidebarView = ref<string | null>(null)
   const activeRightSidebarView = ref<string | null>(null)
@@ -47,6 +158,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   const sortedLeftSidebarViews = computed(() => sortByOrder(leftSidebarViews.value))
   const sortedRightSidebarViews = computed(() => sortByOrder(rightSidebarViews.value))
   const sortedSettingsTabs = computed(() => sortByOrder(settingsTabs.value))
+  const sortedContentStructures = computed(() => sortByOrder(contentStructures.value))
 
   /** Currently active left-sidebar view. Null means the built-in Files panel. */
   const resolvedActiveLeftSidebarView = computed(() => {
@@ -104,6 +216,13 @@ export const usePluginsStore = defineStore('plugins', () => {
     }
   }
 
+  function registerContentStructure(structure: RegisteredContentStructure) {
+    contentStructures.value = [...contentStructures.value.filter((item) => item.fqid !== structure.fqid), structure]
+    return () => {
+      contentStructures.value = contentStructures.value.filter((item) => item.fqid !== structure.fqid)
+    }
+  }
+
   function pushModal(modal: RegisteredModal) {
     modals.value = [...modals.value, modal]
   }
@@ -152,6 +271,10 @@ export const usePluginsStore = defineStore('plugins', () => {
     loaded.value.delete(pluginId)
     // Drop any modals still owned by this plugin.
     modals.value = modals.value.filter((m) => m.pluginId !== pluginId)
+    sidebarButtons.value = sidebarButtons.value.filter((b) => b.pluginId !== pluginId)
+    rightSidebarViews.value = rightSidebarViews.value.filter((v) => v.pluginId !== pluginId)
+    settingsTabs.value = settingsTabs.value.filter((t) => t.pluginId !== pluginId)
+    contentStructures.value = contentStructures.value.filter((s) => s.pluginId !== pluginId)
     // Drop any left sidebar views still owned by this plugin.
     const removedLsView = leftSidebarViews.value.find((v) => v.pluginId === pluginId)
     if (removedLsView) {
@@ -167,6 +290,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     leftSidebarViews,
     rightSidebarViews,
     settingsTabs,
+    contentStructures,
     modals,
     activeLeftSidebarView,
     activeRightSidebarView,
@@ -175,6 +299,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     sortedLeftSidebarViews,
     sortedRightSidebarViews,
     sortedSettingsTabs,
+    sortedContentStructures,
     resolvedActiveLeftSidebarView,
     resolvedActiveRightSidebarView,
     setActiveLeftSidebarView,
@@ -183,6 +308,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     registerLeftSidebarView,
     registerRightSidebarView,
     registerSettingsTab,
+    registerContentStructure,
     pushModal,
     closeModal,
     load,

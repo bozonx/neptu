@@ -10,6 +10,7 @@ export function useSidebarDialogs() {
   const vaults = useVaultsStore()
   const editor = useEditorStore()
   const git = useGitStore()
+  const plugins = usePluginsStore()
   const toast = useToast()
   const { t } = useI18n()
 
@@ -24,6 +25,7 @@ export function useSidebarDialogs() {
   const newCommitMode = ref<GitCommitMode>('respect_config')
   const newCommitDebounceSec = ref(5)
   const newContentType = ref<ContentType>('vault')
+  const newContentStructureId = ref('custom')
   const newContentFolder = ref('src')
   const newSiteLangMode = ref<SiteLangMode>('monolingual')
   const newOverrideFilters = ref(false)
@@ -61,6 +63,24 @@ export function useSidebarDialogs() {
     { label: t('vault.contentTypeCustom'), value: 'custom' as const },
   ]
 
+  const contentStructureItems = computed(() => [
+    { label: t('vault.contentStructureCustom'), value: 'custom' },
+    ...plugins.sortedContentStructures.map((structure) => ({
+      label: structure.label,
+      value: structure.fqid,
+    })),
+  ])
+
+  const selectedNewContentStructure = computed(() =>
+    plugins.sortedContentStructures.find((structure) => structure.fqid === newContentStructureId.value) ?? null,
+  )
+
+  const selectedNewContentStructureDescription = computed(() => {
+    const structure = selectedNewContentStructure.value
+    if (!structure) return ''
+    return structure.descriptionKey ? t(structure.descriptionKey) : structure.description ?? ''
+  })
+
   const siteLangModeItems = [
     { label: t('vault.siteLangMonolingual'), value: 'monolingual' as const },
     { label: t('vault.siteLangMultilingual'), value: 'multilingual' as const },
@@ -86,6 +106,7 @@ export function useSidebarDialogs() {
     newCommitMode.value = 'respect_config'
     newCommitDebounceSec.value = settings.settings.defaultCommitDebounceMs / 1000
     newContentType.value = 'vault'
+    newContentStructureId.value = 'custom'
     newContentFolder.value = 'src'
     newSiteLangMode.value = 'monolingual'
     newOverrideFilters.value = false
@@ -107,6 +128,10 @@ export function useSidebarDialogs() {
 
   function setNewCustomExt(value: string) {
     newCustomExt.value = value
+  }
+
+  function setNewContentStructureId(value: string) {
+    newContentStructureId.value = value
   }
 
   function setNewOverrideMediaDir(value: boolean | 'indeterminate') {
@@ -203,6 +228,7 @@ export function useSidebarDialogs() {
             }
           : undefined,
         contentType: newContentType.value,
+        contentStructureId: newContentType.value === 'custom' ? newContentStructureId.value : undefined,
         contentFolder: newContentType.value !== 'vault' && newOverrideContentFolder.value
           ? newContentFolder.value
           : undefined,
@@ -416,11 +442,16 @@ export function useSidebarDialogs() {
     commitModeItems,
     showCommitDebounce,
     contentTypeItems,
+    contentStructureItems,
+    selectedNewContentStructure,
+    selectedNewContentStructureDescription,
+    newContentStructureId,
     siteLangModeItems,
     mediaModeItems,
     mediaNamingItems,
     formatEnabledExtensions,
     setNewCustomExt,
+    setNewContentStructureId,
     setNewOverrideMediaDir,
     setNewMediaMode,
     setNewMediaFolder,

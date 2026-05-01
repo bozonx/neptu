@@ -68,6 +68,25 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           <p class="text-xs text-muted">
             {{ $t('vault.contentTypeCustomDesc') }}
           </p>
+          <UFormField :label="$t('vault.contentStructure')">
+            <URadioGroup
+              :model-value="ctx.newContentStructureId.value"
+              :items="ctx.contentStructureItems.value"
+              @update:model-value="ctx.setNewContentStructureId"
+            />
+          </UFormField>
+          <p
+            v-if="ctx.selectedNewContentStructure.value"
+            class="text-xs text-muted"
+          >
+            {{ ctx.selectedNewContentStructureDescription.value }}
+          </p>
+          <p
+            v-else
+            class="text-xs text-muted"
+          >
+            {{ $t('vault.contentStructureCustomDesc') }}
+          </p>
           <UFormField :label="$t('vault.siteLangMode')">
             <URadioGroup
               v-model="ctx.newSiteLangMode.value"
@@ -342,6 +361,25 @@ defineProps<{ ctx: SidebarDialogsContext }>()
         <template v-if="ctx.newContentType.value === 'custom'">
           <p class="text-xs text-muted">
             {{ $t('vault.contentTypeCustomDesc') }}
+          </p>
+          <UFormField :label="$t('vault.contentStructure')">
+            <URadioGroup
+              :model-value="ctx.newContentStructureId.value"
+              :items="ctx.contentStructureItems.value"
+              @update:model-value="ctx.setNewContentStructureId"
+            />
+          </UFormField>
+          <p
+            v-if="ctx.selectedNewContentStructure.value"
+            class="text-xs text-muted"
+          >
+            {{ ctx.selectedNewContentStructureDescription.value }}
+          </p>
+          <p
+            v-else
+            class="text-xs text-muted"
+          >
+            {{ $t('vault.contentStructureCustomDesc') }}
           </p>
           <UFormField :label="$t('vault.siteLangMode')">
             <URadioGroup

@@ -1,4 +1,5 @@
 import type { Component } from 'vue'
+import type { VaultConfig } from './vault-config'
 
 /**
  * Locations where plugins may register toolbar buttons.
@@ -75,6 +76,18 @@ export interface ModalSpec {
   onClose?: () => void
 }
 
+export interface ContentStructureSpec {
+  /** Id unique within the plugin. */
+  id: string
+  label: string
+  description?: string
+  descriptionKey?: string
+  /** Lower first. Defaults to 100. */
+  order?: number
+  /** Template written to .neptu-vault.yaml when selected. */
+  config: VaultConfig
+}
+
 /**
  * Registered variants carry the fully qualified id (`${pluginId}:${spec.id}`)
  * plus owner metadata so the registry can perform scoped operations
@@ -105,6 +118,11 @@ export interface RegisteredModal extends ModalSpec {
   fqid: string
 }
 
+export interface RegisteredContentStructure extends ContentStructureSpec {
+  pluginId: string
+  fqid: string
+}
+
 export interface PluginAPI {
   ui: {
     /** Register a toolbar button. Returns a dispose fn. */
@@ -123,6 +141,10 @@ export interface PluginAPI {
     get: <T = unknown>() => Promise<T | null>
     /** Persist state for this plugin (debounced). */
     set: <T = unknown>(value: T) => Promise<void>
+  }
+  content: {
+    /** Register a selectable content structure. Returns a dispose fn. */
+    addStructure: (spec: ContentStructureSpec) => () => void
   }
 }
 

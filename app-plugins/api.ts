@@ -4,6 +4,7 @@ import type {
   Plugin,
   PluginAPI,
   PluginContext,
+  ContentStructureSpec,
   PluginManifest,
   RightSidebarViewSpec,
   SettingsTabSpec,
@@ -76,6 +77,15 @@ export function createPluginAPI(manifest: PluginManifest): PluginAPI {
         const settings = useSettingsStore()
         if (!settings.mainRepoPath) return Promise.resolve()
         return config.savePluginState<T>(settings.mainRepoPath, pluginId, value)
+      },
+    },
+    content: {
+      addStructure(spec: ContentStructureSpec) {
+        return store.registerContentStructure({
+          ...spec,
+          pluginId,
+          fqid: fqid(pluginId, spec.id),
+        })
       },
     },
   }

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { load } from 'js-yaml'
+import { dump, load } from 'js-yaml'
 import {
   DEFAULT_FILE_FILTERS,
   type AddVaultPayload,
@@ -169,7 +169,15 @@ export const useVaultsStore = defineStore('vaults', () => {
     await refreshAllTrees()
   }
 
-  function getTemplateYaml(contentType?: string): string {
+  function getContentStructureConfig(contentStructureId?: string): VaultConfig | null {
+    if (!contentStructureId || contentStructureId === 'custom') return null
+    return usePluginsStore().contentStructures.find((structure) => structure.fqid === contentStructureId)?.config ?? null
+  }
+
+  function getTemplateYaml(contentType?: string, contentStructureId?: string): string {
+    const structureConfig = contentType === 'custom' ? getContentStructureConfig(contentStructureId) : null
+    if (structureConfig) return dump(structureConfig, { noRefs: true, lineWidth: 100 })
+
     switch (contentType) {
       case 'blog': return blogTemplateRaw
       case 'site': return siteTemplateRaw
@@ -178,7 +186,10 @@ export const useVaultsStore = defineStore('vaults', () => {
     }
   }
 
-  function getFallbackTemplateConfig(contentType?: string): VaultConfig {
+  function getFallbackTemplateConfig(contentType?: string, contentStructureId?: string): VaultConfig {
+    const structureConfig = contentType === 'custom' ? getContentStructureConfig(contentStructureId) : null
+    if (structureConfig) return structureConfig
+
     switch (contentType) {
       case 'blog': return BLOG_VAULT_CONFIG
       case 'site': return SITE_VAULT_CONFIG
@@ -187,10 +198,10 @@ export const useVaultsStore = defineStore('vaults', () => {
     }
   }
 
-  function getTemplateConfig(contentType?: string): VaultConfig {
-    const parsed = normalizeVaultConfig(load(getTemplateYaml(contentType)))
+  function getTemplateConfig(contentType?: string, contentStructureId?: string): VaultConfig {
+    const parsed = normalizeVaultConfig(load(getTemplateYaml(contentType, contentStructureId)))
     if (isValidVaultConfig(parsed)) return parsed
-    return getFallbackTemplateConfig(contentType)
+    return getFallbackTemplateConfig(contentType, contentStructureId)
   }
 
   function normalizeVaultConfig(config: unknown): unknown {
@@ -202,15 +213,15 @@ export const useVaultsStore = defineStore('vaults', () => {
     return raw
   }
 
-  async function writeVaultTemplate(path: string, contentType?: string) {
-    await useFs().writeText(path, getTemplateYaml(contentType))
+  async function writeVaultTemplate(path: string, contentType?: string, contentStructureId?: string) {
+    await useFs().writeText(path, getTemplateYaml(contentType, contentStructureId))
   }
 
   async function ensureVaultMarker(vault: Vault) {
     const fs = useFs()
     const markerPath = await fs.join(vault.path, '.neptu-vault.yaml')
     if (!(await fs.exists(markerPath))) {
-      await writeVaultTemplate(markerPath, vault.contentType)
+      await writeVaultTemplate(markerPath, vault.contentType, vault.contentStructureId)
     }
   }
 
@@ -240,17 +251,23 @@ export const useVaultsStore = defineStore('vaults', () => {
     vaultConfigs.value[vault.id] = config
   }
 
-  async function changeVaultType(vault: Vault, newContentType: ContentType): Promise<void> {
+  async function changeVaultType(vault: Vault, newContentType: ContentType, newContentStructureId?: string): Promise<void> {
     const fs = useFs()
     const markerPath = await fs.join(vault.path, '.neptu-vault.yaml')
     if (await fs.exists(markerPath)) {
       await fs.deleteFile(markerPath)
     }
     vault.contentType = newContentType
+    if (newContentType === 'custom' && newContentStructureId && newContentStructureId !== 'custom') {
+      vault.contentStructureId = newContentStructureId
+    }
+    else {
+      delete vault.contentStructureId
+    }
     delete vault.contentFolder
     delete vault.filters
     delete vault.excludes
-    await writeVaultTemplate(markerPath, newContentType)
+    await writeVaultTemplate(markerPath, newContentType, vault.contentStructureId)
     await loadVaultConfig(vault)
     await refreshTree(vault)
     await useSettingsStore().persist()
@@ -283,6 +300,9 @@ export const useVaultsStore = defineStore('vaults', () => {
       type: payload.type,
       path: payload.path,
       contentType: payload.contentType ?? 'vault',
+      contentStructureId: payload.contentType === 'custom' && payload.contentStructureId !== 'custom'
+        ? payload.contentStructureId
+        : undefined,
       contentFolder: payload.contentFolder,
       siteLangMode: payload.siteLangMode,
       filters: payload.filters,
@@ -338,7 +358,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function updateVault(
     id: string,
-    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentFolder' | 'siteLangMode' | 'excludes' | 'mediaDir'>> & { git?: GitVaultSettings },
+    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentStructureId' | 'contentFolder' | 'siteLangMode' | 'excludes' | 'mediaDir'>> & { git?: GitVaultSettings },
   ) {
     const vault = findById(id)
     if (!vault) return
@@ -379,6 +399,15 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     if (updates.contentType !== undefined) {
       vault.contentType = updates.contentType
+      needsRefresh = true
+    }
+    if (updates.contentStructureId !== undefined) {
+      if (updates.contentStructureId === null) {
+        delete vault.contentStructureId
+      }
+      else {
+        vault.contentStructureId = updates.contentStructureId
+      }
       needsRefresh = true
     }
     if (updates.contentFolder !== undefined) {
