@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_FILE_FILTERS } from '~/types'
-import type { ContentType, FileFilterGroup, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, Vault } from '~/types'
+import type { FileFilterGroup, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, Vault } from '~/types'
 
 const props = defineProps<{
   vault: Vault | null
@@ -16,7 +16,6 @@ const emit = defineEmits<{
 const settings = useSettingsStore()
 const vaults = useVaultsStore()
 const tabs = useTabsStore()
-const plugins = usePluginsStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -26,8 +25,6 @@ const editCommitMode = ref<GitCommitMode>('respect_config')
 const editCommitDebounceSec = ref(5)
 const editingCommitDebounce = ref(false)
 const editFilters = ref(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
-const editContentType = ref<ContentType>('vault')
-const editContentStructureId = ref('custom')
 const editContentFolder = ref('src')
 const editExcludes = ref<string[]>([])
 const editMediaMode = ref<MediaUploadMode>('adjacent-folder')
@@ -36,9 +33,6 @@ const editMediaNaming = ref<MediaNamingMode>('original')
 const newExclude = ref('')
 const newCustomExt = ref('')
 const showNameInput = ref(false)
-const changeTypeConfirmOpen = ref(false)
-const pendingContentType = ref<ContentType | null>(null)
-const pendingContentStructureId = ref<string | undefined>()
 
 const editingContentFolder = ref(false)
 const editingFilters = ref(false)
@@ -57,9 +51,6 @@ watch(
     editCommitMode.value = vault.git?.commitMode ?? 'respect_config'
     editCommitDebounceSec.value = (vault.git?.commitDebounceMs ?? settings.settings.defaultCommitDebounceMs) / 1000
     editingCommitDebounce.value = vault.git?.commitDebounceMs !== undefined
-    editContentType.value = vault.contentType ?? 'vault'
-    editContentStructureId.value = vault.contentStructureId ?? 'custom'
-
     // Initialize from effective values (may come from .neptu-vault.yaml or Vault overrides)
     editFilters.value = JSON.parse(JSON.stringify(vaults.getEffectiveFilters(vault)))
     editingFilters.value = vault.filters !== undefined
@@ -136,8 +127,6 @@ async function save() {
           }
         : undefined,
       filters: editingFilters.value ? editFilters.value : null as never,
-      contentType: editContentType.value,
-      contentStructureId: editContentType.value === 'custom' && editContentStructureId.value !== 'custom' ? editContentStructureId.value : null as never,
       contentFolder: editingContentFolder.value ? (editContentFolder.value || undefined) : null as never,
       excludes: editingExcludes.value ? editExcludes.value : null as never,
       mediaDir: editingMediaDir.value
@@ -161,7 +150,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentStructureId, editContentFolder, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentFolder, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -173,35 +162,6 @@ watch(open, (val) => {
   if (!val) emit('close')
 })
 
-watch(editContentType, (newVal, oldVal) => {
-  if (skipNextWatch || !open.value || !props.vault || newVal === oldVal) return
-  if (newVal !== props.vault.contentType) {
-    pendingContentType.value = newVal
-    pendingContentStructureId.value = newVal === 'custom' && editContentStructureId.value !== 'custom' ? editContentStructureId.value : undefined
-    skipNextWatch = true
-    editContentType.value = oldVal
-    nextTick(() => {
-      skipNextWatch = false
-    })
-    changeTypeConfirmOpen.value = true
-  }
-})
-
-watch(editContentStructureId, (newVal, oldVal) => {
-  if (skipNextWatch || !open.value || !props.vault || editContentType.value !== 'custom' || newVal === oldVal) return
-  const currentStructureId = props.vault.contentStructureId ?? 'custom'
-  if (newVal !== currentStructureId) {
-    pendingContentType.value = 'custom'
-    pendingContentStructureId.value = newVal !== 'custom' ? newVal : undefined
-    skipNextWatch = true
-    editContentStructureId.value = oldVal
-    nextTick(() => {
-      skipNextWatch = false
-    })
-    changeTypeConfirmOpen.value = true
-  }
-})
-
 async function openVaultFile() {
   if (!props.vault) return
   try {
@@ -211,26 +171,6 @@ async function openVaultFile() {
   }
   catch (error) {
     toast.add({ title: t('vault.openVaultFileFailed'), description: String(error), color: 'error' })
-  }
-}
-
-async function confirmChangeType() {
-  if (!props.vault || !pendingContentType.value) return
-  try {
-    await vaults.changeVaultType(props.vault, pendingContentType.value, pendingContentStructureId.value)
-    skipNextWatch = true
-    editContentType.value = pendingContentType.value
-    editContentStructureId.value = pendingContentStructureId.value ?? 'custom'
-    nextTick(() => {
-      skipNextWatch = false
-    })
-    changeTypeConfirmOpen.value = false
-    pendingContentType.value = null
-    pendingContentStructureId.value = undefined
-    toast.add({ title: t('vault.typeChanged'), color: 'success' })
-  }
-  catch (error) {
-    toast.add({ title: t('vault.typeChangeFailed'), description: String(error), color: 'error' })
   }
 }
 
@@ -248,31 +188,6 @@ const showCommitDebounce = computed(() =>
   editCommitMode.value === 'auto'
   || (editCommitMode.value === 'respect_config' && settings.settings.defaultCommitMode === 'auto'),
 )
-
-const contentTypeItems = [
-  { label: t('vault.contentTypeVault'), value: 'vault' as const },
-  { label: t('vault.contentTypeBlog'), value: 'blog' as const },
-  { label: t('vault.contentTypeSite'), value: 'site' as const },
-  { label: t('vault.contentTypeCustom'), value: 'custom' as const },
-]
-
-const contentStructureItems = computed(() => [
-  { label: t('vault.contentStructureCustom'), value: 'custom' },
-  ...plugins.sortedContentStructures.map((structure) => ({
-    label: structure.label,
-    value: structure.fqid,
-  })),
-])
-
-const selectedEditContentStructure = computed(() =>
-  plugins.sortedContentStructures.find((structure) => structure.fqid === editContentStructureId.value) ?? null,
-)
-
-const selectedEditContentStructureDescription = computed(() => {
-  const structure = selectedEditContentStructure.value
-  if (!structure) return ''
-  return structure.descriptionKey ? t(structure.descriptionKey) : structure.description ?? ''
-})
 
 const mediaModeItems = [
   { label: t('vault.mediaModeGlobal'), value: 'global-folder' as const },
@@ -401,61 +316,6 @@ const mediaNamingItems = [
             </UFormField>
           </section>
         </template>
-
-        <section class="space-y-3">
-          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-            {{ $t('vault.contentType') }}
-          </h3>
-          <UFormField :label="$t('vault.contentType')">
-            <ButtonGroupToggle
-              v-model="editContentType"
-              :items="contentTypeItems"
-            />
-          </UFormField>
-
-          <p
-            v-if="editContentType === 'vault'"
-            class="text-xs text-muted"
-          >
-            {{ $t('vault.contentTypeVaultDesc') }}
-          </p>
-
-          <template v-if="editContentType === 'blog'">
-            <p class="text-xs text-muted">
-              {{ $t('vault.contentTypeBlogDesc') }}
-            </p>
-          </template>
-
-          <template v-if="editContentType === 'site'">
-            <p class="text-xs text-muted">
-              {{ $t('vault.contentTypeSiteDesc') }}
-            </p>
-          </template>
-
-          <template v-if="editContentType === 'custom'">
-            <p class="text-xs text-muted">
-              {{ $t('vault.contentTypeCustomDesc') }}
-            </p>
-            <UFormField :label="$t('vault.contentStructure')">
-              <URadioGroup
-                v-model="editContentStructureId"
-                :items="contentStructureItems"
-              />
-            </UFormField>
-            <p
-              v-if="selectedEditContentStructure"
-              class="text-xs text-muted"
-            >
-              {{ selectedEditContentStructureDescription }}
-            </p>
-            <p
-              v-else
-              class="text-xs text-muted"
-            >
-              {{ $t('vault.contentStructureCustomDesc') }}
-            </p>
-          </template>
-        </section>
 
         <section class="space-y-3">
           <UButton
@@ -803,32 +663,4 @@ const mediaNamingItems = [
       </div>
     </template>
   </USlideover>
-
-  <UModal
-    v-model:open="changeTypeConfirmOpen"
-    :title="$t('vault.changeTypeTitle')"
-  >
-    <template #body>
-      <p class="text-sm">
-        {{ $t('vault.changeTypeConfirm', { name: vault?.name }) }}
-      </p>
-      <p class="text-xs text-muted mt-1">
-        {{ $t('vault.changeTypeHint') }}
-      </p>
-    </template>
-    <template #footer>
-      <div class="flex justify-end gap-2 w-full">
-        <UButton
-          color="neutral"
-          variant="ghost"
-          :label="$t('vault.cancel')"
-          @click="changeTypeConfirmOpen = false; pendingContentType = null; pendingContentStructureId = undefined"
-        />
-        <UButton
-          :label="$t('vault.change')"
-          @click="confirmChangeType"
-        />
-      </div>
-    </template>
-  </UModal>
 </template>
