@@ -1,1 +1,6 @@
 version: 1
+
+media-dir:
+  mode: adjacent-folder
+  folder: media
+  naming: original

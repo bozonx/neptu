@@ -131,6 +131,7 @@
     "overrideContentFolder": "Переопределить папку контента",
     "overrideFileFilters": "Переопределить фильтры файлов",
     "overrideExcludes": "Переопределить исключённые пути",
+    "overrideMediaDir": "Переопределить настройки загрузки медиа",
     "contentTypeCustom": "Произвольный",
     "contentTypeCustomDesc": "Произвольная структура. Вы сами задаете папку контента и фильтры. Также можно настроить режим языков.",
     "siteLangMode": "Режим языков сайта",
@@ -148,7 +149,19 @@
     "noExcludes": "Нет исключённых путей",
     "excludes": "Исключённые пути",
     "excludesHint": "Пути относительно корня хранилища, которые будут скрыты из дерева файлов.",
-    "excludePlaceholder": "папка/подпапка или файл.md"
+    "excludePlaceholder": "папка/подпапка или файл.md",
+    "mediaDir": "Загрузка медиа",
+    "mediaMode": "Куда сохранять",
+    "mediaFolder": "Папка",
+    "mediaNaming": "Имена файлов",
+    "mediaModeGlobal": "Папка в хранилище",
+    "mediaModeAdjacent": "Рядом с документом",
+    "mediaModeAdjacentFolder": "Папка медиа рядом с документом",
+    "mediaNamingOriginal": "Оставлять исходное имя",
+    "mediaNamingDocumentIndex": "Имя документа + индекс",
+    "mediaNamingHash": "Уникальный хэш",
+    "mediaGlobalFolderHint": "Путь относительно корня хранилища.",
+    "mediaAdjacentFolderHint": "Имя подпапки рядом с текущим документом."
   },
   "settings": {
     "title": "Настройки",

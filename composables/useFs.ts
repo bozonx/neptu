@@ -3,6 +3,7 @@ import {
   exists,
   mkdir,
   readDir,
+  readFile,
   readTextFile,
   remove,
   rename,
@@ -43,6 +44,10 @@ export function useFs() {
 
   async function readText(path: string) {
     return await readTextFile(path)
+  }
+
+  async function readBytes(path: string) {
+    return await readFile(path)
   }
 
   async function writeText(path: string, content: string) {
@@ -311,6 +316,7 @@ export function useFs() {
     ensureDir,
     exists,
     readText,
+    readBytes,
     writeText,
     readYaml,
     writeYaml,

@@ -1,5 +1,5 @@
 import { DEFAULT_FILE_FILTERS } from '~/types'
-import type { ContentType, FileFilterGroup, FileFilterSettings, FileNode, GitCommitMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
+import type { ContentType, FileFilterGroup, FileFilterSettings, FileNode, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
 
 /**
  * Composable that manages all sidebar dialog state and CRUD actions.
@@ -29,6 +29,10 @@ export function useSidebarDialogs() {
   const newOverrideFilters = ref(false)
   const newOverrideExcludes = ref(false)
   const newOverrideContentFolder = ref(false)
+  const newOverrideMediaDir = ref(false)
+  const newMediaMode = ref<MediaUploadMode>('adjacent-folder')
+  const newMediaFolder = ref('media')
+  const newMediaNaming = ref<MediaNamingMode>('original')
   const newFilters = ref<FileFilterSettings>(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
   const newExcludes = ref<string[]>([])
   const newExcludeInput = ref('')
@@ -62,6 +66,18 @@ export function useSidebarDialogs() {
     { label: t('vault.siteLangMultilingual'), value: 'multilingual' as const },
   ]
 
+  const mediaModeItems = [
+    { label: t('vault.mediaModeGlobal'), value: 'global-folder' as const },
+    { label: t('vault.mediaModeAdjacent'), value: 'adjacent' as const },
+    { label: t('vault.mediaModeAdjacentFolder'), value: 'adjacent-folder' as const },
+  ]
+
+  const mediaNamingItems = [
+    { label: t('vault.mediaNamingOriginal'), value: 'original' as const },
+    { label: t('vault.mediaNamingDocumentIndex'), value: 'document-index' as const },
+    { label: t('vault.mediaNamingHash'), value: 'hash' as const },
+  ]
+
   function resetAddForm(type: VaultType = 'local') {
     newVaultName.value = ''
     newVaultPath.value = null
@@ -75,6 +91,10 @@ export function useSidebarDialogs() {
     newOverrideFilters.value = false
     newOverrideExcludes.value = false
     newOverrideContentFolder.value = false
+    newOverrideMediaDir.value = false
+    newMediaMode.value = 'adjacent-folder'
+    newMediaFolder.value = 'media'
+    newMediaNaming.value = 'original'
     newFilters.value = JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
     newExcludes.value = []
     newExcludeInput.value = ''
@@ -87,6 +107,26 @@ export function useSidebarDialogs() {
 
   function setNewCustomExt(value: string) {
     newCustomExt.value = value
+  }
+
+  function setNewOverrideMediaDir(value: boolean | 'indeterminate') {
+    if (typeof value === 'boolean') newOverrideMediaDir.value = value
+  }
+
+  function setNewMediaMode(value: string) {
+    if (value === 'adjacent' || value === 'adjacent-folder' || value === 'global-folder') {
+      newMediaMode.value = value
+    }
+  }
+
+  function setNewMediaFolder(value: string | number) {
+    newMediaFolder.value = String(value)
+  }
+
+  function setNewMediaNaming(value: string) {
+    if (value === 'original' || value === 'document-index' || value === 'hash') {
+      newMediaNaming.value = value
+    }
   }
 
   function findNewFilterGroup(label: string): FileFilterGroup | null {
@@ -169,6 +209,13 @@ export function useSidebarDialogs() {
         siteLangMode: newContentType.value === 'custom' ? newSiteLangMode.value : undefined,
         filters: newOverrideFilters.value ? newFilters.value : undefined,
         excludes: newOverrideExcludes.value ? newExcludes.value : undefined,
+        mediaDir: newOverrideMediaDir.value
+          ? {
+            mode: newMediaMode.value,
+            folder: newMediaMode.value === 'adjacent' ? undefined : newMediaFolder.value,
+            naming: newMediaNaming.value,
+          } satisfies MediaDirSettings
+          : undefined,
       })
       addLocalVaultOpen.value = false
       addGitVaultOpen.value = false
@@ -357,6 +404,10 @@ export function useSidebarDialogs() {
     newOverrideFilters,
     newOverrideExcludes,
     newOverrideContentFolder,
+    newOverrideMediaDir,
+    newMediaMode,
+    newMediaFolder,
+    newMediaNaming,
     newFilters,
     newExcludes,
     newExcludeInput,
@@ -366,8 +417,14 @@ export function useSidebarDialogs() {
     showCommitDebounce,
     contentTypeItems,
     siteLangModeItems,
+    mediaModeItems,
+    mediaNamingItems,
     formatEnabledExtensions,
     setNewCustomExt,
+    setNewOverrideMediaDir,
+    setNewMediaMode,
+    setNewMediaFolder,
+    setNewMediaNaming,
     setNewFilterGroupEnabled,
     setNewFilterExtensionEnabled,
     addNewCustomExtension,

@@ -7,6 +7,7 @@ import {
   type FileFilterSettings,
   type FileNode,
   type GitVaultSettings,
+  type MediaDirSettings,
   type Vault,
   type VaultGroup,
 } from '~/types'
@@ -48,6 +49,51 @@ function replacePathPrefix(path: string, oldPrefix: string, newPrefix: string): 
 
   const targetBase = newPrefix.endsWith('/') || newPrefix.endsWith('\\') ? newPrefix.slice(0, -1) : newPrefix
   return `${targetBase}/${path.slice(sep.length)}`
+}
+
+function stripTrailingSlash(path: string): string {
+  return path.replace(/[/\\]+$/, '')
+}
+
+function normalizeRelativePath(path: string): string {
+  return path.trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
+}
+
+function filename(path: string): string {
+  const parts = path.split(/[\\/]/)
+  return parts[parts.length - 1] ?? path
+}
+
+function fileStem(name: string): string {
+  const lastDot = name.lastIndexOf('.')
+  return lastDot > 0 ? name.slice(0, lastDot) : name
+}
+
+function fileExt(name: string): string {
+  const lastDot = name.lastIndexOf('.')
+  return lastDot > 0 ? name.slice(lastDot).toLowerCase() : ''
+}
+
+function sanitizeFilenamePart(value: string): string {
+  return value.trim().replace(/[<>:"/\\|?*]+/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'media'
+}
+
+function relativePath(fromDir: string, toPath: string): string {
+  const from = stripTrailingSlash(fromDir).replace(/\\/g, '/').split('/').filter(Boolean)
+  const to = toPath.replace(/\\/g, '/').split('/').filter(Boolean)
+  while (from.length && to.length && from[0] === to[0]) {
+    from.shift()
+    to.shift()
+  }
+  const rel = [...from.map(() => '..'), ...to].join('/')
+  if (!rel || rel.startsWith('../')) return rel
+  return `./${rel}`
+}
+
+async function hashBytes(bytes: Uint8Array): Promise<string> {
+  const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(digest)).slice(0, 12).map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 /**
@@ -142,9 +188,18 @@ export const useVaultsStore = defineStore('vaults', () => {
   }
 
   function getTemplateConfig(contentType?: string): VaultConfig {
-    const parsed = load(getTemplateYaml(contentType)) as unknown
+    const parsed = normalizeVaultConfig(load(getTemplateYaml(contentType)))
     if (isValidVaultConfig(parsed)) return parsed
     return getFallbackTemplateConfig(contentType)
+  }
+
+  function normalizeVaultConfig(config: unknown): unknown {
+    if (!config || typeof config !== 'object') return config
+    const raw = config as Record<string, unknown>
+    if (raw['media-dir'] !== undefined && raw.mediaDir === undefined) {
+      raw.mediaDir = raw['media-dir']
+    }
+    return raw
   }
 
   async function writeVaultTemplate(path: string, contentType?: string) {
@@ -163,7 +218,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     const fs = useFs()
     const path = await fs.join(vault.path, '.neptu-vault.yaml')
     try {
-      const data = await fs.readYaml<unknown>(path)
+      const data = normalizeVaultConfig(await fs.readYaml<unknown>(path))
       if (isValidVaultConfig(data)) {
         vaultConfigs.value[vault.id] = data
         return data
@@ -232,6 +287,7 @@ export const useVaultsStore = defineStore('vaults', () => {
       siteLangMode: payload.siteLangMode,
       filters: payload.filters,
       excludes: payload.excludes,
+      mediaDir: payload.mediaDir,
     }
 
     if (payload.type === 'git') {
@@ -282,7 +338,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function updateVault(
     id: string,
-    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentFolder' | 'siteLangMode' | 'excludes'>> & { git?: GitVaultSettings },
+    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentFolder' | 'siteLangMode' | 'excludes' | 'mediaDir'>> & { git?: GitVaultSettings },
   ) {
     const vault = findById(id)
     if (!vault) return
@@ -346,6 +402,14 @@ export const useVaultsStore = defineStore('vaults', () => {
         vault.excludes = updates.excludes
       }
       needsRefresh = true
+    }
+    if (updates.mediaDir !== undefined) {
+      if (updates.mediaDir === null) {
+        delete vault.mediaDir
+      }
+      else {
+        vault.mediaDir = updates.mediaDir
+      }
     }
     if (updates.filters !== undefined) {
       if (updates.filters === null) {
@@ -614,6 +678,107 @@ export const useVaultsStore = defineStore('vaults', () => {
     return configRoot
   }
 
+  function getEffectiveMediaDir(vault: Vault): MediaDirSettings {
+    if (vault.mediaDir !== undefined) return { ...vault.mediaDir }
+    const config = vaultConfigs.value[vault.id]
+    const mediaDir = config?.mediaDir
+    if (mediaDir !== undefined) return { ...mediaDir }
+    if (config?.media) {
+      return {
+        mode: config.media.uploadMode,
+        folder: config.media.globalFolder,
+        naming: 'original',
+      }
+    }
+    return {
+      mode: 'adjacent-folder',
+      folder: 'media',
+      naming: 'original',
+    }
+  }
+
+  async function resolveMediaDestination(
+    vault: Vault,
+    documentPath: string,
+    sourcePath: string,
+    index: number,
+  ): Promise<{ destPath: string, markdownPath: string }> {
+    const fs = useFs()
+    const settings = getEffectiveMediaDir(vault)
+    const documentDir = dirname(documentPath)
+    const sourceName = filename(sourcePath)
+    const ext = fileExt(sourceName)
+    const documentStem = sanitizeFilenamePart(fileStem(filename(documentPath)))
+
+    let destDir = documentDir
+    if (settings.mode === 'global-folder') {
+      const folder = normalizeRelativePath(settings.folder || 'media')
+      destDir = await fs.join(stripTrailingSlash(vault.path), folder)
+    }
+    else if (settings.mode === 'adjacent-folder') {
+      const folder = sanitizeFilenamePart(settings.folder || 'media')
+      destDir = await fs.join(documentDir, folder)
+    }
+
+    let baseName: string
+    if (settings.naming === 'document-index') {
+      baseName = `${documentStem}-${index + 1}`
+    }
+    else if (settings.naming === 'hash') {
+      baseName = await hashBytes(await fs.readBytes(sourcePath))
+    }
+    else {
+      baseName = sanitizeFilenamePart(fileStem(sourceName))
+    }
+
+    let candidate = await fs.join(destDir, `${baseName}${ext}`)
+    let suffix = 2
+    while (await fs.exists(candidate)) {
+      candidate = await fs.join(destDir, `${baseName}-${suffix}${ext}`)
+      suffix += 1
+    }
+
+    return {
+      destPath: candidate,
+      markdownPath: relativePath(documentDir, candidate),
+    }
+  }
+
+  async function importMediaFilesForDocument(paths: string[], documentPath: string): Promise<Array<{ path: string, markdownPath: string }>> {
+    const vault = findVaultForPath(documentPath)
+    if (!vault) return []
+
+    const fs = useFs()
+    const imported: Array<{ path: string, markdownPath: string }> = []
+
+    for (let i = 0; i < paths.length; i++) {
+      const sourcePath = paths[i]!
+      try {
+        const { destPath, markdownPath } = await resolveMediaDestination(vault, documentPath, sourcePath, i)
+        const destDir = dirname(destPath)
+        await fs.ensureDir(destDir)
+        if (sourcePath !== destPath) {
+          await fs.copyFile(sourcePath, destPath)
+        }
+        imported.push({ path: destPath, markdownPath })
+      }
+      catch (error) {
+        console.error('Failed to import media file', sourcePath, error)
+      }
+    }
+
+    if (imported.length > 0) {
+      await refreshTree(vault)
+      if (vault.type === 'git') {
+        const git = useGitStore()
+        await git.commit(vault.id)
+        await git.refreshStatus(vault.id)
+      }
+    }
+
+    return imported
+  }
+
   async function refreshTree(vault: Vault) {
     const fs = useFs()
     const settingsStore = useSettingsStore()
@@ -750,6 +915,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     removeVault,
     updateVault,
     importExternalFiles,
+    importMediaFilesForDocument,
     createVaultFolder,
     refreshTree,
     refreshAllTrees,
@@ -773,6 +939,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     getEffectiveFilters,
     getEffectiveExcludes,
     getEffectiveContentFolder,
+    getEffectiveMediaDir,
     resetVaultOverrides,
     updateGroupsOrder,
     updateVaultsOrder,

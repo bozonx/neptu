@@ -195,6 +195,43 @@ defineProps<{ ctx: SidebarDialogsContext }>()
               </div>
             </div>
           </UFormField>
+
+          <UFormField>
+            <UCheckbox
+              :model-value="ctx.newOverrideMediaDir.value"
+              :label="$t('vault.overrideMediaDir')"
+              @update:model-value="ctx.setNewOverrideMediaDir"
+            />
+            <div
+              v-if="ctx.newOverrideMediaDir.value"
+              class="mt-2 space-y-3"
+            >
+              <UFormField :label="$t('vault.mediaMode')">
+                <ButtonGroupToggle
+                  :model-value="ctx.newMediaMode.value"
+                  :items="ctx.mediaModeItems"
+                  @update:model-value="ctx.setNewMediaMode"
+                />
+              </UFormField>
+              <UFormField
+                v-if="ctx.newMediaMode.value !== 'adjacent'"
+                :label="$t('vault.mediaFolder')"
+                :hint="ctx.newMediaMode.value === 'global-folder' ? $t('vault.mediaGlobalFolderHint') : $t('vault.mediaAdjacentFolderHint')"
+              >
+                <UInput
+                  :model-value="ctx.newMediaFolder.value"
+                  @update:model-value="ctx.setNewMediaFolder"
+                />
+              </UFormField>
+              <UFormField :label="$t('vault.mediaNaming')">
+                <ButtonGroupToggle
+                  :model-value="ctx.newMediaNaming.value"
+                  :items="ctx.mediaNamingItems"
+                  @update:model-value="ctx.setNewMediaNaming"
+                />
+              </UFormField>
+            </div>
+          </UFormField>
         </section>
       </div>
     </template>
@@ -431,6 +468,43 @@ defineProps<{ ctx: SidebarDialogsContext }>()
                   @close="ctx.newExcludes.value.splice(idx, 1)"
                 />
               </div>
+            </div>
+          </UFormField>
+
+          <UFormField>
+            <UCheckbox
+              :model-value="ctx.newOverrideMediaDir.value"
+              :label="$t('vault.overrideMediaDir')"
+              @update:model-value="ctx.setNewOverrideMediaDir"
+            />
+            <div
+              v-if="ctx.newOverrideMediaDir.value"
+              class="mt-2 space-y-3"
+            >
+              <UFormField :label="$t('vault.mediaMode')">
+                <ButtonGroupToggle
+                  :model-value="ctx.newMediaMode.value"
+                  :items="ctx.mediaModeItems"
+                  @update:model-value="ctx.setNewMediaMode"
+                />
+              </UFormField>
+              <UFormField
+                v-if="ctx.newMediaMode.value !== 'adjacent'"
+                :label="$t('vault.mediaFolder')"
+                :hint="ctx.newMediaMode.value === 'global-folder' ? $t('vault.mediaGlobalFolderHint') : $t('vault.mediaAdjacentFolderHint')"
+              >
+                <UInput
+                  :model-value="ctx.newMediaFolder.value"
+                  @update:model-value="ctx.setNewMediaFolder"
+                />
+              </UFormField>
+              <UFormField :label="$t('vault.mediaNaming')">
+                <ButtonGroupToggle
+                  :model-value="ctx.newMediaNaming.value"
+                  :items="ctx.mediaNamingItems"
+                  @update:model-value="ctx.setNewMediaNaming"
+                />
+              </UFormField>
             </div>
           </UFormField>
         </section>

@@ -10,6 +10,11 @@ import {
 
 const SAVED_HINT_MS = 1500
 
+function basename(path: string): string {
+  const parts = path.split(/[\\/]/)
+  return parts[parts.length - 1] ?? path
+}
+
 interface EditorBuffer {
   content: string
   isDirty: boolean
@@ -414,24 +419,22 @@ export const useEditorStore = defineStore('editor', () => {
     insertTrigger.value = { path, text, id: Date.now() }
   }
 
-  function insertImportedFiles(paths: string[]) {
+  function insertImportedFiles(files: Array<string | { path: string, markdownPath: string }>) {
     const currentPath = currentFilePath.value
     if (!currentPath) return
 
-    import('#imports').then(({ useToast }) => {
-      useToast().add({ title: 'Inserting Files', description: `Paths: ${paths.join(', ')}` })
-    }).catch(console.error)
-
     let insertedText = ''
-    for (const path of paths) {
-      const name = path.split(/[\/\\]/).pop() || ''
+    for (const file of files) {
+      const path = typeof file === 'string' ? file : file.path
+      const markdownPath = typeof file === 'string' ? `./${basename(path)}` : file.markdownPath
+      const name = path.split(/[/\\]/).pop() || ''
       const ext = name.split('.').pop()?.toLowerCase() || ''
       const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)
       if (isImage) {
-        insertedText += `\n![${name}](./${name})\n`
+        insertedText += `\n![${name}](${markdownPath})\n`
       }
       else {
-        insertedText += `\n[${name}](./${name})\n`
+        insertedText += `\n[${name}](${markdownPath})\n`
       }
     }
 

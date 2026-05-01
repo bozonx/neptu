@@ -6,6 +6,17 @@ export type SiteLangMode = 'monolingual' | 'multilingual'
 
 export type GitCommitMode = 'auto' | 'manual' | 'respect_config'
 
+export type MediaUploadMode = 'adjacent' | 'adjacent-folder' | 'global-folder'
+
+export type MediaNamingMode = 'original' | 'document-index' | 'hash'
+
+export interface MediaDirSettings {
+  mode: MediaUploadMode
+  /** Relative path for global-folder, or subfolder name for adjacent-folder. */
+  folder?: string
+  naming: MediaNamingMode
+}
+
 export interface FileFilterExtension {
   ext: string
   enabled: boolean
@@ -105,6 +116,8 @@ export interface Vault {
   siteLangMode?: SiteLangMode
   /** Paths relative to vault root to exclude from the file tree */
   excludes?: string[]
+  /** Local override for media uploads. Does not write to .neptu-vault.yaml. */
+  mediaDir?: MediaDirSettings
 }
 
 export type FileSortMode
@@ -321,6 +334,7 @@ export interface AddVaultPayload {
   siteLangMode?: SiteLangMode
   filters?: FileFilterSettings
   excludes?: string[]
+  mediaDir?: MediaDirSettings
 }
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'

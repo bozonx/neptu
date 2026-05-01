@@ -2,6 +2,8 @@ import type { FileFilterSettings } from './index'
 
 export type UploadMode = 'adjacent' | 'adjacent-folder' | 'global-folder'
 
+export type MediaNamingMode = 'original' | 'document-index' | 'hash'
+
 export type ImageFormat = 'webp' | 'jpeg' | 'png' | 'avif'
 
 export interface CompressionSettings {
@@ -18,6 +20,13 @@ export interface MediaSettings {
   /** Relative path inside vault when uploadMode is 'global-folder' */
   globalFolder?: string
   compression?: CompressionSettings
+}
+
+export interface MediaDirSettings {
+  mode: UploadMode
+  /** Relative path for global-folder, or subfolder name for adjacent-folder. */
+  folder?: string
+  naming: MediaNamingMode
 }
 
 export interface SelectOption {
@@ -122,6 +131,7 @@ export interface VaultConfig {
   version: number
   /** Relative folder inside the vault treated as content root (e.g. "src") */
   contentRoot?: string
+  mediaDir?: MediaDirSettings
   media?: MediaSettings
   schemas?: Schema[]
   filters?: FileFilterSettings
@@ -130,39 +140,39 @@ export interface VaultConfig {
 
 export const DEFAULT_VAULT_CONFIG: VaultConfig = {
   version: 1,
+  mediaDir: {
+    mode: 'adjacent-folder',
+    folder: 'media',
+    naming: 'original',
+  },
 }
 
 export const SITE_VAULT_CONFIG: VaultConfig = {
   version: 1,
   contentRoot: 'src',
-  media: {
-    uploadMode: 'global-folder',
-    globalFolder: 'src/public/media',
-    compression: {
-      enabled: true,
-      maxDimension: 1920,
-      quality: 0.65,
-      format: 'webp',
-    },
+  mediaDir: {
+    mode: 'global-folder',
+    folder: 'src/public/media',
+    naming: 'document-index',
   },
 }
 
 export const CUSTOM_VAULT_CONFIG: VaultConfig = {
   version: 1,
+  mediaDir: {
+    mode: 'adjacent-folder',
+    folder: 'media',
+    naming: 'original',
+  },
 }
 
 export const BLOG_VAULT_CONFIG: VaultConfig = {
   version: 1,
   contentRoot: 'src',
-  media: {
-    uploadMode: 'global-folder',
-    globalFolder: 'src/public/media',
-    compression: {
-      enabled: true,
-      maxDimension: 1920,
-      quality: 0.65,
-      format: 'webp',
-    },
+  mediaDir: {
+    mode: 'global-folder',
+    folder: 'src/public/media',
+    naming: 'document-index',
   },
   schemas: [
     {
@@ -199,6 +209,7 @@ export function isValidVaultConfig(obj: unknown): obj is VaultConfig {
   const o = obj as Record<string, unknown>
   if (typeof o.version !== 'number') return false
   if (o.contentRoot !== undefined && typeof o.contentRoot !== 'string') return false
+  if (o.mediaDir !== undefined && !isValidMediaDirSettings(o.mediaDir)) return false
   if (o.media !== undefined && !isValidMediaSettings(o.media)) return false
   if (o.schemas !== undefined && !Array.isArray(o.schemas)) return false
   if (Array.isArray(o.schemas)) {
@@ -208,6 +219,15 @@ export function isValidVaultConfig(obj: unknown): obj is VaultConfig {
   }
   if (o.filters !== undefined && !isValidFileFilterSettings(o.filters)) return false
   if (o.excludes !== undefined && !isValidExcludes(o.excludes)) return false
+  return true
+}
+
+function isValidMediaDirSettings(obj: unknown): boolean {
+  if (!obj || typeof obj !== 'object') return false
+  const o = obj as Record<string, unknown>
+  if (!['adjacent', 'adjacent-folder', 'global-folder'].includes(o.mode as string)) return false
+  if (o.folder !== undefined && typeof o.folder !== 'string') return false
+  if (!['original', 'document-index', 'hash'].includes(o.naming as string)) return false
   return true
 }
 

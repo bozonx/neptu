@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DEFAULT_FILE_FILTERS } from '~/types'
-import type { ContentType, FileFilterGroup, GitCommitMode, SiteLangMode, Vault } from '~/types'
+import type { ContentType, FileFilterGroup, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, SiteLangMode, Vault } from '~/types'
 
 const props = defineProps<{
   vault: Vault | null
@@ -29,6 +29,9 @@ const editContentType = ref<ContentType>('vault')
 const editContentFolder = ref('src')
 const editSiteLangMode = ref<SiteLangMode>('monolingual')
 const editExcludes = ref<string[]>([])
+const editMediaMode = ref<MediaUploadMode>('adjacent-folder')
+const editMediaFolder = ref('media')
+const editMediaNaming = ref<MediaNamingMode>('original')
 const newExclude = ref('')
 const newCustomExt = ref('')
 const showNameInput = ref(false)
@@ -38,6 +41,7 @@ const pendingContentType = ref<ContentType | null>(null)
 const editingContentFolder = ref(false)
 const editingFilters = ref(false)
 const editingExcludes = ref(false)
+const editingMediaDir = ref(false)
 
 let skipNextWatch = false
 
@@ -63,6 +67,11 @@ watch(
 
     editExcludes.value = [...vaults.getEffectiveExcludes(vault)]
     editingExcludes.value = vault.excludes !== undefined
+    const mediaDir = vaults.getEffectiveMediaDir(vault)
+    editMediaMode.value = mediaDir.mode
+    editMediaFolder.value = mediaDir.folder ?? 'media'
+    editMediaNaming.value = mediaDir.naming
+    editingMediaDir.value = vault.mediaDir !== undefined
 
     newExclude.value = ''
     newCustomExt.value = ''
@@ -129,6 +138,13 @@ async function save() {
       contentFolder: editingContentFolder.value ? (editContentFolder.value || undefined) : null as never,
       siteLangMode: editContentType.value === 'custom' ? editSiteLangMode.value : undefined,
       excludes: editingExcludes.value ? editExcludes.value : null as never,
+      mediaDir: editingMediaDir.value
+        ? {
+          mode: editMediaMode.value,
+          folder: editMediaMode.value === 'adjacent' ? undefined : editMediaFolder.value,
+          naming: editMediaNaming.value,
+        } satisfies MediaDirSettings
+        : null as never,
     })
   }
   catch (error) {
@@ -143,7 +159,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode, editExcludes, editingContentFolder, editingFilters, editingExcludes, editingCommitDebounce],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentType, editContentFolder, editSiteLangMode, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -223,6 +239,18 @@ const contentTypeItems = [
 const siteLangModeItems = [
   { label: t('vault.siteLangMonolingual'), value: 'monolingual' as const },
   { label: t('vault.siteLangMultilingual'), value: 'multilingual' as const },
+]
+
+const mediaModeItems = [
+  { label: t('vault.mediaModeGlobal'), value: 'global-folder' as const },
+  { label: t('vault.mediaModeAdjacent'), value: 'adjacent' as const },
+  { label: t('vault.mediaModeAdjacentFolder'), value: 'adjacent-folder' as const },
+]
+
+const mediaNamingItems = [
+  { label: t('vault.mediaNamingOriginal'), value: 'original' as const },
+  { label: t('vault.mediaNamingDocumentIndex'), value: 'document-index' as const },
+  { label: t('vault.mediaNamingHash'), value: 'hash' as const },
 ]
 </script>
 
@@ -627,6 +655,84 @@ const siteLangModeItems = [
                 variant="link"
                 :label="$t('vault.resetToFileDefaults')"
                 @click="editingExcludes = false; editExcludes = [...vaults.getEffectiveExcludes(vault!)]"
+              />
+            </template>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-semibold text-muted uppercase tracking-wide">
+                {{ $t('vault.mediaDir') }}
+              </h4>
+              <UButton
+                v-if="!editingMediaDir"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :label="$t('vault.edit')"
+                @click="editingMediaDir = true"
+              />
+            </div>
+            <template v-if="!editingMediaDir">
+              <div class="space-y-1 text-sm">
+                <div>
+                  <span class="font-medium">{{ $t('vault.mediaMode') }}:</span>
+                  <span class="text-muted ml-1">
+                    {{ mediaModeItems.find((item) => item.value === editMediaMode)?.label }}
+                  </span>
+                </div>
+                <div v-if="editMediaMode !== 'adjacent'">
+                  <span class="font-medium">{{ $t('vault.mediaFolder') }}:</span>
+                  <span class="font-mono text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded ml-1">
+                    {{ editMediaFolder }}
+                  </span>
+                </div>
+                <div>
+                  <span class="font-medium">{{ $t('vault.mediaNaming') }}:</span>
+                  <span class="text-muted ml-1">
+                    {{ mediaNamingItems.find((item) => item.value === editMediaNaming)?.label }}
+                  </span>
+                </div>
+              </div>
+              <div
+                v-if="vault?.mediaDir === undefined"
+                class="text-xs text-muted mt-1"
+              >
+                {{ $t('vault.fromVaultFile') }}
+              </div>
+              <div
+                v-else
+                class="text-xs text-muted mt-1"
+              >
+                {{ $t('vault.customValue') }}
+              </div>
+            </template>
+            <template v-else>
+              <UFormField :label="$t('vault.mediaMode')">
+                <ButtonGroupToggle
+                  v-model="editMediaMode"
+                  :items="mediaModeItems"
+                />
+              </UFormField>
+              <UFormField
+                v-if="editMediaMode !== 'adjacent'"
+                :label="$t('vault.mediaFolder')"
+                :hint="editMediaMode === 'global-folder' ? $t('vault.mediaGlobalFolderHint') : $t('vault.mediaAdjacentFolderHint')"
+              >
+                <UInput v-model="editMediaFolder" />
+              </UFormField>
+              <UFormField :label="$t('vault.mediaNaming')">
+                <ButtonGroupToggle
+                  v-model="editMediaNaming"
+                  :items="mediaNamingItems"
+                />
+              </UFormField>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="link"
+                :label="$t('vault.resetToFileDefaults')"
+                @click="() => { const mediaDir = vaults.getEffectiveMediaDir(vault!); editingMediaDir = false; editMediaMode = mediaDir.mode; editMediaFolder = mediaDir.folder ?? 'media'; editMediaNaming = mediaDir.naming }"
               />
             </template>
           </div>

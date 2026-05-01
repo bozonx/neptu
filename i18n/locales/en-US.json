@@ -130,6 +130,7 @@
     "overrideContentFolder": "Override content folder",
     "overrideFileFilters": "Override file filters",
     "overrideExcludes": "Override excluded paths",
+    "overrideMediaDir": "Override media upload settings",
     "contentTypeCustom": "Custom",
     "contentTypeCustomDesc": "Custom structure. You define the content folder and filters yourself. Language mode can also be configured.",
     "siteLangMode": "Site language mode",
@@ -147,7 +148,19 @@
     "noExcludes": "No excluded paths",
     "excludes": "Excluded paths",
     "excludesHint": "Paths relative to vault root that will be hidden from the file tree.",
-    "excludePlaceholder": "folder/subfolder or file.md"
+    "excludePlaceholder": "folder/subfolder or file.md",
+    "mediaDir": "Media uploads",
+    "mediaMode": "Upload location",
+    "mediaFolder": "Folder",
+    "mediaNaming": "File naming",
+    "mediaModeGlobal": "Vault folder",
+    "mediaModeAdjacent": "Next to document",
+    "mediaModeAdjacentFolder": "Document media folder",
+    "mediaNamingOriginal": "Keep original name",
+    "mediaNamingDocumentIndex": "Document name + index",
+    "mediaNamingHash": "Unique hash",
+    "mediaGlobalFolderHint": "Path relative to the vault root.",
+    "mediaAdjacentFolderHint": "Subfolder name next to the current document."
   },
   "settings": {
     "title": "Settings",

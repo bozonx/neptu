@@ -1,14 +1,10 @@
 version: 1
 contentRoot: src
 
-media:
-  uploadMode: global-folder
-  globalFolder: src/public/media
-  compression:
-    enabled: true
-    maxDimension: 1920
-    quality: 0.65
-    format: webp
+media-dir:
+  mode: global-folder
+  folder: src/public/media
+  naming: document-index
 
 schemas:
   - glob: "src/post/**/*.md"
