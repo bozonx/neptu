@@ -465,14 +465,13 @@ export const useVaultsStore = defineStore('vaults', () => {
         const name = basename(sourcePath)
         const destPath = await fs.join(targetDir, name)
         
-        if (sourcePath === destPath) continue
+        if (sourcePath === destPath) {
+          importedPaths.push(destPath)
+          continue
+        }
 
         if (await fs.exists(destPath)) {
-           // Skip or replace? Let's assume we skip if it exists, or we could add a suffix.
-           // For simplicity, skip if already exists to prevent data loss.
-           const { useToast } = await import('#imports')
-           const toast = useToast()
-           toast.add({ title: 'File already exists', description: `Skipped ${name}`, color: 'error' })
+           importedPaths.push(destPath)
            continue
         }
 

@@ -110,8 +110,7 @@ export function useDnd() {
             if (zone === 'editor') {
                const editor = useEditorStore()
                if (editor.currentFilePath) {
-                 const fs = useFs()
-                 const targetDir = await fs.dirname(editor.currentFilePath)
+                 const targetDir = editor.currentFilePath.replace(/[\/\\][^\/\\]*$/, '')
                  const importedPaths = await useVaultsStore().importExternalFiles(paths, targetDir)
                  
                  if (importedPaths.length > 0) {

@@ -411,6 +411,10 @@ export const useEditorStore = defineStore('editor', () => {
     const currentPath = currentFilePath.value
     if (!currentPath) return
 
+    import('#imports').then(({ useToast }) => {
+      useToast().add({ title: 'Inserting Files', description: `Paths: ${paths.join(', ')}` })
+    }).catch(console.error)
+
     let insertedText = ''
     for (const path of paths) {
       const name = path.split(/[\/\\]/).pop() || ''

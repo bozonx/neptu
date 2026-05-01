@@ -203,8 +203,9 @@ watch(() => props.filePath, () => {
 watch(() => editorStore.insertTrigger, (trigger) => {
   if (trigger && trigger.path === props.filePath && textareaRef.value) {
     const el = textareaRef.value
-    const start = el.selectionStart
-    const end = el.selectionEnd
+    const pos = editorStore.getCursorPosition(props.filePath)
+    const start = pos ? pos.selectionStart : el.selectionStart
+    const end = pos ? pos.selectionEnd : el.selectionEnd
     const text = el.value
     const before = text.substring(0, start)
     const after = text.substring(end)
