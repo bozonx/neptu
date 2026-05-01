@@ -1,5 +1,5 @@
 import { DEFAULT_FILE_FILTERS } from '~/types'
-import type { ContentType, FileFilterGroup, FileFilterSettings, FileNode, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, Vault, VaultGroup, VaultType } from '~/types'
+import type { FileFilterGroup, FileFilterSettings, FileNode, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, Vault, VaultGroup, VaultType } from '~/types'
 
 /**
  * Composable that manages all sidebar dialog state and CRUD actions.
@@ -24,8 +24,7 @@ export function useSidebarDialogs() {
   const newGitMode = ref<'connect' | 'init'>('connect')
   const newCommitMode = ref<GitCommitMode>('respect_config')
   const newCommitDebounceSec = ref(5)
-  const newContentType = ref<ContentType>('vault')
-  const newContentStructureId = ref('custom')
+  const selectedStructureId = ref('vault')
   const newContentFolder = ref('src')
   const newOverrideFilters = ref(false)
   const newOverrideExcludes = ref(false)
@@ -55,29 +54,31 @@ export function useSidebarDialogs() {
     || (newCommitMode.value === 'respect_config' && settings.settings.defaultCommitMode === 'auto'),
   )
 
-  const contentTypeItems = [
-    { label: t('vault.contentTypeVault'), value: 'vault' as const },
-    { label: t('vault.contentTypeBlog'), value: 'blog' as const },
-    { label: t('vault.contentTypeSite'), value: 'site' as const },
-    { label: t('vault.contentTypeCustom'), value: 'custom' as const },
-  ]
-
-  const contentStructureItems = computed(() => [
-    { label: t('vault.contentStructureCustom'), value: 'custom' },
+  const structureOptions = computed(() => [
+    { label: t('vault.contentTypeVault'), value: 'vault', type: 'vault' as const },
+    { label: t('vault.contentTypeBlog'), value: 'blog', type: 'blog' as const },
+    { label: t('vault.contentTypeSite'), value: 'site', type: 'site' as const },
     ...plugins.sortedContentStructures.map((structure) => ({
       label: structure.label,
       value: structure.fqid,
+      type: 'custom' as const,
+      description: structure.descriptionKey ? t(structure.descriptionKey) : structure.description,
     })),
+    { label: t('vault.contentTypeCustom'), value: 'custom', type: 'custom' as const },
   ])
 
-  const selectedNewContentStructure = computed(() =>
-    plugins.sortedContentStructures.find((structure) => structure.fqid === newContentStructureId.value) ?? null,
+  const selectedStructure = computed(() =>
+    structureOptions.value.find((opt) => opt.value === selectedStructureId.value) ?? null,
   )
 
-  const selectedNewContentStructureDescription = computed(() => {
-    const structure = selectedNewContentStructure.value
-    if (!structure) return ''
-    return structure.descriptionKey ? t(structure.descriptionKey) : structure.description ?? ''
+  const selectedStructureDescription = computed(() => {
+    const s = selectedStructure.value
+    if (!s) return ''
+    if (s.value === 'vault') return t('vault.contentTypeVaultDesc')
+    if (s.value === 'blog') return t('vault.contentTypeBlogDesc')
+    if (s.value === 'site') return t('vault.contentTypeSiteDesc')
+    if (s.value === 'custom') return t('vault.contentTypeCustomDesc')
+    return (s as { description?: string }).description ?? ''
   })
 
   const mediaModeItems = [
@@ -99,8 +100,7 @@ export function useSidebarDialogs() {
     newGitMode.value = 'connect'
     newCommitMode.value = 'respect_config'
     newCommitDebounceSec.value = settings.settings.defaultCommitDebounceMs / 1000
-    newContentType.value = 'vault'
-    newContentStructureId.value = 'custom'
+    selectedStructureId.value = 'vault'
     newContentFolder.value = 'src'
     newOverrideFilters.value = false
     newOverrideExcludes.value = false
@@ -121,10 +121,6 @@ export function useSidebarDialogs() {
 
   function setNewCustomExt(value: string) {
     newCustomExt.value = value
-  }
-
-  function setNewContentStructureId(value: string) {
-    newContentStructureId.value = value
   }
 
   function setNewOverrideMediaDir(value: boolean | 'indeterminate') {
@@ -209,6 +205,11 @@ export function useSidebarDialogs() {
     }
 
     try {
+      const selected = selectedStructure.value
+      const contentType = selected?.type ?? 'vault'
+      const contentStructureId = selected?.type === 'custom' && selected.value !== 'custom'
+        ? selected.value
+        : undefined
       await vaults.addVault({
         name: newVaultName.value,
         type: newVaultType.value,
@@ -220,9 +221,9 @@ export function useSidebarDialogs() {
               ...(newCommitMode.value !== 'respect_config' ? { commitDebounceMs: Math.max(0, Math.round(newCommitDebounceSec.value * 1000)) } : {}),
             }
           : undefined,
-        contentType: newContentType.value,
-        contentStructureId: newContentType.value === 'custom' ? newContentStructureId.value : undefined,
-        contentFolder: newContentType.value !== 'vault' && newOverrideContentFolder.value
+        contentType,
+        contentStructureId,
+        contentFolder: contentType !== 'vault' && newOverrideContentFolder.value
           ? newContentFolder.value
           : undefined,
         filters: newOverrideFilters.value ? newFilters.value : undefined,
@@ -416,7 +417,7 @@ export function useSidebarDialogs() {
     newGitMode,
     newCommitMode,
     newCommitDebounceSec,
-    newContentType,
+    selectedStructureId,
     newContentFolder,
     newOverrideFilters,
     newOverrideExcludes,
@@ -432,16 +433,13 @@ export function useSidebarDialogs() {
     gitModeItems,
     commitModeItems,
     showCommitDebounce,
-    contentTypeItems,
-    contentStructureItems,
-    selectedNewContentStructure,
-    selectedNewContentStructureDescription,
-    newContentStructureId,
+    structureOptions,
+    selectedStructure,
+    selectedStructureDescription,
     mediaModeItems,
     mediaNamingItems,
     formatEnabledExtensions,
     setNewCustomExt,
-    setNewContentStructureId,
     setNewOverrideMediaDir,
     setNewMediaMode,
     setNewMediaFolder,

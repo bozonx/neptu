@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { normalizeRelativePath } from '~/utils/paths'
 import { DEFAULT_FILE_FILTERS } from '~/types'
 import type { FileFilterGroup, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, Vault } from '~/types'
 
@@ -127,7 +128,7 @@ async function save() {
           }
         : undefined,
       filters: editingFilters.value ? editFilters.value : null as never,
-      contentFolder: editingContentFolder.value ? (editContentFolder.value || undefined) : null as never,
+      contentFolder: editingContentFolder.value ? (normalizeRelativePath(editContentFolder.value) || undefined) : null as never,
       excludes: editingExcludes.value ? editExcludes.value : null as never,
       mediaDir: editingMediaDir.value
         ? {

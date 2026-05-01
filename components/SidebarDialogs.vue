@@ -39,55 +39,15 @@ defineProps<{ ctx: SidebarDialogsContext }>()
         </UFormField>
 
         <UFormField :label="$t('vault.contentType')">
-          <ButtonGroupToggle
-            v-model="ctx.newContentType.value"
-            :items="ctx.contentTypeItems"
+          <URadioGroup
+            v-model="ctx.selectedStructureId.value"
+            :items="ctx.structureOptions.value"
           />
         </UFormField>
 
-        <p
-          v-if="ctx.newContentType.value === 'vault'"
-          class="text-xs text-muted"
-        >
-          {{ $t('vault.contentTypeVaultDesc') }}
+        <p class="text-xs text-muted">
+          {{ ctx.selectedStructureDescription.value }}
         </p>
-
-        <template v-if="ctx.newContentType.value === 'blog'">
-          <p class="text-xs text-muted">
-            {{ $t('vault.contentTypeBlogDesc') }}
-          </p>
-        </template>
-
-        <template v-if="ctx.newContentType.value === 'site'">
-          <p class="text-xs text-muted">
-            {{ $t('vault.contentTypeSiteDesc') }}
-          </p>
-        </template>
-
-        <template v-if="ctx.newContentType.value === 'custom'">
-          <p class="text-xs text-muted">
-            {{ $t('vault.contentTypeCustomDesc') }}
-          </p>
-          <UFormField :label="$t('vault.contentStructure')">
-            <URadioGroup
-              :model-value="ctx.newContentStructureId.value"
-              :items="ctx.contentStructureItems.value"
-              @update:model-value="ctx.setNewContentStructureId"
-            />
-          </UFormField>
-          <p
-            v-if="ctx.selectedNewContentStructure.value"
-            class="text-xs text-muted"
-          >
-            {{ ctx.selectedNewContentStructureDescription.value }}
-          </p>
-          <p
-            v-else
-            class="text-xs text-muted"
-          >
-            {{ $t('vault.contentStructureCustomDesc') }}
-          </p>
-        </template>
 
         <USeparator class="my-2" />
 
@@ -100,7 +60,7 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           </p>
 
           <UFormField
-            v-if="ctx.newContentType.value !== 'vault'"
+            v-if="ctx.selectedStructure.value?.type !== 'vault'"
           >
             <UCheckbox
               v-model="ctx.newOverrideContentFolder.value"
@@ -327,55 +287,15 @@ defineProps<{ ctx: SidebarDialogsContext }>()
         </UFormField>
 
         <UFormField :label="$t('vault.contentType')">
-          <ButtonGroupToggle
-            v-model="ctx.newContentType.value"
-            :items="ctx.contentTypeItems"
+          <URadioGroup
+            v-model="ctx.selectedStructureId.value"
+            :items="ctx.structureOptions.value"
           />
         </UFormField>
 
-        <p
-          v-if="ctx.newContentType.value === 'vault'"
-          class="text-xs text-muted"
-        >
-          {{ $t('vault.contentTypeVaultDesc') }}
+        <p class="text-xs text-muted">
+          {{ ctx.selectedStructureDescription.value }}
         </p>
-
-        <template v-if="ctx.newContentType.value === 'blog'">
-          <p class="text-xs text-muted">
-            {{ $t('vault.contentTypeBlogDesc') }}
-          </p>
-        </template>
-
-        <template v-if="ctx.newContentType.value === 'site'">
-          <p class="text-xs text-muted">
-            {{ $t('vault.contentTypeSiteDesc') }}
-          </p>
-        </template>
-
-        <template v-if="ctx.newContentType.value === 'custom'">
-          <p class="text-xs text-muted">
-            {{ $t('vault.contentTypeCustomDesc') }}
-          </p>
-          <UFormField :label="$t('vault.contentStructure')">
-            <URadioGroup
-              :model-value="ctx.newContentStructureId.value"
-              :items="ctx.contentStructureItems.value"
-              @update:model-value="ctx.setNewContentStructureId"
-            />
-          </UFormField>
-          <p
-            v-if="ctx.selectedNewContentStructure.value"
-            class="text-xs text-muted"
-          >
-            {{ ctx.selectedNewContentStructureDescription.value }}
-          </p>
-          <p
-            v-else
-            class="text-xs text-muted"
-          >
-            {{ $t('vault.contentStructureCustomDesc') }}
-          </p>
-        </template>
 
         <USeparator class="my-2" />
 
@@ -388,7 +308,7 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           </p>
 
           <UFormField
-            v-if="ctx.newContentType.value !== 'vault'"
+            v-if="ctx.selectedStructure.value?.type !== 'vault'"
           >
             <UCheckbox
               v-model="ctx.newOverrideContentFolder.value"

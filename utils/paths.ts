@@ -30,3 +30,7 @@ export function fileExt(name: string): string {
   const lastDot = name.lastIndexOf('.')
   return lastDot > 0 ? name.slice(lastDot).toLowerCase() : ''
 }
+
+export function normalizeRelativePath(path: string): string {
+  return path.trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import EditorText from './EditorText.vue'
 import type { VaultConfig } from '~/types/vault-config'
+import { normalizeRelativePath } from '~/utils/paths'
 
 const props = defineProps<{
   filePath: string
@@ -9,7 +10,7 @@ const props = defineProps<{
 const mode = ref<'ui' | 'text'>('ui')
 const vaultName = computed(() => {
   const vault = useVaultsStore().findVaultForPath(props.filePath)
-  return vault?.name || 'Vault Configuration'
+  return vault?.name || t('vault.configuration', 'Vault Configuration')
 })
 
 const { t } = useI18n()
@@ -45,7 +46,15 @@ async function loadConfig() {
     }
   }
   catch (error) {
-    toast.add({ title: 'Failed to load configuration', description: String(error), color: 'error' })
+    toast.add({ title: t('vault.loadConfigFailed', 'Failed to load configuration'), description: String(error), color: 'error' })
+    config.value = {
+      version: 1,
+      mediaDir: {
+        mode: 'adjacent-folder',
+        folder: 'media',
+        naming: 'original',
+      },
+    }
   }
   finally {
     loading.value = false
@@ -55,6 +64,9 @@ async function loadConfig() {
 async function saveConfig() {
   if (!config.value) return
   try {
+    if (config.value.contentRoot) {
+      config.value.contentRoot = normalizeRelativePath(config.value.contentRoot)
+    }
     await fs.writeYaml(props.filePath, config.value)
     const vault = useVaultsStore().findVaultForPath(props.filePath)
     if (vault) {
@@ -62,7 +74,7 @@ async function saveConfig() {
     }
   }
   catch (error) {
-    toast.add({ title: 'Failed to save configuration', description: String(error), color: 'error' })
+    toast.add({ title: t('vault.saveConfigFailed', 'Failed to save configuration'), description: String(error), color: 'error' })
   }
 }
 
@@ -119,7 +131,7 @@ function removeExclude(idx: number) {
           name="i-lucide-settings"
           class="size-4 text-muted"
         />
-        {{ vaultName }} Settings
+        {{ vaultName }} — {{ t('vault.configuration', 'Configuration') }}
       </div>
 
       <div class="flex items-center gap-1 bg-elevated/50 p-1 rounded-md border border-default">
@@ -128,14 +140,14 @@ function removeExclude(idx: number) {
           :class="mode === 'ui' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted hover:text-default'"
           @click="mode = 'ui'; loadConfig()"
         >
-          Visual Editor
+          {{ t('vault.visualEditor', 'Visual Editor') }}
         </button>
         <button
           class="px-3 py-1 text-xs font-medium rounded transition-colors"
           :class="mode === 'text' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted hover:text-default'"
           @click="mode = 'text'"
         >
-          Text Editor
+          {{ t('vault.textEditor', 'Text Editor') }}
         </button>
       </div>
     </div>
@@ -160,10 +172,10 @@ function removeExclude(idx: number) {
       >
         <div>
           <h2 class="text-xl font-semibold mb-1">
-            Configuration
+            {{ t('vault.configuration', 'Configuration') }}
           </h2>
           <p class="text-sm text-muted mb-6">
-            Manage settings specific to this vault.
+            {{ t('vault.configSubtitle', 'Manage settings specific to this vault.') }}
           </p>
 
           <div class="space-y-6 bg-elevated/30 border border-default rounded-lg p-6">
