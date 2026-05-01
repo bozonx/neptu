@@ -234,7 +234,10 @@
     "commitMessagePrompt": "Введите сообщение коммита:",
     "pendingCommit": "Автокоммит ожидается",
     "gitAutoMessageTemplate": "Шаблон сообщения коммита",
-    "gitAutoMessageTemplateHint": "Переменные: {files} и {fileWord}."
+    "gitAutoMessageTemplateHint": "Переменные: {files} и {fileWord}.",
+    "uncommittedChanges": "Незакоммиченные изменения",
+    "noChanges": "Нет изменений",
+    "diff": "Diff"
   },
   "editor": {
     "noFileSelected": "Выберите или создайте markdown-файл, чтобы начать редактирование",

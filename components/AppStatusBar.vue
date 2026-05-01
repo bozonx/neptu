@@ -89,6 +89,8 @@ const autoMessageItems = computed(() => [
     },
   ],
 ])
+
+const showDiffModal = ref(false)
 </script>
 
 <template>
@@ -130,6 +132,15 @@ const autoMessageItems = computed(() => [
           :label="autoMessageLabel"
         />
       </UDropdownMenu>
+      <UButton
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        class="px-1 h-5 text-[10px] shrink-0"
+        :label="$t('git.diff')"
+        :disabled="!showCommit"
+        @click="showDiffModal = true"
+      />
     </template>
 
     <UButton
@@ -141,5 +152,7 @@ const autoMessageItems = computed(() => [
       :title="tabsStore.rightSidebarCollapsed ? $t('sidebar.showRightSidebar') : $t('sidebar.hideRightSidebar')"
       @click="tabsStore.rightSidebarCollapsed = !tabsStore.rightSidebarCollapsed"
     />
+
+    <GitDiffModal v-model:open="showDiffModal" :vault-id="currentVault?.id" />
   </div>
 </template>

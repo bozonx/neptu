@@ -233,7 +233,10 @@
     "commitMessagePrompt": "Enter commit message:",
     "pendingCommit": "Auto-commit pending",
     "gitAutoMessageTemplate": "Commit message template",
-    "gitAutoMessageTemplateHint": "Variables: {files} and {fileWord}."
+    "gitAutoMessageTemplateHint": "Variables: {files} and {fileWord}.",
+    "uncommittedChanges": "Uncommitted changes",
+    "noChanges": "No changes",
+    "diff": "Diff"
   },
   "editor": {
     "noFileSelected": "Select or create a markdown file to start editing",

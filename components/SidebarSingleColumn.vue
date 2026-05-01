@@ -1,3 +1,4 @@
+<script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { FileNode, Vault, VaultGroup } from '~/types'
