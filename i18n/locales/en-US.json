@@ -55,7 +55,9 @@
     "loading": "Loading",
     "noDailyNotes": "No daily notes yet",
     "deleteFile": "Delete file",
-    "deleteFolder": "Delete folder"
+    "deleteFolder": "Delete folder",
+    "backlinks": "Backlinks",
+    "noBacklinks": "No backlinks found"
   },
   "vault": {
     "name": "Name",

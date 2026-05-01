@@ -110,7 +110,7 @@ async function onDrop() {
     </div>
 
     <!-- Panel Body -->
-    <div class="flex-1 overflow-hidden flex flex-col">
+    <div class="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
       <div
         v-if="!currentFilePath"
         class="flex flex-1 items-center justify-center text-muted"

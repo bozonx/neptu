@@ -96,8 +96,8 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
       </Pane>
 
       <!-- Central Content (auto-sized by Splitpanes) -->
-      <Pane class="flex flex-col min-w-0 bg-default relative">
-        <main class="flex-1 flex flex-col min-w-0 bg-default relative">
+      <Pane class="flex flex-col min-w-0 min-h-0 bg-default relative">
+        <main class="flex-1 flex flex-col min-w-0 min-h-0 bg-default relative">
           <slot />
         </main>
       </Pane>

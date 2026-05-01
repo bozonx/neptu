@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { FileNode, Vault } from '~/types'
 
-interface SearchDoc {
+export interface SearchDoc {
   path: string
   name: string
   content: string

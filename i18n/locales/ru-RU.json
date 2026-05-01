@@ -56,7 +56,9 @@
     "loading": "Загрузка",
     "noDailyNotes": "Ежедневных заметок пока нет",
     "deleteFile": "Удалить файл",
-    "deleteFolder": "Удалить папку"
+    "deleteFolder": "Удалить папку",
+    "backlinks": "Обратные ссылки",
+    "noBacklinks": "Обратных ссылок не найдено"
   },
   "vault": {
     "name": "Название",

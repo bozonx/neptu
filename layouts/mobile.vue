@@ -65,7 +65,7 @@ watch(() => {
     </header>
 
     <!-- Central Content -->
-    <main class="flex-1 overflow-hidden relative">
+    <main class="flex-1 min-h-0 overflow-hidden relative">
       <slot />
     </main>
 

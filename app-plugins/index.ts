@@ -4,10 +4,12 @@ import { outlinePlugin } from './builtin/outline'
 import { fileInfoPlugin } from './builtin/file-info'
 import { historyPlugin } from './builtin/history'
 import { contentTypesPlugin } from './builtin/content-types'
+import { backlinksPlugin } from './builtin/backlinks'
 
 export const builtinPlugins: Plugin[] = [
   outlinePlugin,
   fileInfoPlugin,
+  backlinksPlugin,
   historyPlugin,
   contentTypesPlugin,
 ]
