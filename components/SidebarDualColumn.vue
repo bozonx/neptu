@@ -5,6 +5,7 @@ import type { Vault, VaultGroup } from '~/types'
 const emit = defineEmits<{
   createNote: [vault: Vault, dir?: string]
   createFolder: [vault: Vault, dir?: string]
+  renameNode: [vault: Vault, node: FileNode]
   editVault: [vault: Vault]
   removeVault: [vault: Vault]
 }>()
@@ -301,6 +302,7 @@ watchEffect(() => {
           @toggle-folder="toggleFolder"
           @create-note="(v, d) => emit('createNote', v, d)"
           @create-folder="(v, d) => emit('createFolder', v, d)"
+          @rename-node="(v, n) => emit('renameNode', v, n)"
           @edit-vault="(v) => emit('editVault', v)"
           @remove-vault="(v) => emit('removeVault', v)"
         />

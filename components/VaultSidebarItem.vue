@@ -19,6 +19,7 @@ const emit = defineEmits<{
   toggleFolder: [path: string]
   createNote: [vault: Vault, dir?: string]
   createFolder: [vault: Vault, dir?: string]
+  renameNode: [vault: Vault, node: FileNode]
   editVault: [vault: Vault]
   removeVault: [vault: Vault]
 }>()
@@ -307,9 +308,28 @@ async function handleDelete(node: FileNode) {
       @open="openFile"
       @open-in-new-panel="openFileInNewPanel"
       @delete="handleDelete"
+      @rename="(n) => emit('renameNode', vault, n)"
       @create-in="(d) => emit('createNote', vault, d)"
       @create-subfolder="(d) => emit('createFolder', vault, d)"
       @toggle-folder="(p: string) => emit('toggleFolder', p)"
     />
+
+    <UContextMenu
+      v-if="expanded"
+      :items="[[
+        { label: $t('vault.newNoteBtn', 'New Note'), icon: 'i-lucide-file-plus', onSelect: () => emit('createNote', vault) },
+        { label: $t('vault.newFolderBtn', 'New Folder'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', vault) }
+      ]]"
+      :modal="false"
+      class="w-full"
+    >
+      <div
+        class="w-full h-8 flex items-center justify-center opacity-0 hover:opacity-100 text-xs text-muted/50 cursor-context-menu"
+        :class="[isDropTarget ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : '']"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
+      />
+    </UContextMenu>
   </div>
 </template>

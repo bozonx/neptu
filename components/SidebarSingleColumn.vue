@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { Vault, VaultGroup } from '~/types'
+import type { FileNode, Vault, VaultGroup } from '~/types'
 
 const emit = defineEmits<{
   createNote: [vault: Vault, dir?: string]
   createFolder: [vault: Vault, dir?: string]
+  renameNode: [vault: Vault, node: FileNode]
   editVault: [vault: Vault]
   removeVault: [vault: Vault]
   createGroup: []
@@ -165,6 +166,7 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
         @toggle-folder="toggleFolder"
         @create-note="(v, d) => emit('createNote', v, d)"
         @create-folder="(v, d) => emit('createFolder', v, d)"
+        @rename-node="(v, n) => emit('renameNode', v, n)"
         @edit-vault="(v) => emit('editVault', v)"
         @remove-vault="(v) => emit('removeVault', v)"
       />
@@ -189,6 +191,7 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
         @toggle-folder="toggleFolder"
         @create-note="(v, d) => emit('createNote', v, d)"
         @create-folder="(v, d) => emit('createFolder', v, d)"
+        @rename-node="(v, n) => emit('renameNode', v, n)"
         @edit-vault="(v) => emit('editVault', v)"
         @remove-vault="(v) => emit('removeVault', v)"
       />
@@ -258,6 +261,7 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
           @toggle-folder="toggleFolder"
           @create-note="(v, d) => emit('createNote', v, d)"
           @create-folder="(v, d) => emit('createFolder', v, d)"
+          @rename-node="(v, n) => emit('renameNode', v, n)"
           @edit-vault="(v) => emit('editVault', v)"
           @remove-vault="(v) => emit('removeVault', v)"
         />

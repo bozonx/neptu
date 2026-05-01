@@ -17,6 +17,7 @@ const emit = defineEmits<{
   open: [path: string]
   openInNewPanel: [path: string]
   delete: [node: FileNode]
+  rename: [node: FileNode]
   createIn: [dirPath: string]
   createSubfolder: [dirPath: string]
   toggleFolder: [path: string]
@@ -112,6 +113,7 @@ function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
         icon: isFav ? 'i-lucide-star-off' : 'i-lucide-star',
         onSelect: () => isFav ? vaults.removeFavorite(node.path) : vaults.addFavorite(node.path),
       },
+      { label: t('vault.rename', 'Rename'), icon: 'i-lucide-pencil', onSelect: () => emit('rename', node) },
       { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
     ],
   ]
@@ -121,6 +123,7 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
   return [
     [
       { label: t('vault.newFolderBtn'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createSubfolder', node.path) },
+      { label: t('vault.rename', 'Rename'), icon: 'i-lucide-pencil', onSelect: () => emit('rename', node) },
       { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
     ],
   ]
@@ -196,10 +199,18 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
         @open="(p: string) => emit('open', p)"
         @open-in-new-panel="(p: string) => emit('openInNewPanel', p)"
         @delete="(n: FileNode) => emit('delete', n)"
+        @rename="(n: FileNode) => emit('rename', n)"
         @create-in="(d: string) => emit('createIn', d)"
         @create-subfolder="(d: string) => emit('createSubfolder', d)"
         @toggle-folder="(p: string) => emit('toggleFolder', p)"
       />
+      <div
+        v-if="node.isDir && expandedFolders?.[node.path] && (!node.children || node.children.length === 0)"
+        class="text-xs text-muted/50 italic py-1 truncate pointer-events-none"
+        :style="{ paddingLeft: `${1.25 + level * 0.75}rem` }"
+      >
+        {{ $t('vault.emptyFolder', 'Empty folder') }}
+      </div>
 
       <UContextMenu
         v-if="!node.isDir"

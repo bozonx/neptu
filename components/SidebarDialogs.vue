@@ -256,6 +256,37 @@ defineProps<{ ctx: SidebarDialogsContext }>()
     </template>
   </UModal>
 
+  <!-- Rename Node -->
+  <UModal
+    v-model:open="ctx.renameNodeOpen.value"
+    :title="$t('vault.rename', 'Rename')"
+  >
+    <template #body>
+      <UFormField :label="$t('vault.newName', 'New Name')">
+        <UInput
+          v-model="ctx.renameNodeName.value"
+          autofocus
+        />
+      </UFormField>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          :label="$t('vault.cancel')"
+          @click="ctx.renameNodeOpen.value = false"
+        />
+        <UButton
+          :label="$t('vault.rename', 'Rename')"
+          :disabled="!ctx.renameNodeName.value.trim() || ctx.renameNodeName.value.trim() === ctx.renameNodeCtx.value?.node.name"
+          @click="ctx.submitRenameNode"
+        />
+      </div>
+    </template>
+  </UModal>
+
   <!-- Remove Vault Confirm -->
   <UModal
     v-model:open="ctx.removeVaultConfirmOpen.value"

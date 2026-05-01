@@ -1,4 +1,4 @@
-import type { ContentType, GitCommitMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
+import type { ContentType, FileNode, GitCommitMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
 
 /**
  * Composable that manages all sidebar dialog state and CRUD actions.
@@ -180,6 +180,29 @@ export function useSidebarDialogs() {
     }
   }
 
+  /* ── Rename File/Folder ───────────────────────── */
+
+  const renameNodeOpen = ref(false)
+  const renameNodeName = ref('')
+  const renameNodeCtx = ref<{ vault: Vault, node: FileNode } | null>(null)
+
+  function openRenameNode(vault: Vault, node: FileNode) {
+    renameNodeCtx.value = { vault, node }
+    renameNodeName.value = node.name
+    renameNodeOpen.value = true
+  }
+
+  async function submitRenameNode() {
+    if (!renameNodeCtx.value || !renameNodeName.value.trim()) return
+    try {
+      await vaults.renameNode(renameNodeCtx.value.vault.id, renameNodeCtx.value.node.path, renameNodeName.value.trim())
+      renameNodeOpen.value = false
+    }
+    catch (error) {
+      toast.add({ title: t('toast.renameFailed', 'Rename failed'), description: String(error), color: 'error' })
+    }
+  }
+
   /* ── Edit Vault ───────────────────────────────── */
 
   const editVaultOpen = ref(false)
@@ -296,6 +319,12 @@ export function useSidebarDialogs() {
     newFolderCtx,
     openCreateFolder,
     submitCreateFolder,
+    /* Rename node */
+    renameNodeOpen,
+    renameNodeName,
+    renameNodeCtx,
+    openRenameNode,
+    submitRenameNode,
     /* Edit vault */
     editVaultOpen,
     editingVault,

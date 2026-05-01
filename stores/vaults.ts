@@ -25,6 +25,13 @@ function basename(path: string): string {
   return parts[parts.length - 1] ?? norm
 }
 
+function dirname(path: string): string {
+  const norm = path.replace(/[\\/]+$/, '')
+  const parts = norm.split(/[\\/]/)
+  parts.pop()
+  return parts.join('/') || '/'
+}
+
 function replacePathPrefix(path: string, oldPrefix: string, newPrefix: string): string {
   if (path === oldPrefix) return newPrefix
 
@@ -324,6 +331,10 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     if (sourcePath === destPath) return
 
+    if (await fs.exists(destPath)) {
+      if (!confirm(`An item named "${name}" already exists in the destination. Do you want to replace it?`)) return
+    }
+
     const sourceVault = findVaultForPath(sourcePath)
     const targetVault = findVaultForPath(targetDirPath)
 
@@ -367,6 +378,10 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     if (sourcePath === destPath) return
 
+    if (await fs.exists(destPath)) {
+      if (!confirm(`An item named "${name}" already exists in the destination. Do you want to replace it?`)) return
+    }
+
     const targetVault = findVaultForPath(targetDirPath)
     if (targetVault) await editor.flushVault(targetVault)
 
@@ -385,6 +400,52 @@ export const useVaultsStore = defineStore('vaults', () => {
         await git.refreshStatus(targetVault.id)
       }
     }
+  }
+
+  async function renameNode(vaultId: string, sourcePath: string, newName: string) {
+    if (!newName.trim()) return
+
+    const fs = useFs()
+    const editor = useEditorStore()
+    const git = useGitStore()
+    const tabs = useTabsStore()
+
+    const vault = findById(vaultId)
+    if (!vault) return
+
+    const dir = dirname(sourcePath)
+    const destPath = await fs.join(dir, newName.trim())
+
+    if (sourcePath === destPath) return
+
+    if (await fs.exists(destPath)) {
+      throw new Error(`An item named "${newName}" already exists.`)
+    }
+
+    const sourceInfo = await fs.stat(sourcePath)
+
+    // Flush if needed
+    await editor.flushVault(vault)
+
+    await fs.renameFile(sourcePath, destPath)
+
+    await refreshTree(vault)
+
+    // Update tabs
+    await tabs.updatePath(sourcePath, destPath, sourceInfo.isDirectory)
+
+    let favoritesChanged = false
+    favorites.value = favorites.value.map((favoritePath) => {
+      const nextPath = sourceInfo.isDirectory ? replacePathPrefix(favoritePath, sourcePath, destPath) : favoritePath === sourcePath ? destPath : favoritePath
+      if (nextPath !== favoritePath) favoritesChanged = true
+      return nextPath
+    })
+
+    if (vault.type === 'git') {
+      await git.commit(vault.id)
+      await git.refreshStatus(vault.id)
+    }
+    if (favoritesChanged) await useSettingsStore().persist()
   }
 
   function getEffectiveFilters(vault: Vault): FileFilterSettings {
@@ -522,6 +583,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     setVaultGroup,
     moveNode,
     copyNode,
+    renameNode,
     addFavorite,
     removeFavorite,
     isFavorite,

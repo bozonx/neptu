@@ -87,6 +87,7 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
                 v-if="tabs.leftSidebarMode === 'single'"
                 @create-note="dialogs.openCreateNote"
                 @create-folder="dialogs.openCreateFolder"
+                @rename-node="dialogs.openRenameNode"
                 @edit-vault="dialogs.openEditVault"
                 @remove-vault="dialogs.openRemoveVaultConfirm"
                 @create-group="dialogs.openCreateGroup"
@@ -98,6 +99,7 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
                 v-else
                 @create-note="dialogs.openCreateNote"
                 @create-folder="dialogs.openCreateFolder"
+                @rename-node="dialogs.openRenameNode"
                 @edit-vault="dialogs.openEditVault"
                 @remove-vault="dialogs.openRemoveVaultConfirm"
               />
