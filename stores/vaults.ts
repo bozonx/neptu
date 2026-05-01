@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import {
   DEFAULT_FILE_FILTERS,
   type AddVaultPayload,
+  type ContentType,
   type FileFilterSettings,
   type FileNode,
   type GitVaultSettings,
@@ -11,6 +12,8 @@ import {
 import {
   DEFAULT_VAULT_CONFIG,
   BLOG_VAULT_CONFIG,
+  SITE_VAULT_CONFIG,
+  CUSTOM_VAULT_CONFIG,
   isValidVaultConfig,
   type VaultConfig,
 } from '~/types/vault-config'
@@ -115,12 +118,20 @@ export const useVaultsStore = defineStore('vaults', () => {
     await refreshAllTrees()
   }
 
+  function getTemplateConfig(contentType?: string): VaultConfig {
+    switch (contentType) {
+      case 'blog': return BLOG_VAULT_CONFIG
+      case 'site': return SITE_VAULT_CONFIG
+      case 'custom': return CUSTOM_VAULT_CONFIG
+      default: return DEFAULT_VAULT_CONFIG
+    }
+  }
+
   async function ensureVaultMarker(vault: Vault) {
     const fs = useFs()
     const markerPath = await fs.join(vault.path, '.neptu-vault.yaml')
     if (!(await fs.exists(markerPath))) {
-      const config = vault.contentType === 'blog' ? BLOG_VAULT_CONFIG : DEFAULT_VAULT_CONFIG
-      await fs.writeYaml(markerPath, config)
+      await fs.writeYaml(markerPath, getTemplateConfig(vault.contentType))
     }
   }
 
@@ -148,6 +159,22 @@ export const useVaultsStore = defineStore('vaults', () => {
     const path = await fs.join(vault.path, '.neptu-vault.yaml')
     await fs.writeYaml(path, config)
     vaultConfigs.value[vault.id] = config
+  }
+
+  async function changeVaultType(vault: Vault, newContentType: ContentType): Promise<void> {
+    const fs = useFs()
+    const markerPath = await fs.join(vault.path, '.neptu-vault.yaml')
+    if (await fs.exists(markerPath)) {
+      await fs.deleteFile(markerPath)
+    }
+    vault.contentType = newContentType
+    delete vault.contentFolder
+    delete vault.filters
+    delete vault.excludes
+    await fs.writeYaml(markerPath, getTemplateConfig(newContentType))
+    await loadVaultConfig(vault)
+    await refreshTree(vault)
+    await useSettingsStore().persist()
   }
 
   async function addFavorite(path: string) {
@@ -718,6 +745,8 @@ export const useVaultsStore = defineStore('vaults', () => {
     ensureVaultMarker,
     loadVaultConfig,
     saveVaultConfig,
+    changeVaultType,
+    getTemplateConfig,
     getEffectiveContentRoot,
     getEffectiveFilters,
     getEffectiveExcludes,

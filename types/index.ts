@@ -319,6 +319,8 @@ export interface AddVaultPayload {
   contentType?: ContentType
   contentFolder?: string
   siteLangMode?: SiteLangMode
+  filters?: FileFilterSettings
+  excludes?: string[]
 }
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'

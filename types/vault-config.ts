@@ -132,6 +132,25 @@ export const DEFAULT_VAULT_CONFIG: VaultConfig = {
   version: 1,
 }
 
+export const SITE_VAULT_CONFIG: VaultConfig = {
+  version: 1,
+  contentRoot: 'src',
+  media: {
+    uploadMode: 'global-folder',
+    globalFolder: 'src/public/media',
+    compression: {
+      enabled: true,
+      maxDimension: 1920,
+      quality: 0.65,
+      format: 'webp',
+    },
+  },
+}
+
+export const CUSTOM_VAULT_CONFIG: VaultConfig = {
+  version: 1,
+}
+
 export const BLOG_VAULT_CONFIG: VaultConfig = {
   version: 1,
   contentRoot: 'src',

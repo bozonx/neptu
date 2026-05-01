@@ -1,4 +1,5 @@
-import type { ContentType, FileNode, GitCommitMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
+import { DEFAULT_FILE_FILTERS } from '~/types'
+import type { ContentType, FileFilterSettings, FileNode, GitCommitMode, SiteLangMode, Vault, VaultGroup, VaultType } from '~/types'
 
 /**
  * Composable that manages all sidebar dialog state and CRUD actions.
@@ -25,6 +26,12 @@ export function useSidebarDialogs() {
   const newContentType = ref<ContentType>('vault')
   const newContentFolder = ref('src')
   const newSiteLangMode = ref<SiteLangMode>('monolingual')
+  const newOverrideFilters = ref(false)
+  const newOverrideExcludes = ref(false)
+  const newOverrideContentFolder = ref(false)
+  const newFilters = ref<FileFilterSettings>(JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS)))
+  const newExcludes = ref<string[]>([])
+  const newExcludeInput = ref('')
 
   const gitModeItems = [
     { label: t('vault.connectExisting'), value: 'connect' as const },
@@ -64,6 +71,12 @@ export function useSidebarDialogs() {
     newContentType.value = 'vault'
     newContentFolder.value = 'src'
     newSiteLangMode.value = 'monolingual'
+    newOverrideFilters.value = false
+    newOverrideExcludes.value = false
+    newOverrideContentFolder.value = false
+    newFilters.value = JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
+    newExcludes.value = []
+    newExcludeInput.value = ''
   }
 
   watch(addLocalVaultOpen, (value) => {
@@ -113,8 +126,12 @@ export function useSidebarDialogs() {
             }
           : undefined,
         contentType: newContentType.value,
-        contentFolder: newContentType.value !== 'vault' ? newContentFolder.value : undefined,
+        contentFolder: newContentType.value !== 'vault' && newOverrideContentFolder.value
+          ? newContentFolder.value
+          : undefined,
         siteLangMode: newContentType.value === 'custom' ? newSiteLangMode.value : undefined,
+        filters: newOverrideFilters.value ? newFilters.value : undefined,
+        excludes: newOverrideExcludes.value ? newExcludes.value : undefined,
       })
       addLocalVaultOpen.value = false
       addGitVaultOpen.value = false
@@ -300,6 +317,12 @@ export function useSidebarDialogs() {
     newContentType,
     newContentFolder,
     newSiteLangMode,
+    newOverrideFilters,
+    newOverrideExcludes,
+    newOverrideContentFolder,
+    newFilters,
+    newExcludes,
+    newExcludeInput,
     gitModeItems,
     commitModeItems,
     showCommitDebounce,

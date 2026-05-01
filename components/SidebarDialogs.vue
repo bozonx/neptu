@@ -70,13 +70,78 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           </UFormField>
         </template>
 
-        <UFormField
-          v-if="ctx.newContentType.value !== 'vault'"
-          :label="$t('vault.contentFolder')"
-          :hint="$t('vault.contentFolderHint')"
-        >
-          <UInput v-model="ctx.newContentFolder.value" />
-        </UFormField>
+        <USeparator class="my-2" />
+
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            {{ $t('sidebar.vaultOverrides') }}
+          </h3>
+          <p class="text-xs text-muted">
+            {{ $t('vault.creationOverridesHint') }}
+          </p>
+
+          <UFormField
+            v-if="ctx.newContentType.value !== 'vault'"
+          >
+            <UCheckbox
+              v-model="ctx.newOverrideContentFolder.value"
+              :label="$t('vault.overrideContentFolder')"
+            />
+            <UInput
+              v-if="ctx.newOverrideContentFolder.value"
+              v-model="ctx.newContentFolder.value"
+              :placeholder="$t('vault.contentFolderHint')"
+              class="mt-2"
+            />
+          </UFormField>
+
+          <UFormField>
+            <UCheckbox
+              v-model="ctx.newOverrideFilters.value"
+              :label="$t('vault.overrideFileFilters')"
+            />
+          </UFormField>
+
+          <UFormField>
+            <UCheckbox
+              v-model="ctx.newOverrideExcludes.value"
+              :label="$t('vault.overrideExcludes')"
+            />
+            <div
+              v-if="ctx.newOverrideExcludes.value"
+              class="mt-2 space-y-2"
+            >
+              <div class="flex items-center gap-2">
+                <UInput
+                  v-model="ctx.newExcludeInput.value"
+                  :placeholder="$t('vault.excludePlaceholder')"
+                  class="flex-1"
+                  @keydown.enter="() => { const raw = ctx.newExcludeInput.value.trim(); if (raw && !ctx.newExcludes.value.includes(raw)) { ctx.newExcludes.value.push(raw); ctx.newExcludeInput.value = '' } }"
+                />
+                <UButton
+                  icon="i-lucide-plus"
+                  color="neutral"
+                  variant="ghost"
+                  @click="() => { const raw = ctx.newExcludeInput.value.trim(); if (raw && !ctx.newExcludes.value.includes(raw)) { ctx.newExcludes.value.push(raw); ctx.newExcludeInput.value = '' } }"
+                />
+              </div>
+              <div
+                v-if="ctx.newExcludes.value.length"
+                class="flex flex-wrap gap-1"
+              >
+                <UBadge
+                  v-for="(item, idx) in ctx.newExcludes.value"
+                  :key="idx"
+                  color="neutral"
+                  variant="soft"
+                  class="font-mono text-xs"
+                  :label="item"
+                  @close="ctx.newExcludes.value.splice(idx, 1)"
+                />
+              </div>
+            </div>
+          </UFormField>
+        </section>
       </div>
     </template>
 
@@ -189,13 +254,78 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           </UFormField>
         </template>
 
-        <UFormField
-          v-if="ctx.newContentType.value !== 'vault'"
-          :label="$t('vault.contentFolder')"
-          :hint="$t('vault.contentFolderHint')"
-        >
-          <UInput v-model="ctx.newContentFolder.value" />
-        </UFormField>
+        <USeparator class="my-2" />
+
+        <section class="space-y-3">
+          <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+            {{ $t('sidebar.vaultOverrides') }}
+          </h3>
+          <p class="text-xs text-muted">
+            {{ $t('vault.creationOverridesHint') }}
+          </p>
+
+          <UFormField
+            v-if="ctx.newContentType.value !== 'vault'"
+          >
+            <UCheckbox
+              v-model="ctx.newOverrideContentFolder.value"
+              :label="$t('vault.overrideContentFolder')"
+            />
+            <UInput
+              v-if="ctx.newOverrideContentFolder.value"
+              v-model="ctx.newContentFolder.value"
+              :placeholder="$t('vault.contentFolderHint')"
+              class="mt-2"
+            />
+          </UFormField>
+
+          <UFormField>
+            <UCheckbox
+              v-model="ctx.newOverrideFilters.value"
+              :label="$t('vault.overrideFileFilters')"
+            />
+          </UFormField>
+
+          <UFormField>
+            <UCheckbox
+              v-model="ctx.newOverrideExcludes.value"
+              :label="$t('vault.overrideExcludes')"
+            />
+            <div
+              v-if="ctx.newOverrideExcludes.value"
+              class="mt-2 space-y-2"
+            >
+              <div class="flex items-center gap-2">
+                <UInput
+                  v-model="ctx.newExcludeInput.value"
+                  :placeholder="$t('vault.excludePlaceholder')"
+                  class="flex-1"
+                  @keydown.enter="() => { const raw = ctx.newExcludeInput.value.trim(); if (raw && !ctx.newExcludes.value.includes(raw)) { ctx.newExcludes.value.push(raw); ctx.newExcludeInput.value = '' } }"
+                />
+                <UButton
+                  icon="i-lucide-plus"
+                  color="neutral"
+                  variant="ghost"
+                  @click="() => { const raw = ctx.newExcludeInput.value.trim(); if (raw && !ctx.newExcludes.value.includes(raw)) { ctx.newExcludes.value.push(raw); ctx.newExcludeInput.value = '' } }"
+                />
+              </div>
+              <div
+                v-if="ctx.newExcludes.value.length"
+                class="flex flex-wrap gap-1"
+              >
+                <UBadge
+                  v-for="(item, idx) in ctx.newExcludes.value"
+                  :key="idx"
+                  color="neutral"
+                  variant="soft"
+                  class="font-mono text-xs"
+                  :label="item"
+                  @close="ctx.newExcludes.value.splice(idx, 1)"
+                />
+              </div>
+            </div>
+          </UFormField>
+        </section>
       </div>
     </template>
 

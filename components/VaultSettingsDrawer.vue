@@ -31,6 +31,8 @@ const editExcludes = ref<string[]>([])
 const newExclude = ref('')
 const newCustomExt = ref('')
 const showNameInput = ref(false)
+const changeTypeConfirmOpen = ref(false)
+const pendingContentType = ref<ContentType | null>(null)
 
 const editingContentFolder = ref(false)
 const editingFilters = ref(false)
@@ -151,6 +153,37 @@ watch(
 watch(open, (val) => {
   if (!val) emit('close')
 })
+
+watch(editContentType, (newVal, oldVal) => {
+  if (skipNextWatch || !open.value || !props.vault || newVal === oldVal) return
+  if (newVal !== props.vault.contentType) {
+    pendingContentType.value = newVal
+    skipNextWatch = true
+    editContentType.value = oldVal
+    nextTick(() => {
+      skipNextWatch = false
+    })
+    changeTypeConfirmOpen.value = true
+  }
+})
+
+async function confirmChangeType() {
+  if (!props.vault || !pendingContentType.value) return
+  try {
+    await vaults.changeVaultType(props.vault, pendingContentType.value)
+    skipNextWatch = true
+    editContentType.value = pendingContentType.value
+    nextTick(() => {
+      skipNextWatch = false
+    })
+    changeTypeConfirmOpen.value = false
+    pendingContentType.value = null
+    toast.add({ title: t('vault.typeChanged'), color: 'success' })
+  }
+  catch (error) {
+    toast.add({ title: t('vault.typeChangeFailed'), description: String(error), color: 'error' })
+  }
+}
 
 const effectiveGlobalModeLabel = computed(() =>
   settings.settings.defaultCommitMode === 'auto' ? t('vault.autoCommit') : t('vault.manualCommit'),
@@ -588,4 +621,32 @@ const siteLangModeItems = [
       </div>
     </template>
   </USlideover>
+
+  <UModal
+    v-model:open="changeTypeConfirmOpen"
+    :title="$t('vault.changeTypeTitle')"
+  >
+    <template #body>
+      <p class="text-sm">
+        {{ $t('vault.changeTypeConfirm', { name: vault?.name }) }}
+      </p>
+      <p class="text-xs text-muted mt-1">
+        {{ $t('vault.changeTypeHint') }}
+      </p>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          :label="$t('vault.cancel')"
+          @click="changeTypeConfirmOpen = false; pendingContentType = null"
+        />
+        <UButton
+          :label="$t('vault.change')"
+          @click="confirmChangeType"
+        />
+      </div>
+    </template>
+  </UModal>
 </template>
