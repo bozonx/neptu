@@ -250,7 +250,8 @@
     "duplicateRight": "Duplicate to right",
     "duplicateLeft": "Duplicate to left",
     "duplicateTop": "Duplicate to top",
-    "duplicateBottom": "Duplicate to bottom"
+    "duplicateBottom": "Duplicate to bottom",
+    "untitled": "Untitled"
   },
   "error": {
     "tauriRequired": "Tauri runtime required",

@@ -10,6 +10,8 @@ const tabsStore = useTabsStore()
 const editorStore = useEditorStore()
 const settingsStore = useSettingsStore()
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const titleInputRef = ref<HTMLInputElement | null>(null)
+const title = ref('')
 
 const activeTab = computed(() => {
   if (props.isMobile) {
@@ -27,6 +29,112 @@ function onInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   if (currentFilePath.value) {
     editorStore.setContent(currentFilePath.value, target.value)
+  }
+}
+
+watch(currentFilePath, (path) => {
+  if (path) {
+    const name = path.split(/[\/\\]/).pop() || ''
+    const lastDot = name.lastIndexOf('.')
+    if (lastDot > 0) {
+      title.value = name.substring(0, lastDot)
+    } else {
+      title.value = name
+    }
+  } else {
+    title.value = ''
+  }
+}, { immediate: true })
+
+function onTextareaKeydown(event: KeyboardEvent) {
+  if (!textareaRef.value) return
+  if (event.key === 'ArrowLeft') {
+    if (textareaRef.value.selectionStart === 0 && textareaRef.value.selectionEnd === 0) {
+      event.preventDefault()
+      titleInputRef.value?.focus()
+      nextTick(() => {
+        if (titleInputRef.value) {
+          titleInputRef.value.selectionStart = title.value.length
+          titleInputRef.value.selectionEnd = title.value.length
+        }
+      })
+    }
+  } else if (event.key === 'ArrowUp') {
+    const textBefore = textareaRef.value.value.substring(0, textareaRef.value.selectionStart)
+    if (!textBefore.includes('\n')) {
+      event.preventDefault()
+      titleInputRef.value?.focus()
+      nextTick(() => {
+        if (titleInputRef.value) {
+          titleInputRef.value.selectionStart = title.value.length
+          titleInputRef.value.selectionEnd = title.value.length
+        }
+      })
+    }
+  }
+}
+
+function onTitleKeydown(event: KeyboardEvent) {
+  if (!titleInputRef.value || !textareaRef.value) return
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    textareaRef.value.focus()
+    textareaRef.value.selectionStart = 0
+    textareaRef.value.selectionEnd = 0
+  } else if (event.key === 'ArrowRight') {
+    if (titleInputRef.value.selectionStart === title.value.length && titleInputRef.value.selectionEnd === title.value.length) {
+      event.preventDefault()
+      textareaRef.value.focus()
+      textareaRef.value.selectionStart = 0
+      textareaRef.value.selectionEnd = 0
+    }
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    if (currentFilePath.value) {
+      const content = buffer.value?.content ?? ''
+      editorStore.setContent(currentFilePath.value, '\n' + content)
+      nextTick(() => {
+        if (textareaRef.value) {
+          textareaRef.value.focus()
+          textareaRef.value.selectionStart = 0
+          textareaRef.value.selectionEnd = 0
+        }
+      })
+    }
+  }
+}
+
+async function renameCurrentFile() {
+  const path = currentFilePath.value
+  if (!path) return
+  const vault = editorStore.currentVault
+  if (!vault) return
+  
+  const name = path.split(/[\/\\]/).pop() || ''
+  const lastDot = name.lastIndexOf('.')
+  const ext = lastDot > 0 ? name.substring(lastDot) : ''
+  const oldTitle = lastDot > 0 ? name.substring(0, lastDot) : name
+  
+  const newTitle = title.value.trim()
+  if (!newTitle || newTitle === oldTitle) {
+    title.value = oldTitle
+    return
+  }
+  
+  const invalidChars = /[<>:"/\\|?*]/g
+  if (invalidChars.test(newTitle)) {
+    title.value = oldTitle
+    return
+  }
+
+  const newName = newTitle + ext
+  
+  try {
+    const vaultsStore = useVaultsStore()
+    await vaultsStore.renameNode(vault.id, path, newName)
+  } catch (err) {
+    console.error(err)
+    title.value = oldTitle
   }
 }
 
@@ -212,14 +320,23 @@ async function onDrop() {
 
       <template v-else>
         <FrontmatterForm :file-path="currentFilePath" />
+        <input
+          ref="titleInputRef"
+          v-model="title"
+          class="w-full bg-transparent outline-none px-8 pt-8 pb-4 font-sans text-3xl font-bold text-default placeholder-muted"
+          :placeholder="$t('editor.untitled')"
+          @keydown="onTitleKeydown"
+          @blur="renameCurrentFile"
+        />
         <textarea
           :key="currentFilePath"
           ref="textareaRef"
           :value="buffer?.content ?? ''"
-          class="w-full flex-1 resize-none bg-transparent outline-none p-8 font-mono text-base leading-7 text-default"
+          class="w-full flex-1 resize-none bg-transparent outline-none px-8 pb-8 font-mono text-base leading-7 text-default"
           spellcheck="false"
           :placeholder="$t('editor.startWriting')"
           @input="onInput"
+          @keydown="onTextareaKeydown"
           @blur="saveCursorState"
         />
       </template>

@@ -251,7 +251,8 @@
     "duplicateRight": "Дублировать вправо",
     "duplicateLeft": "Дублировать влево",
     "duplicateTop": "Дублировать вверх",
-    "duplicateBottom": "Дублировать вниз"
+    "duplicateBottom": "Дублировать вниз",
+    "untitled": "Без названия"
   },
   "error": {
     "tauriRequired": "Требуется Tauri",
