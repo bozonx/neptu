@@ -214,6 +214,26 @@ export const useEditorStore = defineStore('editor', () => {
     return fullPath
   }
 
+  async function createFile(payload: {
+    vault: Vault
+    fileName: string
+    parentDir?: string
+  }) {
+    const fs = useFs()
+    const dir = payload.parentDir ?? useVaultsStore().getEffectiveContentRoot(payload.vault)
+    const fullPath = await fs.createFile(dir, payload.fileName)
+    const vaults = useVaultsStore()
+    await vaults.refreshTree(payload.vault)
+    if (payload.vault.type === 'git') {
+      const git = useGitStore()
+      await git.commit(payload.vault.id)
+      await git.refreshStatus(payload.vault.id)
+    }
+    await useTabsStore().openFile(fullPath)
+    useSearchStore().updateFile(fullPath, '')
+    return fullPath
+  }
+
   async function deleteNote(payload: { vault: Vault, path: string }) {
     const fs = useFs()
     if (payload.vault.type === 'git') useGitStore().cancelCommit(payload.vault.id)
@@ -457,6 +477,7 @@ export const useEditorStore = defineStore('editor', () => {
     save,
     flushVault,
     createNote,
+    createFile,
     deleteNote,
     reset,
     scrollToLine,

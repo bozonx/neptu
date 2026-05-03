@@ -2,6 +2,15 @@
 import type { SidebarDialogsContext } from '~/composables/useSidebarDialogs'
 
 defineProps<{ ctx: SidebarDialogsContext }>()
+
+function selectBaseName(event: FocusEvent) {
+  const target = event.target as HTMLInputElement | null
+  if (!target) return
+  const val = target.value
+  const dot = val.lastIndexOf('.')
+  if (dot > 0) target.setSelectionRange(0, dot)
+  else target.select()
+}
 </script>
 
 <template>
@@ -509,6 +518,43 @@ defineProps<{ ctx: SidebarDialogsContext }>()
           :label="$t('vault.create')"
           :disabled="!ctx.newFolderName.value.trim()"
           @click="ctx.submitCreateFolder"
+        />
+      </div>
+    </template>
+  </UModal>
+
+  <!-- New File -->
+  <UModal
+    v-model:open="ctx.newFileOpen.value"
+    :title="$t('vault.newFile')"
+  >
+    <template #body>
+      <UFormField
+        :label="$t('vault.fileName')"
+        :hint="$t('vault.fileNameAnyExtHint')"
+      >
+        <UInput
+          v-model="ctx.newFileName.value"
+          data-new-file-input
+          :placeholder="$t('vault.myNotePlaceholder')"
+          autofocus
+          @focus="selectBaseName"
+        />
+      </UFormField>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end gap-2 w-full">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          :label="$t('vault.cancel')"
+          @click="ctx.newFileOpen.value = false"
+        />
+        <UButton
+          :label="$t('vault.create')"
+          :disabled="!ctx.newFileName.value.trim()"
+          @click="ctx.submitCreateFile"
         />
       </div>
     </template>

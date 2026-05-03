@@ -18,6 +18,7 @@ const emit = defineEmits<{
   toggle: []
   toggleFolder: [path: string]
   createNote: [vault: Vault, dir?: string]
+  createFile: [vault: Vault, dir?: string]
   createFolder: [vault: Vault, dir?: string]
   renameNode: [vault: Vault, node: FileNode]
   convertImage: [vault: Vault, node: FileNode]
@@ -84,6 +85,7 @@ function onVaultDragEnd() {
 const vaultMenuItems = computed<DropdownMenuItem[][]>(() => {
   const groups: DropdownMenuItem[][] = []
   const top: DropdownMenuItem[] = [
+    { label: t('vault.newFileBtn'), icon: 'i-lucide-file-plus', onSelect: () => emit('createFile', props.vault) },
     { label: t('vault.newFolderBtn'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', props.vault) },
     { label: t('vault.editVault'), icon: 'i-lucide-pencil', onSelect: () => emit('editVault', props.vault) },
   ]
@@ -314,6 +316,7 @@ async function handleDelete(node: FileNode) {
       @rename="(n) => emit('renameNode', vault, n)"
       @convert-image="(n) => emit('convertImage', vault, n)"
       @create-in="(d) => emit('createNote', vault, d)"
+      @create-file-in="(d) => emit('createFile', vault, d)"
       @create-subfolder="(d) => emit('createFolder', vault, d)"
       @toggle-folder="(p: string) => emit('toggleFolder', p)"
     />
@@ -322,6 +325,7 @@ async function handleDelete(node: FileNode) {
       v-if="expanded"
       :items="[[
         { label: $t('vault.newNoteBtn', 'New Note'), icon: 'i-lucide-file-plus', onSelect: () => emit('createNote', vault) },
+        { label: $t('vault.newFileBtn', 'New File'), icon: 'i-lucide-file', onSelect: () => emit('createFile', vault) },
         { label: $t('vault.newFolderBtn', 'New Folder'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', vault) },
       ]]"
       :modal="false"

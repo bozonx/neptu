@@ -138,6 +138,14 @@ export function useFs() {
     return fullPath
   }
 
+  async function createFile(dirPath: string, fileName: string) {
+    const safe = fileName.trim()
+    if (!safe) throw new Error('File name cannot be empty')
+    const fullPath = await join(dirPath, safe)
+    await writeTextFile(fullPath, '')
+    return fullPath
+  }
+
   async function createFolder(dirPath: string, folderName: string) {
     const safe = folderName.trim()
     if (!safe) throw new Error('Folder name cannot be empty')
@@ -333,6 +341,7 @@ export function useFs() {
     moveFile,
     moveToTrash,
     createMarkdown,
+    createFile,
     createFolder,
     scanMarkdownTree,
     scanDir,

@@ -277,6 +277,33 @@ export function useSidebarDialogs() {
     }
   }
 
+  /* ── Create File ──────────────────────────────── */
+
+  const newFileOpen = ref(false)
+  const newFileName = ref('')
+  const newFileCtx = ref<{ vault: Vault, dir: string } | null>(null)
+
+  function openCreateFile(vault: Vault, dir?: string) {
+    newFileCtx.value = { vault, dir: dir ?? vaults.getEffectiveContentRoot(vault) }
+    newFileName.value = 'My note.md'
+    newFileOpen.value = true
+  }
+
+  async function submitCreateFile() {
+    if (!newFileCtx.value || !newFileName.value.trim()) return
+    try {
+      await editor.createFile({
+        vault: newFileCtx.value.vault,
+        fileName: newFileName.value.trim(),
+        parentDir: newFileCtx.value.dir,
+      })
+      newFileOpen.value = false
+    }
+    catch (error) {
+      toast.add({ title: t('toast.createFileFailed'), description: String(error), color: 'error' })
+    }
+  }
+
   /* ── Create Folder ────────────────────────────── */
 
   const newFolderOpen = ref(false)
@@ -465,6 +492,12 @@ export function useSidebarDialogs() {
     newNoteCtx,
     openCreateNote,
     submitCreateNote,
+    /* Create file */
+    newFileOpen,
+    newFileName,
+    newFileCtx,
+    openCreateFile,
+    submitCreateFile,
     /* Create folder */
     newFolderOpen,
     newFolderName,

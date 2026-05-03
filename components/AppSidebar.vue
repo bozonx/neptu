@@ -113,6 +113,7 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
               <SidebarSingleColumn
                 v-if="tabs.leftSidebarMode === 'single'"
                 @create-note="dialogs.openCreateNote"
+                @create-file="dialogs.openCreateFile"
                 @create-folder="dialogs.openCreateFolder"
                 @rename-node="dialogs.openRenameNode"
                 @convert-image="dialogs.openConvertImage"
@@ -126,6 +127,7 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
               <SidebarDualColumn
                 v-else
                 @create-note="dialogs.openCreateNote"
+                @create-file="dialogs.openCreateFile"
                 @create-folder="dialogs.openCreateFolder"
                 @rename-node="dialogs.openRenameNode"
                 @convert-image="dialogs.openConvertImage"

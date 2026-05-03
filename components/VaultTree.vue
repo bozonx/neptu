@@ -21,6 +21,7 @@ const emit = defineEmits<{
   rename: [node: FileNode]
   convertImage: [node: FileNode]
   createIn: [dirPath: string]
+  createFileIn: [dirPath: string]
   createSubfolder: [dirPath: string]
   toggleFolder: [path: string]
 }>()
@@ -143,6 +144,8 @@ function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
 function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
   return [
     [
+      { label: t('vault.newNoteBtn'), icon: 'i-lucide-file-plus', onSelect: () => emit('createIn', node.path) },
+      { label: t('vault.newFileBtn'), icon: 'i-lucide-file-plus', onSelect: () => emit('createFileIn', node.path) },
       { label: t('vault.newFolderBtn'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createSubfolder', node.path) },
       { label: t('vault.rename', 'Rename'), icon: 'i-lucide-pencil', onSelect: () => emit('rename', node) },
       { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
@@ -224,6 +227,7 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
         @rename="(n: FileNode) => emit('rename', n)"
         @convert-image="(n: FileNode) => emit('convertImage', n)"
         @create-in="(d: string) => emit('createIn', d)"
+        @create-file-in="(d: string) => emit('createFileIn', d)"
         @create-subfolder="(d: string) => emit('createSubfolder', d)"
         @toggle-folder="(p: string) => emit('toggleFolder', p)"
       />
