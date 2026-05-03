@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import EditorText from './EditorText.vue'
-import type { VaultConfig } from '~/types/vault-config'
+import { DEFAULT_AUTO_CONVERT_SETTINGS, type VaultConfig } from '~/types/vault-config'
 import { normalizeRelativePath } from '~/utils/paths'
 
 const props = defineProps<{
@@ -44,6 +44,9 @@ async function loadConfig() {
         naming: 'original',
       }
     }
+    if (!config.value.autoConvert) {
+      config.value.autoConvert = { ...DEFAULT_AUTO_CONVERT_SETTINGS }
+    }
   }
   catch (error) {
     toast.add({ title: t('vault.loadConfigFailed', 'Failed to load configuration'), description: String(error), color: 'error' })
@@ -54,6 +57,7 @@ async function loadConfig() {
         folder: 'media',
         naming: 'original',
       },
+      autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
     }
   }
   finally {
@@ -111,12 +115,7 @@ const newExclude = ref('')
 function ensureAutoConvert() {
   if (!config.value) return null
   if (!config.value.autoConvert) {
-    config.value.autoConvert = {
-      enabled: false,
-      format: 'webp',
-      quality: 0.85,
-      preserveTransparency: true,
-    }
+    config.value.autoConvert = { ...DEFAULT_AUTO_CONVERT_SETTINGS }
   }
   return config.value.autoConvert
 }

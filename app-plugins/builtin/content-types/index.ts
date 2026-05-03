@@ -1,4 +1,5 @@
 import type { Plugin } from '~/types/plugin'
+import { DEFAULT_AUTO_CONVERT_SETTINGS } from '~/types/vault-config'
 
 export const contentTypesPlugin: Plugin = {
   manifest: {
@@ -22,6 +23,7 @@ export const contentTypesPlugin: Plugin = {
             folder: 'public/media',
             naming: 'document-index' as const,
           },
+          autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
           excludes: ['node_modules', 'dist', '.astro'],
         },
       },
@@ -38,6 +40,7 @@ export const contentTypesPlugin: Plugin = {
             folder: 'public/media',
             naming: 'document-index' as const,
           },
+          autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
           excludes: ['node_modules', '.nuxt', '.output'],
         },
       },
@@ -53,6 +56,7 @@ export const contentTypesPlugin: Plugin = {
             folder: 'static/img',
             naming: 'document-index' as const,
           },
+          autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
           excludes: ['node_modules', 'build', '.docusaurus'],
         },
       },
@@ -69,6 +73,7 @@ export const contentTypesPlugin: Plugin = {
             folder: 'src/public/media',
             naming: 'document-index' as const,
           },
+          autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
           excludes: ['node_modules', 'dist', '.vitepress'],
         },
       },
@@ -85,6 +90,7 @@ export const contentTypesPlugin: Plugin = {
             folder: 'src/public/media',
             naming: 'document-index' as const,
           },
+          autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
           excludes: ['node_modules', 'dist', '.vitepress'],
         },
       },
@@ -101,6 +107,7 @@ export const contentTypesPlugin: Plugin = {
             folder: 'static/media',
             naming: 'document-index' as const,
           },
+          autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
           excludes: ['public', 'resources', 'node_modules'],
         },
       },
@@ -116,6 +123,7 @@ export const contentTypesPlugin: Plugin = {
             folder: 'assets/media',
             naming: 'document-index' as const,
           },
+          autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
           excludes: ['_site', '.jekyll-cache', 'vendor', 'node_modules'],
         },
       },
@@ -132,6 +140,7 @@ export const contentTypesPlugin: Plugin = {
             folder: 'src/assets/media',
             naming: 'document-index' as const,
           },
+          autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
           excludes: ['_site', 'node_modules'],
         },
       },

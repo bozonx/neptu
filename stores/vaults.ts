@@ -65,6 +65,18 @@ function fileExt(name: string): string {
   return lastDot > 0 ? name.slice(lastDot).toLowerCase() : ''
 }
 
+function extFromMime(mime: string): string {
+  switch (mime.toLowerCase()) {
+    case 'image/jpeg': return '.jpg'
+    case 'image/png': return '.png'
+    case 'image/webp': return '.webp'
+    case 'image/gif': return '.gif'
+    case 'image/avif': return '.avif'
+    case 'image/svg+xml': return '.svg'
+    default: return ''
+  }
+}
+
 function sanitizeFilenamePart(value: string): string {
   return value.trim().replace(/[<>:"/\\|?*]+/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'media'
 }
@@ -754,13 +766,13 @@ export const useVaultsStore = defineStore('vaults', () => {
   async function resolveMediaDestination(
     vault: Vault,
     documentPath: string,
-    sourcePath: string,
+    sourceName: string,
     index: number,
+    sourceBytes?: Uint8Array,
   ): Promise<{ destPath: string, markdownPath: string }> {
     const fs = useFs()
     const settings = getEffectiveMediaDir(vault)
     const documentDir = dirname(documentPath)
-    const sourceName = filename(sourcePath)
     const ext = fileExt(sourceName)
     const documentStem = sanitizeFilenamePart(fileStem(filename(documentPath)))
 
@@ -779,7 +791,8 @@ export const useVaultsStore = defineStore('vaults', () => {
       baseName = `${documentStem}-${index + 1}`
     }
     else if (settings.naming === 'hash') {
-      baseName = await hashBytes(await fs.readBytes(sourcePath))
+      if (!sourceBytes) throw new Error('Source bytes are required for hash-based media naming')
+      baseName = await hashBytes(sourceBytes)
     }
     else {
       baseName = sanitizeFilenamePart(fileStem(sourceName))
@@ -798,6 +811,48 @@ export const useVaultsStore = defineStore('vaults', () => {
     }
   }
 
+  async function importMediaBytesForDocument(
+    items: Array<{ name: string, type?: string, bytes: Uint8Array }>,
+    documentPath: string,
+  ): Promise<Array<{ path: string, markdownPath: string }>> {
+    const vault = findVaultForPath(documentPath)
+    if (!vault) return []
+
+    const fs = useFs()
+    const imported: Array<{ path: string, markdownPath: string }> = []
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]!
+      try {
+        const fallbackExt = extFromMime(item.type ?? '') || '.png'
+        const sourceName = fileExt(item.name) ? item.name : `${fileStem(item.name || 'clipboard-image')}${fallbackExt}`
+        const { destPath, markdownPath } = await resolveMediaDestination(vault, documentPath, sourceName, i, item.bytes)
+        const destDir = dirname(destPath)
+        await fs.ensureDir(destDir)
+        await fs.writeBytes(destPath, item.bytes)
+        const finalPath = await applyAutoConvert(vault, destPath)
+        const finalMarkdownPath = finalPath === destPath
+          ? markdownPath
+          : relativePath(dirname(documentPath), finalPath)
+        imported.push({ path: finalPath, markdownPath: finalMarkdownPath })
+      }
+      catch (error) {
+        console.error('Failed to import media bytes', item.name, error)
+      }
+    }
+
+    if (imported.length > 0) {
+      await refreshTree(vault)
+      if (vault.type === 'git') {
+        const git = useGitStore()
+        await git.commit(vault.id)
+        await git.refreshStatus(vault.id)
+      }
+    }
+
+    return imported
+  }
+
   async function importMediaFilesForDocument(paths: string[], documentPath: string): Promise<Array<{ path: string, markdownPath: string }>> {
     const vault = findVaultForPath(documentPath)
     if (!vault) return []
@@ -808,7 +863,8 @@ export const useVaultsStore = defineStore('vaults', () => {
     for (let i = 0; i < paths.length; i++) {
       const sourcePath = paths[i]!
       try {
-        const { destPath, markdownPath } = await resolveMediaDestination(vault, documentPath, sourcePath, i)
+        const sourceBytes = await fs.readBytes(sourcePath)
+        const { destPath, markdownPath } = await resolveMediaDestination(vault, documentPath, filename(sourcePath), i, sourceBytes)
         const destDir = dirname(destPath)
         await fs.ensureDir(destDir)
         if (sourcePath !== destPath) {
@@ -974,6 +1030,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     updateVault,
     importExternalFiles,
     importMediaFilesForDocument,
+    importMediaBytesForDocument,
     createVaultFolder,
     refreshTree,
     refreshAllTrees,

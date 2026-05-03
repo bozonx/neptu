@@ -140,6 +140,13 @@ export interface VaultConfig {
   excludes?: string[]
 }
 
+export const DEFAULT_AUTO_CONVERT_SETTINGS: AutoConvertSettings = {
+  enabled: false,
+  format: 'webp',
+  quality: 0.85,
+  preserveTransparency: true,
+}
+
 export const DEFAULT_VAULT_CONFIG: VaultConfig = {
   version: 1,
   mediaDir: {
@@ -147,6 +154,7 @@ export const DEFAULT_VAULT_CONFIG: VaultConfig = {
     folder: 'media',
     naming: 'original',
   },
+  autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
 }
 
 export const SITE_VAULT_CONFIG: VaultConfig = {
@@ -157,6 +165,7 @@ export const SITE_VAULT_CONFIG: VaultConfig = {
     folder: 'src/public/media',
     naming: 'document-index',
   },
+  autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
 }
 
 export const CUSTOM_VAULT_CONFIG: VaultConfig = {
@@ -166,6 +175,7 @@ export const CUSTOM_VAULT_CONFIG: VaultConfig = {
     folder: 'media',
     naming: 'original',
   },
+  autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
 }
 
 export const BLOG_VAULT_CONFIG: VaultConfig = {
@@ -176,6 +186,7 @@ export const BLOG_VAULT_CONFIG: VaultConfig = {
     folder: 'src/public/media',
     naming: 'document-index',
   },
+  autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
   schemas: [
     {
       glob: 'src/post/**/*.md',
