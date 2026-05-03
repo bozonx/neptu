@@ -3,8 +3,13 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import type { FileNode } from '~/types'
 import type { DailyNotesMonth } from '~/composables/useDailyNotes'
 
+const props = defineProps<{
+  // When true, the tree adapts to the content height instead of stretching
+  // to fill the parent (used when embedded inside the single-column sidebar).
+  inline?: boolean
+}>()
+
 const settings = useSettingsStore()
-const tabs = useTabsStore()
 const editor = useEditorStore()
 const toast = useToast()
 const { t } = useI18n()
@@ -111,7 +116,7 @@ function folderMenuItems(month: DailyNotesMonth): DropdownMenuItem[][] {
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div :class="props.inline ? 'flex flex-col' : 'flex flex-col h-full'">
     <!-- Header -->
     <div class="flex items-center justify-between px-2 py-1.5 border-b border-default shrink-0">
       <div class="flex items-center gap-1.5">
@@ -132,7 +137,7 @@ function folderMenuItems(month: DailyNotesMonth): DropdownMenuItem[][] {
     </div>
 
     <!-- Tree -->
-    <div class="flex-1 overflow-auto p-2 min-h-0">
+    <div :class="props.inline ? 'p-2' : 'flex-1 overflow-auto p-2 min-h-0'">
       <div
         v-if="loading"
         class="text-xs text-muted px-2 py-1"

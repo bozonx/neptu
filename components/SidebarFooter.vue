@@ -94,11 +94,11 @@ const addMenuItems = [
       <PluginButtons location="left-sidebar-footer" />
     </div>
     <UButton
-      :icon="tabs.leftSidebarMode === 'single' ? 'i-lucide-panel-left' : 'i-lucide-columns'"
+      :icon="tabs.leftSidebarMode === 'single' ? 'i-lucide-columns-2' : 'i-lucide-panel-left'"
       size="xs"
       color="neutral"
       variant="ghost"
-      title="Toggle dual column mode"
+      :title="tabs.leftSidebarMode === 'single' ? $t('sidebar.enableDualColumn') : $t('sidebar.disableDualColumn')"
       @click="emit('toggleMode')"
     />
   </div>

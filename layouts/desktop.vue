@@ -65,6 +65,7 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
     <Splitpanes
       v-if="layoutReady"
       id="main-layout"
+      :key="tabsStore.rightSidebarCollapsed ? 'no-right' : 'with-right'"
       class="h-full"
       @resized="handleResize"
     >
@@ -108,7 +109,8 @@ function handleResize(event: Array<{ pane: number, size: number }>) {
         :size="tabsStore.rightSidebarSize"
         min-size="10"
         max-size="30"
-        class="flex flex-col bg-default pb-7"
+        class="flex flex-col bg-default"
+        :class="activeFilePath ? 'pb-7' : ''"
       >
         <AppPanel class="shrink-0" />
         <FileSidebar class="flex-1 min-h-0" />

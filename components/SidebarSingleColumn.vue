@@ -149,7 +149,10 @@ const groupMenuItems = computed(() => (group: VaultGroup): DropdownMenuItem[][] 
     </div>
 
     <!-- Daily Notes -->
-    <DailyNotesTree class="mb-2" />
+    <DailyNotesTree
+      class="mb-2"
+      inline
+    />
 
     <!-- Ungrouped vaults area -->
     <div

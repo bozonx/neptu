@@ -5,7 +5,6 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
-import CharacterCount from '@tiptap/extension-character-count'
 import { Table } from '@tiptap/extension-table'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
@@ -61,8 +60,6 @@ const linkUrlInput = ref('')
 const isApplyingEditorUpdate = ref(false)
 
 const buffer = computed(() => props.filePath ? editorStore.buffers[props.filePath] : null)
-const characterCount = computed(() => editor.value?.storage.characterCount.characters() ?? 0)
-const wordCount = computed(() => editor.value?.storage.characterCount.words() ?? 0)
 
 function normalizeMarkdown(markdown: string): string {
   return markdown
@@ -207,7 +204,6 @@ const editor = useEditor({
     Placeholder.configure({
       placeholder: () => t('editor.startWriting'),
     }),
-    CharacterCount,
     Table.configure({
       resizable: true,
     }),
@@ -974,11 +970,6 @@ onUnmounted(() => {
         @blur="saveCursorState"
         @select="updateSourceSelection"
       />
-    </div>
-
-    <div class="flex shrink-0 items-center justify-between border-t border-default bg-muted/30 px-8 py-1.5 text-xs text-muted">
-      <span>{{ characterCount }} {{ $t('editor.characters') }}</span>
-      <span>{{ wordCount }} {{ $t('editor.words') }}</span>
     </div>
   </div>
 </template>
