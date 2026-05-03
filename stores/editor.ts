@@ -100,7 +100,7 @@ export const useEditorStore = defineStore('editor', () => {
       }
 
       // Only read text for types that are actually text-based
-      if (viewType === 'text' || viewType === 'vault-config') {
+      if (isTextViewType(viewType)) {
         rawContent = await fs.readText(path)
       }
 

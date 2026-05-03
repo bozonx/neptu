@@ -180,11 +180,13 @@ export const useVaultsStore = defineStore('vaults', () => {
   function normalizeVaultConfig(config: unknown): unknown {
     if (!config || typeof config !== 'object') return config
     const raw = config as Record<string, unknown>
-    if (raw['media-dir'] !== undefined && raw.mediaDir === undefined) {
-      raw.mediaDir = raw['media-dir']
+    if (raw['media-dir'] !== undefined) {
+      if (raw.mediaDir === undefined) raw.mediaDir = raw['media-dir']
+      delete raw['media-dir']
     }
-    if (raw['auto-convert'] !== undefined && raw.autoConvert === undefined) {
-      raw.autoConvert = raw['auto-convert']
+    if (raw['auto-convert'] !== undefined) {
+      if (raw.autoConvert === undefined) raw.autoConvert = raw['auto-convert']
+      delete raw['auto-convert']
     }
     return raw
   }

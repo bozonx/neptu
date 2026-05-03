@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import EditorText from './EditorText.vue'
+import EditorCode from './EditorCode.vue'
 import { DEFAULT_AUTO_CONVERT_SETTINGS, type VaultConfig } from '~/types/vault-config'
 import { normalizeRelativePath } from '~/utils/paths'
+import SchemasSection from '~/components/vault-config/SchemasSection.vue'
+import FiltersSection from '~/components/vault-config/FiltersSection.vue'
 
 const props = defineProps<{
   filePath: string
 }>()
+
+const { t } = useI18n()
+const fs = useFs()
+const toast = useToast()
 
 const mode = ref<'ui' | 'text'>('ui')
 const vaultName = computed(() => {
@@ -13,40 +19,74 @@ const vaultName = computed(() => {
   return vault?.name || t('vault.configuration', 'Vault Configuration')
 })
 
-const { t } = useI18n()
-const fs = useFs()
-const toast = useToast()
-
 const config = ref<VaultConfig | null>(null)
 const loading = ref(true)
+const saveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+/**
+ * Snapshot of the last-known on-disk state. Used to skip redundant writes
+ * caused by default-fill mutations during loadConfig() or by re-entering UI
+ * mode after a no-op text edit.
+ */
+let lastSavedJson = ''
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+let pendingSave = false
+
+/**
+ * Migrate kebab-case keys produced by hand-written templates to camelCase
+ * and drop legacy variants in place.
+ */
+function migrateKebabKeys(raw: Record<string, unknown>): void {
+  if (raw['media-dir'] !== undefined) {
+    if (raw.mediaDir === undefined) raw.mediaDir = raw['media-dir']
+    delete raw['media-dir']
+  }
+  if (raw['auto-convert'] !== undefined) {
+    if (raw.autoConvert === undefined) raw.autoConvert = raw['auto-convert']
+    delete raw['auto-convert']
+  }
+}
+
+/** Strip empty optional collections so the YAML stays clean. */
+function sanitize(cfg: VaultConfig): VaultConfig {
+  if (cfg.contentRoot) cfg.contentRoot = normalizeRelativePath(cfg.contentRoot)
+  if (cfg.schemas && cfg.schemas.length === 0) delete cfg.schemas
+  if (cfg.excludes && cfg.excludes.length === 0) delete cfg.excludes
+  if (cfg.filters && cfg.filters.groups.length === 0) delete cfg.filters
+  return cfg
+}
 
 async function loadConfig() {
   loading.value = true
   try {
-    const rawConfig = await fs.readYaml<VaultConfig>(props.filePath)
-    config.value = rawConfig || { version: 1 }
+    const rawConfig = (await fs.readYaml<VaultConfig>(props.filePath)) || { version: 1 }
+    migrateKebabKeys(rawConfig as unknown as Record<string, unknown>)
 
-    if (!config.value.version) {
-      config.value.version = 1
+    if (!rawConfig.version) {
+      rawConfig.version = 1
     }
-    if (!config.value.mediaDir && config.value.media) {
-      config.value.mediaDir = {
-        mode: config.value.media.uploadMode,
-        folder: config.value.media.globalFolder,
+    if (!rawConfig.mediaDir && rawConfig.media) {
+      rawConfig.mediaDir = {
+        mode: rawConfig.media.uploadMode,
+        folder: rawConfig.media.globalFolder,
         naming: 'original',
       }
-      delete config.value.media
     }
-    if (!config.value.mediaDir) {
-      config.value.mediaDir = {
+    delete rawConfig.media
+    if (!rawConfig.mediaDir) {
+      rawConfig.mediaDir = {
         mode: 'adjacent-folder',
         folder: 'media',
         naming: 'original',
       }
     }
-    if (!config.value.autoConvert) {
-      config.value.autoConvert = { ...DEFAULT_AUTO_CONVERT_SETTINGS }
+    if (!rawConfig.autoConvert) {
+      rawConfig.autoConvert = { ...DEFAULT_AUTO_CONVERT_SETTINGS }
     }
+
+    config.value = rawConfig
+    // Snapshot AFTER mutations so the watcher does not auto-save on open.
+    lastSavedJson = JSON.stringify(sanitize(structuredClone(toRaw(rawConfig))))
   }
   catch (error) {
     toast.add({ title: t('vault.loadConfigFailed', 'Failed to load configuration'), description: String(error), color: 'error' })
@@ -59,38 +99,80 @@ async function loadConfig() {
       },
       autoConvert: { ...DEFAULT_AUTO_CONVERT_SETTINGS },
     }
+    lastSavedJson = JSON.stringify(config.value)
   }
   finally {
     loading.value = false
   }
 }
 
-async function saveConfig() {
+async function saveConfig(): Promise<void> {
   if (!config.value) return
+  pendingSave = false
+  const sanitized = sanitize(structuredClone(toRaw(config.value)))
+  const snapshot = JSON.stringify(sanitized)
+  if (snapshot === lastSavedJson) {
+    saveStatus.value = 'idle'
+    return
+  }
+  saveStatus.value = 'saving'
   try {
-    if (config.value.contentRoot) {
-      config.value.contentRoot = normalizeRelativePath(config.value.contentRoot)
-    }
-    await fs.writeYaml(props.filePath, config.value)
+    await fs.writeYaml(props.filePath, sanitized)
+    lastSavedJson = snapshot
+    saveStatus.value = 'saved'
     const vault = useVaultsStore().findVaultForPath(props.filePath)
     if (vault) {
       await useVaultsStore().loadVaultConfig(vault)
     }
   }
   catch (error) {
+    saveStatus.value = 'error'
     toast.add({ title: t('vault.saveConfigFailed', 'Failed to save configuration'), description: String(error), color: 'error' })
   }
 }
 
-const debouncedSave = useDebounceFn(saveConfig, 500)
+function scheduleSave() {
+  pendingSave = true
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    saveTimer = null
+    void saveConfig()
+  }, 500)
+}
+
+async function flushSave() {
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
+  }
+  if (pendingSave) await saveConfig()
+}
 
 watch(config, () => {
   if (!loading.value) {
-    debouncedSave()
+    scheduleSave()
   }
 }, { deep: true })
 
+async function switchTo(next: 'ui' | 'text') {
+  if (mode.value === next) return
+  if (mode.value === 'ui') {
+    // Persist any pending UI edits before handing the file to the text editor.
+    await flushSave()
+  }
+  mode.value = next
+  if (next === 'ui') {
+    // Re-read so we pick up changes the text editor may have written.
+    await loadConfig()
+  }
+}
+
 onMounted(loadConfig)
+onBeforeUnmount(() => {
+  if (saveTimer) clearTimeout(saveTimer)
+  // Best-effort flush; not awaited because component is being torn down.
+  if (pendingSave) void saveConfig()
+})
 
 const mediaModeItems = computed(() => [
   { label: t('vault.mediaModeGlobal'), value: 'global-folder' },
@@ -156,20 +238,32 @@ function removeExclude(idx: number) {
           class="size-4 text-muted"
         />
         {{ vaultName }} — {{ t('vault.configuration', 'Configuration') }}
+        <span
+          v-if="saveStatus === 'saving'"
+          class="text-xs text-muted ml-2"
+        >{{ t('vault.saving', 'Saving…') }}</span>
+        <span
+          v-else-if="saveStatus === 'saved'"
+          class="text-xs text-success ml-2"
+        >{{ t('vault.saved', 'Saved') }}</span>
+        <span
+          v-else-if="saveStatus === 'error'"
+          class="text-xs text-error ml-2"
+        >{{ t('vault.saveConfigFailed') }}</span>
       </div>
 
       <div class="flex items-center gap-1 bg-elevated/50 p-1 rounded-md border border-default">
         <button
           class="px-3 py-1 text-xs font-medium rounded transition-colors"
           :class="mode === 'ui' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted hover:text-default'"
-          @click="mode = 'ui'; loadConfig()"
+          @click="switchTo('ui')"
         >
           {{ t('vault.visualEditor', 'Visual Editor') }}
         </button>
         <button
           class="px-3 py-1 text-xs font-medium rounded transition-colors"
           :class="mode === 'text' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted hover:text-default'"
-          @click="mode = 'text'"
+          @click="switchTo('text')"
         >
           {{ t('vault.textEditor', 'Text Editor') }}
         </button>
@@ -277,7 +371,7 @@ function removeExclude(idx: number) {
                 </UFormField>
                 <UFormField :label="$t('convertImage.maxDimension')">
                   <UInput
-                    v-model="config.autoConvert.maxDimension"
+                    v-model.number="config.autoConvert.maxDimension"
                     type="number"
                     :min="1"
                     :placeholder="$t('convertImage.maxDimensionPlaceholder')"
@@ -299,6 +393,14 @@ function removeExclude(idx: number) {
                 </UFormField>
               </template>
             </div>
+
+            <USeparator />
+
+            <SchemasSection v-model="config.schemas" />
+
+            <USeparator />
+
+            <FiltersSection v-model="config.filters" />
 
             <USeparator />
 
@@ -349,7 +451,7 @@ function removeExclude(idx: number) {
     </div>
 
     <!-- Text Mode -->
-    <EditorText
+    <EditorCode
       v-else
       :file-path="props.filePath"
     />

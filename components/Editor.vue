@@ -142,7 +142,15 @@ async function onDrop() {
           :view-type="viewType"
         />
         <EditorText
-          v-else-if="viewType === 'text'"
+          v-else-if="viewType === 'markdown'"
+          :file-path="currentFilePath"
+        />
+        <EditorPlainText
+          v-else-if="viewType === 'plain'"
+          :file-path="currentFilePath"
+        />
+        <EditorCode
+          v-else-if="viewType === 'code'"
           :file-path="currentFilePath"
         />
         <EditorUnsupported
@@ -153,7 +161,7 @@ async function onDrop() {
 
       <!-- Mobile Bottom Toolbar Placeholder -->
       <div
-        v-if="props.isMobile && viewType === 'text'"
+        v-if="props.isMobile && viewType === 'markdown'"
         class="h-10 border-t border-default bg-elevated/50 flex items-center px-4 shrink-0"
       >
         <div class="flex items-center gap-4">
