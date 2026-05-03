@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import { basename, dirname, relativePath } from '~/utils/paths'
 import { getCodeLanguage } from '~/utils/fileTypes'
+import { highlightCode } from '~/composables/useShiki'
 
 const props = defineProps<{
   filePath: string
 }>()
 
 const editorStore = useEditorStore()
+const colorMode = useColorMode()
 
 const titleInputRef = ref<HTMLInputElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const highlightRef = ref<HTMLDivElement | null>(null)
 const title = ref('')
 
 const buffer = computed(() => props.filePath ? editorStore.buffers[props.filePath] : null)
 const language = computed(() => getCodeLanguage(props.filePath) ?? 'text')
+
+const highlightedHtml = ref('')
+const isHighlightReady = ref(false)
 
 const lineCount = computed(() => {
   const content = buffer.value?.content ?? ''
@@ -58,7 +64,33 @@ function updateSelection() {
 function syncScroll() {
   const ta = textareaRef.value
   const gutter = gutterRef.value
-  if (ta && gutter) gutter.scrollTop = ta.scrollTop
+  const highlight = highlightRef.value
+  if (ta) {
+    if (gutter) gutter.scrollTop = ta.scrollTop
+    if (highlight) highlight.scrollTop = ta.scrollTop
+  }
+}
+
+async function updateHighlight() {
+  const code = buffer.value?.content ?? ''
+  const lang = language.value
+  if (!code || lang === 'text') {
+    highlightedHtml.value = ''
+    isHighlightReady.value = false
+    return
+  }
+  try {
+    highlightedHtml.value = await highlightCode({
+      code,
+      lang,
+      theme: colorMode.value === 'dark' ? 'dark' : 'light',
+    })
+    isHighlightReady.value = true
+  }
+  catch {
+    highlightedHtml.value = ''
+    isHighlightReady.value = false
+  }
 }
 
 const gutterRef = ref<HTMLElement | null>(null)
@@ -258,6 +290,14 @@ watch(() => props.filePath ? editorStore.scrollToLineTrigger[props.filePath] : n
   syncScroll()
 })
 
+watch(() => buffer.value?.content ?? '', async () => {
+  await updateHighlight()
+}, { immediate: true })
+
+watch(() => colorMode.value, async () => {
+  await updateHighlight()
+})
+
 onUnmounted(() => {
   editorStore.activeSelectionText = ''
 })
@@ -305,26 +345,35 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <textarea
-        :key="props.filePath"
-        ref="textareaRef"
-        :value="buffer?.content ?? ''"
-        class="min-h-0 flex-1 resize-none whitespace-pre overflow-auto bg-transparent px-4 py-2 font-mono text-sm leading-[22px] text-default outline-none"
-        spellcheck="false"
-        autocapitalize="off"
-        autocomplete="off"
-        autocorrect="off"
-        wrap="off"
-        :data-editor-file-path="props.filePath"
-        :placeholder="$t('editor.startWriting')"
-        @input="onInput"
-        @keydown="onKeydown"
-        @keyup="updateSelection"
-        @mouseup="updateSelection"
-        @select="updateSelection"
-        @scroll="syncScroll"
-        @blur="saveCursorState"
-      />
+      <div class="relative min-h-0 flex-1 overflow-hidden">
+        <div
+          v-if="isHighlightReady"
+          ref="highlightRef"
+          class="absolute inset-0 overflow-auto whitespace-pre px-4 py-2 font-mono text-sm leading-[22px] pointer-events-none select-none"
+          v-html="highlightedHtml"
+        />
+        <textarea
+          :key="props.filePath"
+          ref="textareaRef"
+          :value="buffer?.content ?? ''"
+          class="relative z-10 min-h-0 h-full w-full resize-none whitespace-pre overflow-auto bg-transparent px-4 py-2 font-mono text-sm leading-[22px] outline-none"
+          :class="isHighlightReady ? 'text-transparent caret-default' : 'text-default'"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          wrap="off"
+          :data-editor-file-path="props.filePath"
+          :placeholder="$t('editor.startWriting')"
+          @input="onInput"
+          @keydown="onKeydown"
+          @keyup="updateSelection"
+          @mouseup="updateSelection"
+          @select="updateSelection"
+          @scroll="syncScroll"
+          @blur="saveCursorState"
+        />
+      </div>
     </div>
   </div>
 </template>

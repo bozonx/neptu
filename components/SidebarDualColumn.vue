@@ -4,6 +4,7 @@ import type { FileNode, Vault, VaultGroup } from '~/types'
 
 const emit = defineEmits<{
   createNote: [vault: Vault, dir?: string]
+  createFile: [vault: Vault, dir?: string]
   createFolder: [vault: Vault, dir?: string]
   renameNode: [vault: Vault, node: FileNode]
   convertImage: [vault: Vault, node: FileNode]
@@ -328,6 +329,7 @@ watchEffect(() => {
             @toggle="() => {}"
             @toggle-folder="toggleFolder"
             @create-note="(v, d) => emit('createNote', v, d)"
+            @create-file="(v, d) => emit('createFile', v, d)"
             @create-folder="(v, d) => emit('createFolder', v, d)"
             @rename-node="(v, n) => emit('renameNode', v, n)"
             @convert-image="(v, n) => emit('convertImage', v, n)"
