@@ -979,7 +979,6 @@ onUnmounted(() => {
 
 :deep(.neptu-tiptap) {
   min-height: 480px;
-  max-width: 76ch;
   padding-bottom: 2rem;
   color: var(--ui-text);
   font-size: 1rem;

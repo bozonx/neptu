@@ -192,7 +192,7 @@ function removeExclude(idx: number) {
       </div>
       <div
         v-else-if="config"
-        class="max-w-2xl mx-auto space-y-8 pb-12"
+        class="space-y-8 pb-12"
       >
         <div>
           <h2 class="text-xl font-semibold mb-1">

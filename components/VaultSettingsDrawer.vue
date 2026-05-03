@@ -63,7 +63,7 @@ watch(
     editFilters.value = JSON.parse(JSON.stringify(vaults.getEffectiveFilters(vault)))
     editingFilters.value = vault.filters !== undefined
 
-    editContentFolder.value = vaults.getEffectiveContentFolder(vault) ?? 'src'
+    editContentFolder.value = vaults.getEffectiveContentFolder(vault) ?? ''
     editingContentFolder.value = vault.contentFolder !== undefined
 
     editExcludes.value = [...vaults.getEffectiveExcludes(vault)]
@@ -138,7 +138,7 @@ async function save() {
           }
         : undefined,
       filters: editingFilters.value ? editFilters.value : null as never,
-      contentFolder: editingContentFolder.value ? (normalizeRelativePath(editContentFolder.value) || undefined) : null as never,
+      contentFolder: editingContentFolder.value ? normalizeRelativePath(editContentFolder.value) : null as never,
       excludes: editingExcludes.value ? editExcludes.value : null as never,
       mediaDir: editingMediaDir.value
         ? {
@@ -392,7 +392,7 @@ function resetAutoConvertOverride() {
             <template v-if="!editingContentFolder">
               <div class="text-sm flex items-center gap-2">
                 <span class="font-mono text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
-                  {{ vaults.getEffectiveContentFolder(vault!) ?? 'src' }}
+                  {{ vaults.getEffectiveContentFolder(vault!) || $t('vault.contentFolderRoot') }}
                 </span>
                 <span
                   v-if="vault?.contentFolder !== undefined"
@@ -410,14 +410,17 @@ function resetAutoConvertOverride() {
             </template>
             <template v-else>
               <UFormField :hint="$t('vault.contentFolderHint')">
-                <UInput v-model="editContentFolder" />
+                <UInput
+                  v-model="editContentFolder"
+                  :placeholder="$t('vault.contentFolderPlaceholder')"
+                />
               </UFormField>
               <UButton
                 size="xs"
                 color="neutral"
                 variant="link"
                 :label="$t('vault.resetToFileDefaults')"
-                @click="editingContentFolder = false; editContentFolder = vaults.getEffectiveContentFolder(vault!) ?? 'src'"
+                @click="editingContentFolder = false; editContentFolder = vaults.getEffectiveContentFolder(vault!) ?? ''"
               />
             </template>
           </div>
