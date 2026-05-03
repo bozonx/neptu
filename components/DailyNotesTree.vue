@@ -10,7 +10,7 @@ const props = defineProps<{
 }>()
 
 const settings = useSettingsStore()
-const editor = useEditorStore()
+const tabs = useTabsStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -56,7 +56,7 @@ async function onCreate() {
   try {
     const path = await dn.createDailyNote(baseDir.value)
     await loadTree()
-    await editor.openFile(path)
+    await tabs.openFile(path)
     if (settings.mainRepoPath) {
       await dn.commitIfGit(settings.mainRepoPath)
     }
@@ -67,7 +67,7 @@ async function onCreate() {
 }
 
 async function onOpen(file: FileNode) {
-  await editor.openFile(file.path)
+  await tabs.openFile(file.path)
 }
 
 function isToday(file: FileNode): boolean {
