@@ -5,3 +5,9 @@ media-dir:
   mode: global-folder
   folder: src/public/media
   naming: document-index
+
+auto-convert:
+  enabled: false
+  format: webp
+  quality: 0.85
+  preserveTransparency: true

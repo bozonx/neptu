@@ -8,6 +8,7 @@ import {
   remove,
   rename,
   stat,
+  writeFile,
   writeTextFile,
 } from '@tauri-apps/plugin-fs'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
@@ -52,6 +53,10 @@ export function useFs() {
 
   async function writeText(path: string, content: string) {
     await writeTextFile(path, content)
+  }
+
+  async function writeBytes(path: string, content: Uint8Array) {
+    await writeFile(path, content)
   }
 
   async function readYaml<T = unknown>(path: string): Promise<T> {
@@ -318,6 +323,7 @@ export function useFs() {
     readText,
     readBytes,
     writeText,
+    writeBytes,
     readYaml,
     writeYaml,
     deleteFile,

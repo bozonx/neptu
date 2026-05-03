@@ -100,7 +100,32 @@ const mediaNamingItems = computed(() => [
   { label: t('vault.mediaNamingHash'), value: 'hash' },
 ])
 
+const autoConvertFormatItems = computed(() => [
+  { label: 'WebP', value: 'webp' },
+  { label: 'PNG', value: 'png' },
+  { label: 'JPEG', value: 'jpeg' },
+])
+
 const newExclude = ref('')
+
+function ensureAutoConvert() {
+  if (!config.value) return null
+  if (!config.value.autoConvert) {
+    config.value.autoConvert = {
+      enabled: false,
+      format: 'webp',
+      quality: 0.85,
+      preserveTransparency: true,
+    }
+  }
+  return config.value.autoConvert
+}
+
+function setAutoConvertEnabled(enabled: boolean | 'indeterminate') {
+  const autoConvert = ensureAutoConvert()
+  if (!autoConvert) return
+  autoConvert.enabled = enabled === true
+}
 
 function addExclude() {
   const raw = newExclude.value.trim().replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
@@ -214,6 +239,66 @@ function removeExclude(idx: number) {
                   :items="mediaNamingItems"
                 />
               </UFormField>
+            </div>
+
+            <USeparator />
+
+            <div class="space-y-4">
+              <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
+                {{ $t('vault.autoConvert') }}
+              </h3>
+              <UCheckbox
+                :model-value="config.autoConvert?.enabled ?? false"
+                :label="$t('vault.autoConvertEnabled')"
+                @update:model-value="setAutoConvertEnabled"
+              />
+              <template v-if="config.autoConvert?.enabled">
+                <UFormField :label="$t('convertImage.format')">
+                  <ButtonGroupToggle
+                    v-model="config.autoConvert.format"
+                    :items="autoConvertFormatItems"
+                  />
+                </UFormField>
+                <UFormField
+                  v-if="config.autoConvert.format !== 'png'"
+                  :label="$t('convertImage.quality')"
+                >
+                  <div class="flex items-center gap-3">
+                    <URange
+                      v-model="config.autoConvert.quality"
+                      :min="0.1"
+                      :max="1"
+                      :step="0.05"
+                      class="flex-1"
+                    />
+                    <span class="text-sm text-muted w-12 text-right">
+                      {{ Math.round((config.autoConvert.quality ?? 0.85) * 100) }}%
+                    </span>
+                  </div>
+                </UFormField>
+                <UFormField :label="$t('convertImage.maxDimension')">
+                  <UInput
+                    v-model="config.autoConvert.maxDimension"
+                    type="number"
+                    :min="1"
+                    :placeholder="$t('convertImage.maxDimensionPlaceholder')"
+                  />
+                </UFormField>
+                <UCheckbox
+                  v-model="config.autoConvert.preserveTransparency"
+                  :label="$t('convertImage.preserveTransparency')"
+                />
+                <UFormField
+                  v-if="!config.autoConvert.preserveTransparency || config.autoConvert.format === 'jpeg'"
+                  :label="$t('convertImage.backgroundColor')"
+                >
+                  <UInput
+                    v-model="config.autoConvert.backgroundColor"
+                    type="text"
+                    placeholder="#ffffff"
+                  />
+                </UFormField>
+              </template>
             </div>
 
             <USeparator />

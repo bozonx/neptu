@@ -17,6 +17,22 @@ export interface MediaDirSettings {
   naming: MediaNamingMode
 }
 
+export type ImageFormat = 'webp' | 'jpeg' | 'png' | 'avif'
+export type ConvertibleImageFormat = 'webp' | 'jpeg' | 'png'
+
+export interface AutoConvertSettings {
+  enabled: boolean
+  format: ConvertibleImageFormat
+  /** Quality 0.0 - 1.0 */
+  quality?: number
+  /** Max dimension for the larger side (width or height) */
+  maxDimension?: number
+  /** Hex background color to replace transparency, e.g. #ffffff */
+  backgroundColor?: string
+  /** Whether to preserve transparency when the format supports it */
+  preserveTransparency: boolean
+}
+
 export interface FileFilterExtension {
   ext: string
   enabled: boolean
@@ -118,6 +134,8 @@ export interface Vault {
   excludes?: string[]
   /** Local override for media uploads. Does not write to .neptu-vault.yaml. */
   mediaDir?: MediaDirSettings
+  /** Local override for auto-convert settings. Does not write to .neptu-vault.yaml. */
+  autoConvert?: AutoConvertSettings
 }
 
 export type FileSortMode

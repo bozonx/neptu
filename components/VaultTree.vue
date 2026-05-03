@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { FileFilterSettings, FileNode, Vault } from '~/types'
+import { isImageFile } from '~/utils/fileTypes'
 
 interface Props {
   vault: Vault
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   openInNewPanel: [path: string]
   delete: [node: FileNode]
   rename: [node: FileNode]
+  convertImage: [node: FileNode]
   createIn: [dirPath: string]
   createSubfolder: [dirPath: string]
   toggleFolder: [path: string]
@@ -114,7 +116,7 @@ function getFileIcon(fileName: string, filters?: FileFilterSettings): string {
 
 function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
   const isFav = vaults.isFavorite(node.path)
-  return [
+  const items: DropdownMenuItem[][] = [
     [
       { label: t('vault.openInNewPanel'), icon: 'i-lucide-panel-right-open', onSelect: () => emit('openInNewPanel', node.path) },
       {
@@ -122,10 +124,20 @@ function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
         icon: isFav ? 'i-lucide-star-off' : 'i-lucide-star',
         onSelect: () => isFav ? vaults.removeFavorite(node.path) : vaults.addFavorite(node.path),
       },
-      { label: t('vault.rename', 'Rename'), icon: 'i-lucide-pencil', onSelect: () => emit('rename', node) },
-      { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
     ],
   ]
+  if (isImageFile(node.path)) {
+    items[0]!.push({
+      label: t('vault.convertImage', 'Convert image'),
+      icon: 'i-lucide-image-upscale',
+      onSelect: () => emit('convertImage', node),
+    })
+  }
+  items[0]!.push(
+    { label: t('vault.rename', 'Rename'), icon: 'i-lucide-pencil', onSelect: () => emit('rename', node) },
+    { label: t('vault.delete'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete', node) },
+  )
+  return items
 }
 
 function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
@@ -210,6 +222,7 @@ function folderMenuItems(node: FileNode): DropdownMenuItem[][] {
         @open-in-new-panel="(p: string) => emit('openInNewPanel', p)"
         @delete="(n: FileNode) => emit('delete', n)"
         @rename="(n: FileNode) => emit('rename', n)"
+        @convert-image="(n: FileNode) => emit('convertImage', n)"
         @create-in="(d: string) => emit('createIn', d)"
         @create-subfolder="(d: string) => emit('createSubfolder', d)"
         @toggle-folder="(p: string) => emit('toggleFolder', p)"

@@ -39,6 +39,13 @@ const editingContentFolder = ref(false)
 const editingFilters = ref(false)
 const editingExcludes = ref(false)
 const editingMediaDir = ref(false)
+const editingAutoConvert = ref(false)
+const editAutoConvertEnabled = ref(false)
+const editAutoConvertFormat = ref<'webp' | 'png' | 'jpeg'>('webp')
+const editAutoConvertQuality = ref(0.85)
+const editAutoConvertMaxDimension = ref<number | undefined>(undefined)
+const editAutoConvertPreserveTransparency = ref(true)
+const editAutoConvertBackgroundColor = ref('#ffffff')
 
 let skipNextWatch = false
 
@@ -66,6 +73,9 @@ watch(
     editMediaFolder.value = mediaDir.folder ?? 'media'
     editMediaNaming.value = mediaDir.naming
     editingMediaDir.value = vault.mediaDir !== undefined
+
+    setAutoConvertFields(vaults.getEffectiveAutoConvert(vault))
+    editingAutoConvert.value = vault.autoConvert !== undefined
 
     newExclude.value = ''
     newCustomExt.value = ''
@@ -137,6 +147,16 @@ async function save() {
           naming: editMediaNaming.value,
         } satisfies MediaDirSettings
         : null as never,
+      autoConvert: editingAutoConvert.value
+        ? {
+            enabled: editAutoConvertEnabled.value,
+            format: editAutoConvertFormat.value,
+            quality: editAutoConvertQuality.value,
+            maxDimension: editAutoConvertMaxDimension.value || undefined,
+            preserveTransparency: editAutoConvertPreserveTransparency.value,
+            backgroundColor: editAutoConvertPreserveTransparency.value && editAutoConvertFormat.value !== 'jpeg' ? undefined : editAutoConvertBackgroundColor.value,
+          }
+        : null as never,
     })
   }
   catch (error) {
@@ -151,7 +171,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentFolder, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentFolder, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce, editAutoConvertEnabled, editAutoConvertFormat, editAutoConvertQuality, editAutoConvertMaxDimension, editAutoConvertPreserveTransparency, editAutoConvertBackgroundColor, editingAutoConvert],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -201,6 +221,27 @@ const mediaNamingItems = [
   { label: t('vault.mediaNamingDocumentIndex'), value: 'document-index' as const },
   { label: t('vault.mediaNamingHash'), value: 'hash' as const },
 ]
+
+const autoConvertFormatItems = [
+  { label: 'WebP', value: 'webp' as const },
+  { label: 'PNG', value: 'png' as const },
+  { label: 'JPEG', value: 'jpeg' as const },
+]
+
+function setAutoConvertFields(autoConvert: ReturnType<typeof vaults.getEffectiveAutoConvert>) {
+  editAutoConvertEnabled.value = autoConvert?.enabled ?? false
+  editAutoConvertFormat.value = (autoConvert?.format as 'webp' | 'png' | 'jpeg') ?? 'webp'
+  editAutoConvertQuality.value = autoConvert?.quality ?? 0.85
+  editAutoConvertMaxDimension.value = autoConvert?.maxDimension
+  editAutoConvertPreserveTransparency.value = autoConvert?.preserveTransparency ?? true
+  editAutoConvertBackgroundColor.value = autoConvert?.backgroundColor ?? '#ffffff'
+}
+
+function resetAutoConvertOverride() {
+  if (!props.vault) return
+  setAutoConvertFields(vaults.vaultConfigs[props.vault.id]?.autoConvert)
+  editingAutoConvert.value = false
+}
 </script>
 
 <template>
@@ -639,6 +680,106 @@ const mediaNamingItems = [
                 variant="link"
                 :label="$t('vault.resetToFileDefaults')"
                 @click="() => { const mediaDir = vaults.getEffectiveMediaDir(vault!); editingMediaDir = false; editMediaMode = mediaDir.mode; editMediaFolder = mediaDir.folder ?? 'media'; editMediaNaming = mediaDir.naming }"
+              />
+            </template>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-semibold text-muted uppercase tracking-wide">
+                {{ $t('vault.autoConvert', 'Auto-convert images') }}
+              </h4>
+              <UButton
+                v-if="!editingAutoConvert"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :label="$t('vault.edit')"
+                @click="editingAutoConvert = true"
+              />
+            </div>
+            <template v-if="!editingAutoConvert">
+              <div class="space-y-1 text-sm">
+                <div>
+                  <span class="font-medium">{{ $t('vault.enabled') }}:</span>
+                  <span class="text-muted ml-1">
+                    {{ editAutoConvertEnabled ? $t('vault.yes') : $t('vault.no') }}
+                  </span>
+                </div>
+                <div v-if="editAutoConvertEnabled">
+                  <span class="font-medium">{{ $t('convertImage.format') }}:</span>
+                  <span class="text-muted ml-1 uppercase">{{ editAutoConvertFormat }}</span>
+                </div>
+              </div>
+              <div
+                v-if="vault?.autoConvert === undefined"
+                class="text-xs text-muted mt-1"
+              >
+                {{ $t('vault.fromVaultFile') }}
+              </div>
+              <div
+                v-else
+                class="text-xs text-muted mt-1"
+              >
+                {{ $t('vault.customValue') }}
+              </div>
+            </template>
+            <template v-else>
+              <UCheckbox
+                v-model="editAutoConvertEnabled"
+                :label="$t('vault.autoConvertEnabled', 'Auto-convert uploaded images')"
+              />
+              <template v-if="editAutoConvertEnabled">
+                <UFormField :label="$t('convertImage.format')">
+                  <URadioGroup
+                    v-model="editAutoConvertFormat"
+                    :items="autoConvertFormatItems"
+                  />
+                </UFormField>
+                <UFormField
+                  v-if="editAutoConvertFormat !== 'png'"
+                  :label="$t('convertImage.quality')"
+                >
+                  <div class="flex items-center gap-3">
+                    <URange
+                      v-model="editAutoConvertQuality"
+                      :min="0.1"
+                      :max="1"
+                      :step="0.05"
+                      class="flex-1"
+                    />
+                    <span class="text-sm text-muted w-12 text-right">{{ Math.round(editAutoConvertQuality * 100) }}%</span>
+                  </div>
+                </UFormField>
+                <UFormField :label="$t('convertImage.maxDimension')">
+                  <UInput
+                    v-model="editAutoConvertMaxDimension"
+                    type="number"
+                    :min="1"
+                    :placeholder="$t('convertImage.maxDimensionPlaceholder')"
+                  />
+                </UFormField>
+                <UCheckbox
+                  v-model="editAutoConvertPreserveTransparency"
+                  :label="$t('convertImage.preserveTransparency')"
+                />
+                <UFormField
+                  v-if="!editAutoConvertPreserveTransparency || editAutoConvertFormat === 'jpeg'"
+                  :label="$t('convertImage.backgroundColor')"
+                >
+                  <UInput
+                    v-model="editAutoConvertBackgroundColor"
+                    type="text"
+                    placeholder="#ffffff"
+                  />
+                </UFormField>
+              </template>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="link"
+                :label="$t('vault.resetToFileDefaults')"
+                @click="resetAutoConvertOverride"
               />
             </template>
           </div>

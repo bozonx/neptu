@@ -11,9 +11,11 @@ import {
   type Vault,
   type VaultGroup,
 } from '~/types'
+import { convertImageBuffer, isImageFileName, mimeFromImageFileName, replaceExtension, type ConvertOptions } from '~/composables/useImageConvert'
 import {
   DEFAULT_VAULT_CONFIG,
   isValidVaultConfig,
+  type AutoConvertSettings,
   type VaultConfig,
 } from '~/types/vault-config'
 import vaultTemplateRaw from '~/assets/templates/vault.neptu-vault.yaml?raw'
@@ -169,6 +171,9 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (raw['media-dir'] !== undefined && raw.mediaDir === undefined) {
       raw.mediaDir = raw['media-dir']
     }
+    if (raw['auto-convert'] !== undefined && raw.autoConvert === undefined) {
+      raw.autoConvert = raw['auto-convert']
+    }
     return raw
   }
 
@@ -287,7 +292,7 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function updateVault(
     id: string,
-    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentStructureId' | 'contentFolder' | 'excludes' | 'mediaDir'>> & { git?: GitVaultSettings },
+    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentStructureId' | 'contentFolder' | 'excludes' | 'mediaDir' | 'autoConvert'>> & { git?: GitVaultSettings },
   ) {
     const vault = findById(id)
     if (!vault) return
@@ -363,6 +368,14 @@ export const useVaultsStore = defineStore('vaults', () => {
       }
       else {
         vault.mediaDir = updates.mediaDir
+      }
+    }
+    if (updates.autoConvert !== undefined) {
+      if (updates.autoConvert === null) {
+        delete vault.autoConvert
+      }
+      else {
+        vault.autoConvert = updates.autoConvert
       }
     }
     if (updates.filters !== undefined) {
@@ -530,6 +543,7 @@ export const useVaultsStore = defineStore('vaults', () => {
       try {
         const name = basename(sourcePath)
         const destPath = await fs.join(targetDir, name)
+        let importedPath = destPath
 
         if (sourcePath === destPath) {
           importedPaths.push(destPath)
@@ -544,21 +558,25 @@ export const useVaultsStore = defineStore('vaults', () => {
         const info = await fs.stat(sourcePath)
         if (info.isDirectory) {
           await fs.copyFolder(sourcePath, destPath)
+          importedPaths.push(destPath)
         }
         else {
           await fs.copyFile(sourcePath, destPath)
+          const finalPath = await applyAutoConvert(vault, destPath)
+          importedPath = finalPath
+          importedPaths.push(finalPath)
         }
-        importedPaths.push(destPath)
 
         // Check if it's visible
+        const importedName = basename(importedPath)
         let isVisible = true
-        if (!showHidden && name.startsWith('.')) {
+        if (!showHidden && importedName.startsWith('.')) {
           isVisible = false
         }
         else {
-          const extMatch = name.match(/\.([^.]+)$/)
+          const extMatch = importedName.match(/\.([^.]+)$/)
           const ext = extMatch ? extMatch[1]?.toLowerCase() ?? '' : ''
-          const isExcluded = excludes.some((pattern) => name.includes(pattern)) // Basic exclude check
+          const isExcluded = excludes.some((pattern) => importedName.includes(pattern)) // Basic exclude check
 
           if (isExcluded) {
             isVisible = false
@@ -582,7 +600,7 @@ export const useVaultsStore = defineStore('vaults', () => {
         }
 
         if (!isVisible) {
-          hiddenPaths.push(name)
+          hiddenPaths.push(importedName)
         }
       }
       catch (e) {
@@ -651,6 +669,88 @@ export const useVaultsStore = defineStore('vaults', () => {
     }
   }
 
+  function getEffectiveAutoConvert(vault: Vault): AutoConvertSettings | undefined {
+    if (vault.autoConvert !== undefined) return vault.autoConvert
+    const config = vaultConfigs.value[vault.id]
+    return config?.autoConvert
+  }
+
+  async function writeConvertedImage(filePath: string, options: ConvertOptions): Promise<string> {
+    const fs = useFs()
+    const sourceBytes = await fs.readBytes(filePath)
+    const { bytes, ext } = await convertImageBuffer(sourceBytes, mimeFromImageFileName(filePath), options)
+
+    const dir = filePath.includes('\\')
+      ? filePath.slice(0, filePath.lastIndexOf('\\'))
+      : filePath.slice(0, filePath.lastIndexOf('/'))
+    const newName = replaceExtension(filePath.split(/[\\/]/).pop()!, ext)
+    let newPath = await fs.join(dir, newName)
+
+    let suffix = 2
+    while (newPath !== filePath && await fs.exists(newPath)) {
+      const baseName = newName.slice(0, newName.lastIndexOf('.'))
+      newPath = await fs.join(dir, `${baseName}-${suffix}${ext}`)
+      suffix++
+    }
+
+    await fs.writeBytes(newPath, bytes)
+    if (newPath !== filePath) {
+      await fs.deleteFile(filePath)
+    }
+    return newPath
+  }
+
+  async function applyAutoConvert(vault: Vault, filePath: string): Promise<string> {
+    const settings = getEffectiveAutoConvert(vault)
+    if (!settings?.enabled || !isImageFileName(filePath)) return filePath
+
+    try {
+      return await writeConvertedImage(filePath, {
+        format: settings.format,
+        quality: settings.quality,
+        maxDimension: settings.maxDimension,
+        backgroundColor: settings.backgroundColor,
+        preserveTransparency: settings.preserveTransparency,
+      })
+    }
+    catch (error) {
+      console.warn('[vaults] Failed to auto-convert image, keeping original', filePath, error)
+      return filePath
+    }
+  }
+
+  async function convertImageFile(vaultId: string, filePath: string, options: ConvertOptions): Promise<string> {
+    if (!isImageFileName(filePath)) return filePath
+
+    const vault = findById(vaultId) ?? findVaultForPath(filePath)
+    if (!vault) return filePath
+
+    const editor = useEditorStore()
+    const tabs = useTabsStore()
+    const git = useGitStore()
+
+    await editor.flushVault(vault)
+    const finalPath = await writeConvertedImage(filePath, options)
+
+    await refreshTree(vault)
+    await tabs.updatePath(filePath, finalPath, false)
+
+    let favoritesChanged = false
+    favorites.value = favorites.value.map((favoritePath) => {
+      const nextPath = favoritePath === filePath ? finalPath : favoritePath
+      if (nextPath !== favoritePath) favoritesChanged = true
+      return nextPath
+    })
+
+    if (vault.type === 'git') {
+      await git.commit(vault.id)
+      await git.refreshStatus(vault.id)
+    }
+    if (favoritesChanged) await useSettingsStore().persist()
+
+    return finalPath
+  }
+
   async function resolveMediaDestination(
     vault: Vault,
     documentPath: string,
@@ -714,7 +814,11 @@ export const useVaultsStore = defineStore('vaults', () => {
         if (sourcePath !== destPath) {
           await fs.copyFile(sourcePath, destPath)
         }
-        imported.push({ path: destPath, markdownPath })
+        const finalPath = await applyAutoConvert(vault, destPath)
+        const finalMarkdownPath = finalPath === destPath
+          ? markdownPath
+          : relativePath(dirname(documentPath), finalPath)
+        imported.push({ path: finalPath, markdownPath: finalMarkdownPath })
       }
       catch (error) {
         console.error('Failed to import media file', sourcePath, error)
@@ -891,6 +995,8 @@ export const useVaultsStore = defineStore('vaults', () => {
     getEffectiveExcludes,
     getEffectiveContentFolder,
     getEffectiveMediaDir,
+    getEffectiveAutoConvert,
+    convertImageFile,
     resetVaultOverrides,
     updateGroupsOrder,
     updateVaultsOrder,

@@ -6,6 +6,12 @@ media-dir:
   folder: src/public/media
   naming: document-index
 
+auto-convert:
+  enabled: false
+  format: webp
+  quality: 0.85
+  preserveTransparency: true
+
 schemas:
   - glob: "src/post/**/*.md"
     fields:

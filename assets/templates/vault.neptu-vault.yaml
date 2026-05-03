@@ -4,3 +4,9 @@ media-dir:
   mode: adjacent-folder
   folder: media
   naming: original
+
+auto-convert:
+  enabled: false
+  format: webp
+  quality: 0.85
+  preserveTransparency: true

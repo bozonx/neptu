@@ -323,6 +323,16 @@ export function useSidebarDialogs() {
     }
   }
 
+  /* ── Convert Image ────────────────────────────── */
+
+  const convertImageOpen = ref(false)
+  const convertImagePath = ref('')
+
+  function openConvertImage(vault: Vault, node: FileNode) {
+    convertImagePath.value = node.path
+    convertImageOpen.value = true
+  }
+
   /* ── Edit Vault ───────────────────────────────── */
 
   const editVaultOpen = ref(false)
@@ -467,6 +477,10 @@ export function useSidebarDialogs() {
     renameNodeCtx,
     openRenameNode,
     submitRenameNode,
+    /* Convert image */
+    convertImageOpen,
+    convertImagePath,
+    openConvertImage,
     /* Edit vault */
     editVaultOpen,
     editingVault,

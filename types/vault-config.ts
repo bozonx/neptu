@@ -1,10 +1,11 @@
-import type { FileFilterSettings } from './index'
+import type { FileFilterSettings, ImageFormat, AutoConvertSettings } from './index'
+
+export type { AutoConvertSettings }
+export type { ImageFormat }
 
 export type UploadMode = 'adjacent' | 'adjacent-folder' | 'global-folder'
 
 export type MediaNamingMode = 'original' | 'document-index' | 'hash'
-
-export type ImageFormat = 'webp' | 'jpeg' | 'png' | 'avif'
 
 export interface CompressionSettings {
   enabled: boolean
@@ -133,6 +134,7 @@ export interface VaultConfig {
   contentRoot?: string
   mediaDir?: MediaDirSettings
   media?: MediaSettings
+  autoConvert?: AutoConvertSettings
   schemas?: Schema[]
   filters?: FileFilterSettings
   excludes?: string[]
@@ -211,6 +213,7 @@ export function isValidVaultConfig(obj: unknown): obj is VaultConfig {
   if (o.contentRoot !== undefined && typeof o.contentRoot !== 'string') return false
   if (o.mediaDir !== undefined && !isValidMediaDirSettings(o.mediaDir)) return false
   if (o.media !== undefined && !isValidMediaSettings(o.media)) return false
+  if (o.autoConvert !== undefined && !isValidAutoConvertSettings(o.autoConvert)) return false
   if (o.schemas !== undefined && !Array.isArray(o.schemas)) return false
   if (Array.isArray(o.schemas)) {
     for (const s of o.schemas) {
@@ -276,6 +279,18 @@ function isValidCompressionSettings(obj: unknown): boolean {
   if (o.maxDimension !== undefined && typeof o.maxDimension !== 'number') return false
   if (o.quality !== undefined && typeof o.quality !== 'number') return false
   if (o.format !== undefined && typeof o.format !== 'string') return false
+  return true
+}
+
+function isValidAutoConvertSettings(obj: unknown): boolean {
+  if (!obj || typeof obj !== 'object') return false
+  const o = obj as Record<string, unknown>
+  if (typeof o.enabled !== 'boolean') return false
+  if (!['webp', 'jpeg', 'png'].includes(o.format as string)) return false
+  if (o.quality !== undefined && typeof o.quality !== 'number') return false
+  if (o.maxDimension !== undefined && typeof o.maxDimension !== 'number') return false
+  if (o.backgroundColor !== undefined && typeof o.backgroundColor !== 'string') return false
+  if (typeof o.preserveTransparency !== 'boolean') return false
   return true
 }
 

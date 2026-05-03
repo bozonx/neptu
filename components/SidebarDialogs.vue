@@ -514,6 +514,12 @@ defineProps<{ ctx: SidebarDialogsContext }>()
     </template>
   </UModal>
 
+  <!-- Convert Image -->
+  <ConvertImageDialog
+    v-model:open="ctx.convertImageOpen.value"
+    :file-path="ctx.convertImagePath.value"
+  />
+
   <!-- Rename Node -->
   <UModal
     v-model:open="ctx.renameNodeOpen.value"

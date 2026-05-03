@@ -115,6 +115,7 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
                 @create-note="dialogs.openCreateNote"
                 @create-folder="dialogs.openCreateFolder"
                 @rename-node="dialogs.openRenameNode"
+                @convert-image="dialogs.openConvertImage"
                 @edit-vault="dialogs.openEditVault"
                 @remove-vault="dialogs.openRemoveVaultConfirm"
                 @create-group="dialogs.openCreateGroup"
@@ -127,6 +128,7 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
                 @create-note="dialogs.openCreateNote"
                 @create-folder="dialogs.openCreateFolder"
                 @rename-node="dialogs.openRenameNode"
+                @convert-image="dialogs.openConvertImage"
                 @edit-vault="dialogs.openEditVault"
                 @remove-vault="dialogs.openRemoveVaultConfirm"
               />

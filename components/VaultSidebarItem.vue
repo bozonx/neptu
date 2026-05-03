@@ -20,6 +20,7 @@ const emit = defineEmits<{
   createNote: [vault: Vault, dir?: string]
   createFolder: [vault: Vault, dir?: string]
   renameNode: [vault: Vault, node: FileNode]
+  convertImage: [vault: Vault, node: FileNode]
   editVault: [vault: Vault]
   removeVault: [vault: Vault]
 }>()
@@ -311,6 +312,7 @@ async function handleDelete(node: FileNode) {
       @open-in-new-panel="openFileInNewPanel"
       @delete="handleDelete"
       @rename="(n) => emit('renameNode', vault, n)"
+      @convert-image="(n) => emit('convertImage', vault, n)"
       @create-in="(d) => emit('createNote', vault, d)"
       @create-subfolder="(d) => emit('createFolder', vault, d)"
       @toggle-folder="(p: string) => emit('toggleFolder', p)"
