@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const settings = useSettingsStore()
 const tabs = useTabsStore()
+const editor = useEditorStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -25,6 +26,7 @@ const months = ref<DailyNotesMonth[]>([])
 const loading = ref(false)
 
 const todayFileName = computed(() => dn.formatFileName(new Date()))
+const activePath = computed(() => editor.currentFilePath)
 
 async function loadTree() {
   if (!baseDir.value) return
@@ -192,13 +194,16 @@ function folderMenuItems(month: DailyNotesMonth): DropdownMenuItem[][] {
           >
             <div
               class="flex items-center gap-1.5 px-1.5 py-1 rounded-md cursor-pointer hover:bg-elevated transition-colors select-none"
-              :class="{ 'bg-primary/10 text-primary': isToday(file) }"
+              :class="[
+                isToday(file) ? 'text-primary' : '',
+                activePath === file.path ? 'bg-primary/10 text-primary border-l-2 border-primary' : '',
+              ]"
               @click="onOpen(file)"
             >
               <UIcon
                 name="i-lucide-file-text"
                 class="size-3.5 shrink-0"
-                :class="isToday(file) ? 'text-primary' : 'text-muted'"
+                :class="activePath === file.path || isToday(file) ? 'text-primary' : 'text-muted'"
               />
               <span class="truncate text-xs flex-1">{{ file.name.replace('.md', '') }}</span>
             </div>
