@@ -34,3 +34,31 @@ export function fileExt(name: string): string {
 export function normalizeRelativePath(path: string): string {
   return path.trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
 }
+
+/**
+ * Resolve a (possibly relative) path against a document path.
+ * Returns the absolute path. External URLs and absolute paths are returned as-is.
+ */
+export function resolveAbsolutePath(documentPath: string, relOrAbs: string): string | null {
+  if (!relOrAbs) return null
+  if (/^[a-z]+:\/\//i.test(relOrAbs) || relOrAbs.startsWith('data:') || relOrAbs.startsWith('blob:')) {
+    return null
+  }
+  if (relOrAbs.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(relOrAbs)) {
+    return relOrAbs.replace(/\\/g, '/')
+  }
+
+  const baseDir = stripTrailingSlash(dirname(documentPath)).replace(/\\/g, '/')
+  const segments = baseDir.split('/').filter(Boolean)
+  const isUnix = baseDir.startsWith('/')
+
+  for (const part of relOrAbs.replace(/\\/g, '/').split('/')) {
+    if (!part || part === '.') continue
+    if (part === '..') {
+      segments.pop()
+      continue
+    }
+    segments.push(part)
+  }
+  return (isUnix ? '/' : '') + segments.join('/')
+}

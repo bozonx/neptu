@@ -403,13 +403,54 @@
       "codeBlock": "Code block",
       "bulletList": "Bullet list",
       "orderedList": "Ordered list",
+      "taskList": "Task list",
       "quote": "Quote",
+      "callout": "Callout",
       "divider": "Divider",
       "link": "Link",
       "unlink": "Remove link",
       "table": "Table",
+      "search": "Find and replace",
       "undo": "Undo",
       "redo": "Redo"
+    },
+    "context": {
+      "cut": "Cut",
+      "copy": "Copy",
+      "paste": "Paste",
+      "pastePlain": "Paste without formatting",
+      "selectAll": "Select all",
+      "find": "Find…"
+    },
+    "search": {
+      "find": "Find",
+      "replace": "Replace",
+      "next": "Next match",
+      "prev": "Previous match",
+      "replaceOne": "Replace",
+      "replaceAll": "Replace all",
+      "close": "Close",
+      "caseSensitive": "Case sensitive",
+      "wholeWord": "Whole word",
+      "regex": "Regular expression",
+      "noMatches": "No matches",
+      "matchCount": "{current} of {total}"
+    },
+    "callout": {
+      "note": "Note",
+      "tip": "Tip",
+      "important": "Important",
+      "warning": "Warning",
+      "caution": "Caution"
+    },
+    "dropHere": "Drop files here to insert",
+    "overwrite": {
+      "title": "File already exists",
+      "description": "A file named \"{name}\" already exists. What do you want to do?",
+      "rename": "Keep both (auto-rename)",
+      "overwrite": "Overwrite",
+      "skip": "Skip",
+      "rememberChoice": "Apply to all remaining conflicts"
     },
     "table": {
       "addColumnBefore": "Add column before",

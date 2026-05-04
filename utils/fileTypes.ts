@@ -10,6 +10,8 @@ export type EditorViewType
     | 'virtual'
 
 const IMAGE_EXTENSIONS = ['avif', 'webp', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico']
+const VIDEO_EXTENSIONS = ['avi', 'mp4', 'mkv', 'webm', 'mov']
+const AUDIO_EXTENSIONS = ['weba', 'mp3', 'aac', 'm4a', 'opus', 'wav', 'ogg', 'flac']
 
 const MARKDOWN_EXTENSIONS = ['md', 'markdown', 'mdx']
 const PLAIN_TEXT_EXTENSIONS = ['txt', 'log']
@@ -62,11 +64,23 @@ export function isImageFile(filePath: string): boolean {
   return IMAGE_EXTENSIONS.includes(name.substring(lastDot + 1).toLowerCase())
 }
 
-function getFileExtension(filePath: string): string {
+export function getFileExtension(filePath: string): string {
   const name = filePath.split(/[/\\]/).pop() || ''
   const lastDot = name.lastIndexOf('.')
   if (lastDot <= 0) return ''
   return name.substring(lastDot + 1).toLowerCase()
+}
+
+export function isVideoFile(filePath: string): boolean {
+  return VIDEO_EXTENSIONS.includes(getFileExtension(filePath))
+}
+
+export function isAudioFile(filePath: string): boolean {
+  return AUDIO_EXTENSIONS.includes(getFileExtension(filePath))
+}
+
+export function isMediaFile(filePath: string): boolean {
+  return isImageFile(filePath) || isVideoFile(filePath) || isAudioFile(filePath)
 }
 
 /**
@@ -104,12 +118,8 @@ export function getEditorViewType(filePath: string | null): EditorViewType {
   if (ext in CODE_EXTENSIONS_TO_LANG) return 'code'
 
   if (IMAGE_EXTENSIONS.includes(ext)) return 'image'
-
-  const videoExts = ['avi', 'mp4', 'mkv', 'webm', 'mov']
-  if (videoExts.includes(ext)) return 'video'
-
-  const audioExts = ['weba', 'mp3', 'aac', 'm4a', 'opus', 'wav', 'ogg']
-  if (audioExts.includes(ext)) return 'audio'
+  if (VIDEO_EXTENSIONS.includes(ext)) return 'video'
+  if (AUDIO_EXTENSIONS.includes(ext)) return 'audio'
 
   return 'unsupported'
 }

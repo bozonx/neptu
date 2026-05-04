@@ -27,6 +27,10 @@ function generateId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+export type ConflictChoice = 'rename' | 'overwrite' | 'skip'
+export type ConflictPolicy = ConflictChoice
+  | ((info: { name: string, existingPath: string }) => Promise<ConflictChoice>)
+
 function basename(path: string): string {
   const norm = path.replace(/[\\/]+$/, '')
   const parts = norm.split(/[\\/]/)
@@ -771,7 +775,8 @@ export const useVaultsStore = defineStore('vaults', () => {
     sourceName: string,
     index: number,
     sourceBytes?: Uint8Array,
-  ): Promise<{ destPath: string, markdownPath: string }> {
+    options?: { conflict?: 'rename' | 'overwrite' | 'skip' },
+  ): Promise<{ destPath: string, markdownPath: string, existed: boolean } | null> {
     const fs = useFs()
     const settings = getEffectiveMediaDir(vault)
     const documentDir = dirname(documentPath)
@@ -800,7 +805,16 @@ export const useVaultsStore = defineStore('vaults', () => {
       baseName = sanitizeFilenamePart(fileStem(sourceName))
     }
 
-    let candidate = await fs.join(destDir, `${baseName}${ext}`)
+    const initialPath = await fs.join(destDir, `${baseName}${ext}`)
+    const existed = await fs.exists(initialPath)
+    const policy = options?.conflict ?? 'rename'
+
+    if (existed && policy === 'skip') return null
+    if (existed && policy === 'overwrite') {
+      return { destPath: initialPath, markdownPath: relativePath(documentDir, initialPath), existed }
+    }
+
+    let candidate = initialPath
     let suffix = 2
     while (await fs.exists(candidate)) {
       candidate = await fs.join(destDir, `${baseName}-${suffix}${ext}`)
@@ -810,12 +824,42 @@ export const useVaultsStore = defineStore('vaults', () => {
     return {
       destPath: candidate,
       markdownPath: relativePath(documentDir, candidate),
+      existed,
     }
+  }
+
+  async function resolveConflictPolicy(
+    vault: Vault,
+    documentPath: string,
+    sourceName: string,
+    index: number,
+    sourceBytes: Uint8Array | undefined,
+    policy: ConflictPolicy | undefined,
+  ): Promise<{ destPath: string, markdownPath: string } | null> {
+    // First pass: see whether the initial candidate exists.
+    const probe = await resolveMediaDestination(vault, documentPath, sourceName, index, sourceBytes, { conflict: 'rename' })
+    if (!probe) return null
+    if (!probe.existed || !policy) return probe
+
+    let choice: ConflictChoice
+    if (typeof policy === 'function') {
+      // Recompute the initial path so the callback gets the actual conflicting path.
+      const initial = await resolveMediaDestination(vault, documentPath, sourceName, index, sourceBytes, { conflict: 'overwrite' })
+      const existingPath = initial?.destPath ?? probe.destPath
+      choice = await policy({ name: sourceName, existingPath })
+    }
+    else {
+      choice = policy
+    }
+
+    if (choice === 'rename') return probe
+    return resolveMediaDestination(vault, documentPath, sourceName, index, sourceBytes, { conflict: choice })
   }
 
   async function importMediaBytesForDocument(
     items: Array<{ name: string, type?: string, bytes: Uint8Array }>,
     documentPath: string,
+    options?: { onConflict?: ConflictPolicy },
   ): Promise<Array<{ path: string, markdownPath: string }>> {
     const vault = findVaultForPath(documentPath)
     if (!vault) return []
@@ -828,7 +872,9 @@ export const useVaultsStore = defineStore('vaults', () => {
       try {
         const fallbackExt = extFromMime(item.type ?? '') || '.png'
         const sourceName = fileExt(item.name) ? item.name : `${fileStem(item.name || 'clipboard-image')}${fallbackExt}`
-        const { destPath, markdownPath } = await resolveMediaDestination(vault, documentPath, sourceName, i, item.bytes)
+        const decision = await resolveConflictPolicy(vault, documentPath, sourceName, i, item.bytes, options?.onConflict)
+        if (!decision) continue
+        const { destPath, markdownPath } = decision
         const destDir = dirname(destPath)
         await fs.ensureDir(destDir)
         await fs.writeBytes(destPath, item.bytes)
@@ -855,7 +901,11 @@ export const useVaultsStore = defineStore('vaults', () => {
     return imported
   }
 
-  async function importMediaFilesForDocument(paths: string[], documentPath: string): Promise<Array<{ path: string, markdownPath: string }>> {
+  async function importMediaFilesForDocument(
+    paths: string[],
+    documentPath: string,
+    options?: { onConflict?: ConflictPolicy },
+  ): Promise<Array<{ path: string, markdownPath: string }>> {
     const vault = findVaultForPath(documentPath)
     if (!vault) return []
 
@@ -866,7 +916,9 @@ export const useVaultsStore = defineStore('vaults', () => {
       const sourcePath = paths[i]!
       try {
         const sourceBytes = await fs.readBytes(sourcePath)
-        const { destPath, markdownPath } = await resolveMediaDestination(vault, documentPath, filename(sourcePath), i, sourceBytes)
+        const decision = await resolveConflictPolicy(vault, documentPath, filename(sourcePath), i, sourceBytes, options?.onConflict)
+        if (!decision) continue
+        const { destPath, markdownPath } = decision
         const destDir = dirname(destPath)
         await fs.ensureDir(destDir)
         if (sourcePath !== destPath) {

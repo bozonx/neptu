@@ -9,6 +9,7 @@ const colorMode = useColorMode()
 const { locale, setLocale } = useI18n()
 const { isTauri, isMobile } = useTauri()
 const dnd = useDnd()
+const importPrompt = useEditorImport()
 
 const availableLocales = ['en-US', 'ru-RU'] as const
 type AppLocale = typeof availableLocales[number]
@@ -144,6 +145,14 @@ onBeforeUnmount(() => {
     />
 
     <PluginModalHost />
+
+    <OverwriteFileDialog
+      :open="!!importPrompt.pending.value"
+      :file-name="importPrompt.pending.value?.fileName ?? ''"
+      :show-remember-option="importPrompt.showRemember.value"
+      @resolve="importPrompt.resolvePrompt"
+      @cancel="importPrompt.cancelPrompt"
+    />
 
     <div
       v-if="dnd.isOsDragging.value"

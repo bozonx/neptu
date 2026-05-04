@@ -11,13 +11,15 @@ const emit = defineEmits<{
 }>()
 
 const value = computed({
-  get() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get(): any {
     const v = props.modelValue
-    if (Array.isArray(v)) return v as string[]
+    if (Array.isArray(v)) return v
     if (v === undefined || v === null) return []
     return [String(v)]
   },
-  set(v: string[]) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  set(v: any) {
     emit('update:modelValue', v.length ? v : undefined)
   },
 })
@@ -29,7 +31,7 @@ const value = computed({
     :required="field.required"
   >
     <USelectMenu
-      v-model="value as any"
+      v-model="value"
       :items="field.options"
       multiple
       size="sm"

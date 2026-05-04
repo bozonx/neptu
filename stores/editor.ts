@@ -435,13 +435,24 @@ export const useEditorStore = defineStore('editor', () => {
     if (vault?.type === 'git') useGitStore().cancelCommit(vault.id)
   }
 
-  const insertTrigger = ref<{ path: string, text: string, id: number } | null>(null)
+  interface InsertTriggerPayload {
+    path: string
+    text: string
+    id: number
+    coords?: { x: number, y: number }
+    replaceTarget?: 'media-at-coords'
+  }
+  const insertTrigger = ref<InsertTriggerPayload | null>(null)
 
-  function insertText(path: string, text: string) {
-    insertTrigger.value = { path, text, id: Date.now() }
+  function insertText(path: string, text: string, options?: { coords?: { x: number, y: number }, replaceTarget?: 'media-at-coords' }) {
+    insertTrigger.value = { path, text, id: Date.now(), coords: options?.coords, replaceTarget: options?.replaceTarget }
   }
 
-  function insertImportedFiles(files: Array<string | { path: string, markdownPath: string }>, targetPath = currentFilePath.value) {
+  function insertImportedFiles(
+    files: Array<string | { path: string, markdownPath: string }>,
+    targetPath = currentFilePath.value,
+    options?: { coords?: { x: number, y: number }, replaceTarget?: 'media-at-coords' },
+  ) {
     if (!targetPath) return
 
     let insertedText = ''
@@ -458,7 +469,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     if (insertedText) {
-      insertText(targetPath, insertedText.trim() + '\n')
+      insertText(targetPath, insertedText.trim() + '\n', options)
     }
   }
 

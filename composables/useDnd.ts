@@ -114,10 +114,18 @@ export function useDnd() {
                 || dropZone.getAttribute('data-editor-file-path')
                 || editor.currentFilePath
               if (targetPath) {
-                const importedPaths = await useVaultsStore().importMediaFilesForDocument(paths, targetPath)
+                const onConflict = useEditorImport().makeAskPolicy()
+                const importedPaths = await useVaultsStore().importMediaFilesForDocument(paths, targetPath, { onConflict })
 
                 if (importedPaths.length > 0) {
-                  editor.insertImportedFiles(importedPaths, targetPath)
+                  // If the drop landed directly on an existing media node, ask
+                  // the editor to replace its `src` instead of inserting a new
+                  // sibling node.
+                  const onMedia = !!targetElement.closest('[data-original-src], img, video, audio')
+                  editor.insertImportedFiles(importedPaths, targetPath, {
+                    coords: position,
+                    replaceTarget: onMedia ? 'media-at-coords' : undefined,
+                  })
                 }
               }
             }
