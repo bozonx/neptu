@@ -243,6 +243,15 @@ const editor = useEditor({
         void importClipboardImages(event)
         return clipboardHasImportableImages(event)
       },
+      drop: (_view, event) => {
+        const dnd = useDnd()
+        if (dnd.draggedPath.value) {
+          // Return true to prevent ProseMirror from handling this as a text drag.
+          // This allows the event to bubble up to Editor.vue's onDrop handler.
+          return true
+        }
+        return false
+      },
     },
     transformPastedHTML(html: string) {
       const allowedTags = new Set([

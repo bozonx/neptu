@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { CursorPosition, SaveStatus, Vault } from '~/types'
 import type { Schema } from '~/types/vault-config'
-import { isImageFile } from '~/utils/fileTypes'
+import { isAudioFile, isImageFile, isVideoFile } from '~/utils/fileTypes'
 import {
   findSchemaForFile,
   parseFrontmatter,
@@ -462,6 +462,12 @@ export const useEditorStore = defineStore('editor', () => {
       const name = path.split(/[/\\]/).pop() || ''
       if (isImageFile(path)) {
         insertedText += `\n![${name}](${markdownPath})\n`
+      }
+      else if (isVideoFile(path)) {
+        insertedText += `\n[🎬 ${name}](${markdownPath})\n`
+      }
+      else if (isAudioFile(path)) {
+        insertedText += `\n[🔊 ${name}](${markdownPath})\n`
       }
       else {
         insertedText += `\n[${name}](${markdownPath})\n`

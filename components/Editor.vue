@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { EditorTab } from '~/types'
-import { getEditorViewType } from '~/utils/fileTypes'
+import { getEditorViewType, isMediaFile } from '~/utils/fileTypes'
+import { dirname, relativePath } from '~/utils/paths'
 
 const props = defineProps<{
   panelId?: string
@@ -45,12 +46,28 @@ function onDragLeave() {
   isDropTarget.value = false
 }
 
-async function onDrop() {
+async function onDrop(event: DragEvent) {
   isDropTarget.value = false
   if (props.isMobile || !dnd.draggedPath.value || dnd.draggedIsDir.value) return
 
   const path = dnd.draggedPath.value
   dnd.onDragEnd()
+
+  /*
+   * If the dragged file is a media file (image / video / audio) and the
+   * active tab is a markdown document, insert a relative markdown reference
+   * into the document instead of opening the media file as a separate tab.
+   */
+  if (isMediaFile(path) && currentFilePath.value && viewType.value === 'markdown') {
+    const docDir = dirname(currentFilePath.value)
+    const markdownPath = relativePath(docDir, path)
+    editorStore.insertImportedFiles(
+      [{ path, markdownPath }],
+      currentFilePath.value,
+      { coords: { x: event.clientX, y: event.clientY } },
+    )
+    return
+  }
 
   if (props.panelId) {
     // Check if the file is already open in this panel
