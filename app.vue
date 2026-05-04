@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
 
     <PluginModalHost />
 
-    <OverwriteFileDialog
+    <DialogsOverwriteFileDialog
       :open="!!importPrompt.pending.value"
       :file-name="importPrompt.pending.value?.fileName ?? ''"
       :show-remember-option="importPrompt.showRemember.value"

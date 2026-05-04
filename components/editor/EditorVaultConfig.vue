@@ -357,7 +357,7 @@ function removeExclude(idx: number) {
                   :label="$t('convertImage.quality')"
                 >
                   <div class="flex items-center gap-3">
-                    <URange
+                    <USlider
                       v-model="config.autoConvert.quality"
                       :min="0.1"
                       :max="1"

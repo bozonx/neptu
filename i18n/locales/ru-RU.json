@@ -94,6 +94,7 @@
     "removeVaultClearSettings": "Удалить настройки приложения и состояния, связанные с этим репозиторием",
     "removeVaultClearSettingsHint": "Ничего не удаляется из самого репозитория, а только в приложении.",
     "remove": "Удалить",
+    "rename": "Переименовать",
     "createGroup": "Создать группу",
     "groupName": "Название группы",
     "deleteGroupConfirm": "Удалить \"{name}\"?",

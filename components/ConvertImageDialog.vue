@@ -108,7 +108,7 @@ async function submitConvert() {
           :label="$t('convertImage.quality', 'Quality')"
         >
           <div class="flex items-center gap-3">
-            <URange
+            <USlider
               v-model="quality"
               :min="0.1"
               :max="1"

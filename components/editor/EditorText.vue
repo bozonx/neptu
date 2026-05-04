@@ -245,9 +245,27 @@ const editor = useEditor({
       },
       drop: (_view, event) => {
         const dnd = useDnd()
-        if (dnd.draggedPath.value) {
-          // Return true to prevent ProseMirror from handling this as a text drag.
-          // This allows the event to bubble up to Editor.vue's onDrop handler.
+        const path = dnd.draggedPath.value
+        if (path) {
+          event.preventDefault()
+          event.stopPropagation()
+          if (!dnd.draggedIsDir.value) {
+            if (isMediaFile(path) && props.filePath) {
+              import('~/utils/paths').then(({ dirname, relativePath }) => {
+                const docDir = dirname(props.filePath)
+                const markdownPath = relativePath(docDir, path)
+                editorStore.insertImportedFiles(
+                  [{ path, markdownPath }],
+                  props.filePath,
+                  { coords: { x: event.clientX, y: event.clientY } },
+                )
+              })
+            }
+            else {
+              useTabsStore().openFile(path).catch(() => {})
+            }
+          }
+          dnd.onDragEnd()
           return true
         }
         return false
