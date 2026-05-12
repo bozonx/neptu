@@ -20,15 +20,15 @@ export default defineNuxtConfig({
   // Make development server reachable from physical mobile devices
   devServer: {
     host: '0',
-    port: Number(process.env.NUXT_PORT || process.env.PORT || 3000),
+    port: Number(process.env.NEPTU_DEV_PORT ?? 3030),
   },
   compatibilityDate: '2025-05-15',
 
   vite: {
     // Better support for Tauri CLI output
     clearScreen: false,
-    // Forward Tauri-specific environment variables to the client
-    envPrefix: ['VITE_', 'TAURI_'],
+    // Forward Tauri and Neptu environment variables to the client
+    envPrefix: ['VITE_', 'TAURI_', 'NEPTU_'],
     server: {
       // Tauri requires a consistent port
       strictPort: true,

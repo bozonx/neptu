@@ -88,11 +88,10 @@ Copy `.env.example` to `.env` and adjust as needed:
 cp .env.example .env
 ```
 
-| Variable   | Description                   | Default |
-| ---------- | ----------------------------- | ------- |
-| `NUXT_PORT` | Nuxt development server port  | `3000`  |
-
-`PORT` is also supported as a fallback.
+| Variable        | Description                        | Default       |
+| --------------- | ---------------------------------- | --------------- |
+| `NEPTU_DEV_PORT` | Nuxt development server port       | `3030`          |
+| `NEPTU_DEV_DIR`  | Override app data dir in dev mode  | Tauri appConfigDir |
 
 ## Run desktop app (dev)
 

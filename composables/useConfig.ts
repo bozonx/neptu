@@ -105,7 +105,7 @@ export function useConfig() {
   const fs = useFs()
 
   async function configDir(): Promise<string> {
-    const envDir = import.meta.env.VITE_NEPTU_DEV_DIR as string | undefined
+    const envDir = import.meta.env.NEPTU_DEV_DIR as string | undefined
     if (envDir) {
       return await resolve(envDir)
     }
