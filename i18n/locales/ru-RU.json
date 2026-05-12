@@ -16,6 +16,7 @@
     "settings": "Настройки",
     "outline": "Структура",
     "fileInfo": "Информация о файле",
+    "history": "История",
     "name": "Имя",
     "vault": "Хранилище",
     "path": "Путь",
@@ -72,6 +73,7 @@
     "folder": "Папка",
     "noFolderSelected": "Папка не выбрана",
     "browse": "Обзор",
+    "selectVaultFolder": "Выбрать папку хранилища",
     "repository": "Репозиторий",
     "connectExisting": "Подключить существующий репозиторий",
     "initNew": "Инициализировать новый репозиторий",
@@ -95,6 +97,7 @@
     "removeVaultClearSettingsHint": "Ничего не удаляется из самого репозитория, а только в приложении.",
     "remove": "Удалить",
     "rename": "Переименовать",
+    "newName": "Новое имя",
     "createGroup": "Создать группу",
     "groupName": "Название группы",
     "deleteGroupConfirm": "Удалить \"{name}\"?",
@@ -303,15 +306,28 @@
     "currentFolder": "Текущая папка",
     "currentFolderHint": "Изменение перемещает папку .neptu в новое место.",
     "change": "Изменить",
+    "selectNewMainVaultFolder": "Выбрать новую папку основного хранилища",
     "language": "Язык",
     "plugins": "Плагины",
     "systemPlugins": "Системные плагины",
     "dailyNotes": "Ежедневные заметки",
     "dailyNotesPath": "Папка ежедневных заметок",
-    "dailyNotesPathHint": "Относительный путь внутри основного хранилища. Изменение перенесёт существующие заметки."
+    "dailyNotesPathHint": "Относительный путь внутри основного хранилища. Изменение перенесёт существующие заметки.",
+    "dailyNotesPathPlaceholder": ".neptu/daily_notes",
+    "gitAutoMessageTemplatePlaceholder": "Обновить заметки ({files} {fileWord})"
   },
   "plugins": {
-    "addPlugins": "Добавить плагины"
+    "addPlugins": "Добавить плагины",
+    "backlinksName": "Обратные ссылки",
+    "backlinksDescription": "Показывает файлы, которые ссылаются на текущую заметку.",
+    "fileInfoName": "Информация о файле",
+    "fileInfoDescription": "Показывает имя, хранилище и путь текущего файла.",
+    "historyName": "История",
+    "historyDescription": "Показывает недавно изменённые файлы во всех хранилищах.",
+    "outlineName": "Структура",
+    "outlineDescription": "Показывает структуру заголовков текущего markdown-файла.",
+    "contentTypesName": "Типы контента",
+    "contentTypesDescription": "Регистрирует распространённые структуры контента статических сайтов (Astro, Nuxt, Docusaurus, VitePress, Hugo, Jekyll, Eleventy)."
   },
   "welcome": {
     "title": "Добро пожаловать в Neptu",
@@ -319,7 +335,8 @@
     "info1": "Основной репозиторий — это обычная папка на вашем компьютере.",
     "info2": "Она будет добавлена как ваше первое хранилище.",
     "info3": "Настройки приложения хранятся в директории конфигурации Tauri.",
-    "chooseFolder": "Выбрать папку"
+    "chooseFolder": "Выбрать папку",
+    "selectMainRepoFolder": "Выбрать папку основного репозитория"
   },
   "convertImage": {
     "title": "Конвертация изображения",
@@ -360,7 +377,14 @@
     "openFileFailed": "Не удалось открыть файл",
     "openFilePanelFailed": "Не удалось открыть файл в новой панели",
     "deleteFailed": "Не удалось удалить",
-    "moveFailed": "Не удалось переместить или скопировать"
+    "moveFailed": "Не удалось переместить или скопировать",
+    "renameFailed": "Не удалось переименовать",
+    "addFavoriteFailed": "Не удалось добавить в избранное",
+    "importFailed": "Не удалось импортировать",
+    "mainVaultUpdated": "Основное хранилище обновлено",
+    "changeMainVaultFailed": "Не удалось изменить основное хранилище",
+    "hiddenFilesImported": "Скрытые файлы импортированы",
+    "hiddenFilesImportedDesc": "{files} скопированы, но скрыты вашими фильтрами файлов."
   },
   "git": {
     "commit": "Коммит",

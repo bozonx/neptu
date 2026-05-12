@@ -174,7 +174,7 @@ async function importClipboardImages(event: ClipboardEvent): Promise<boolean> {
   }
   catch (error) {
     toast.add({
-      title: t('toast.importFailed', 'Import failed'),
+      title: t('toast.importFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
@@ -822,7 +822,7 @@ async function onSystemDrop(event: DragEvent) {
   }
   catch (error) {
     toast.add({
-      title: t('toast.importFailed', 'Import failed'),
+      title: t('toast.importFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })

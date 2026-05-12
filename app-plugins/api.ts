@@ -1,4 +1,5 @@
 import type {
+  CommandPaletteItem,
   LeftSidebarViewSpec,
   ModalSpec,
   Plugin,
@@ -30,6 +31,13 @@ export function createPluginAPI(manifest: PluginManifest): PluginAPI {
 
   return {
     ui: {
+      addCommand(spec: CommandPaletteItem) {
+        return store.registerCommandPaletteItem({
+          ...spec,
+          pluginId,
+          fqid: fqid(pluginId, spec.id),
+        })
+      },
       addSidebarButton(spec: SidebarButtonSpec) {
         return store.registerSidebarButton({
           ...spec,

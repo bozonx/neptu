@@ -16,6 +16,7 @@
     "settings": "Settings",
     "outline": "Outline",
     "fileInfo": "File Info",
+    "history": "History",
     "name": "Name",
     "vault": "Vault",
     "path": "Path",
@@ -72,6 +73,7 @@
     "folder": "Folder",
     "noFolderSelected": "No folder selected",
     "browse": "Browse",
+    "selectVaultFolder": "Select vault folder",
     "repository": "Repository",
     "connectExisting": "Connect existing repository",
     "initNew": "Initialize new repository",
@@ -94,6 +96,8 @@
     "removeVaultClearSettings": "Delete app settings and states related to this repository",
     "removeVaultClearSettingsHint": "Nothing is deleted from the repository itself; only application data is cleared.",
     "remove": "Remove",
+    "rename": "Rename",
+    "newName": "New Name",
     "createGroup": "Create group",
     "groupName": "Group name",
     "deleteGroupConfirm": "Delete \"{name}\"?",
@@ -302,15 +306,28 @@
     "currentFolder": "Current folder",
     "currentFolderHint": "Changing this moves the .neptu folder to the new location.",
     "change": "Change",
+    "selectNewMainVaultFolder": "Select new main vault folder",
     "language": "Language",
     "plugins": "Plugins",
     "systemPlugins": "System plugins",
     "dailyNotes": "Daily Notes",
     "dailyNotesPath": "Daily notes folder",
-    "dailyNotesPathHint": "Relative path inside the main vault. Changing this migrates existing notes."
+    "dailyNotesPathHint": "Relative path inside the main vault. Changing this migrates existing notes.",
+    "dailyNotesPathPlaceholder": ".neptu/daily_notes",
+    "gitAutoMessageTemplatePlaceholder": "Update notes ({files} {fileWord})"
   },
   "plugins": {
-    "addPlugins": "Add plugins"
+    "addPlugins": "Add plugins",
+    "backlinksName": "Backlinks",
+    "backlinksDescription": "Shows files that link to the current note.",
+    "fileInfoName": "File Info",
+    "fileInfoDescription": "Shows name, vault and path of the current file.",
+    "historyName": "History",
+    "historyDescription": "Shows recently modified files across all vaults.",
+    "outlineName": "Outline",
+    "outlineDescription": "Shows the heading structure of the current markdown file.",
+    "contentTypesName": "Content Types",
+    "contentTypesDescription": "Registers common static-site content structures (Astro, Nuxt, Docusaurus, VitePress, Hugo, Jekyll, Eleventy)."
   },
   "welcome": {
     "title": "Welcome to Neptu",
@@ -318,7 +335,8 @@
     "info1": "The main repository is just a regular folder on your computer.",
     "info2": "It will be added as your first vault.",
     "info3": "App settings are stored in the Tauri app config directory.",
-    "chooseFolder": "Choose folder"
+    "chooseFolder": "Choose folder",
+    "selectMainRepoFolder": "Select main repository folder"
   },
   "convertImage": {
     "title": "Convert Image",
@@ -359,7 +377,14 @@
     "openFileFailed": "Failed to open file",
     "openFilePanelFailed": "Failed to open file in new panel",
     "deleteFailed": "Failed to delete",
-    "moveFailed": "Failed to move or copy"
+    "moveFailed": "Failed to move or copy",
+    "renameFailed": "Rename failed",
+    "addFavoriteFailed": "Failed to add favorite",
+    "importFailed": "Import failed",
+    "mainVaultUpdated": "Main vault updated",
+    "changeMainVaultFailed": "Failed to change main vault",
+    "hiddenFilesImported": "Hidden files imported",
+    "hiddenFilesImportedDesc": "{files} were copied but are hidden by your file filters."
   },
   "git": {
     "commit": "Commit",

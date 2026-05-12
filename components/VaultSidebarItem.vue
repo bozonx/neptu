@@ -69,7 +69,7 @@ async function onDrop(event: DragEvent) {
     }
   }
   catch (error) {
-    toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
+    toast.add({ title: t('toast.moveFailed'), description: String(error), color: 'error' })
   }
 }
 

@@ -569,10 +569,10 @@ function selectBaseName(event: FocusEvent) {
   <!-- Rename Node -->
   <UModal
     v-model:open="ctx.renameNodeOpen.value"
-    :title="$t('vault.rename', 'Rename')"
+    :title="$t('vault.rename')"
   >
     <template #body>
-      <UFormField :label="$t('vault.newName', 'New Name')">
+      <UFormField :label="$t('vault.newName')">
         <UInput
           v-model="ctx.renameNodeName.value"
           autofocus
@@ -589,7 +589,7 @@ function selectBaseName(event: FocusEvent) {
           @click="ctx.renameNodeOpen.value = false"
         />
         <UButton
-          :label="$t('vault.rename', 'Rename')"
+          :label="$t('vault.rename')"
           :disabled="!ctx.renameNodeName.value.trim() || ctx.renameNodeName.value.trim() === ctx.renameNodeCtx.value?.node.name"
           @click="ctx.submitRenameNode"
         />

@@ -10,6 +10,8 @@ const { locale, setLocale } = useI18n()
 const { isTauri, isMobile } = useTauri()
 const dnd = useDnd()
 const importPrompt = useEditorImport()
+const palette = useCommandPalette()
+const builtinCommands = useBuiltinCommands()
 
 const availableLocales = ['en-US', 'ru-RU'] as const
 type AppLocale = typeof availableLocales[number]
@@ -76,6 +78,13 @@ function handleBeforeUnload() {
 onMounted(async () => {
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('keydown', (event: KeyboardEvent) => {
+      const isPaletteKey = (event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'P'
+      if (isPaletteKey) {
+        event.preventDefault()
+        palette.toggle()
+      }
+    })
   }
 
   if (isTauri.value) {
@@ -145,6 +154,8 @@ onBeforeUnmount(() => {
     />
 
     <PluginModalHost />
+
+    <CommandPalette />
 
     <DialogsOverwriteFileDialog
       :open="!!importPrompt.pending.value"

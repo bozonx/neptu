@@ -9,10 +9,11 @@ export const backlinksPlugin: Plugin = {
     description: 'Shows files that link to the current note.',
   },
   activate(ctx) {
+    const { t } = useI18n()
     const dispose = ctx.api.ui.addRightSidebarView({
       id: 'main',
       icon: 'i-lucide-link',
-      title: 'Backlinks',
+      title: t('sidebar.backlinks'),
       order: 15,
       component: BacklinksView,
     })

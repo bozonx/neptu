@@ -88,7 +88,7 @@ async function onUngroupedDrop() {
     await vaults.setVaultGroup(dnd.draggedVaultId.value, null)
   }
   catch (error) {
-    toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
+    toast.add({ title: t('toast.moveFailed'), description: String(error), color: 'error' })
   }
   finally {
     dnd.onDragEnd()
@@ -119,7 +119,7 @@ async function onGroupDrop(group: VaultGroup) {
     await vaults.setVaultGroup(dnd.draggedVaultId.value, group.id)
   }
   catch (error) {
-    toast.add({ title: t('toast.moveFailed', 'Move failed'), description: String(error), color: 'error' })
+    toast.add({ title: t('toast.moveFailed'), description: String(error), color: 'error' })
   }
   finally {
     dnd.onDragEnd()

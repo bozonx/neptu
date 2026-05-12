@@ -16,7 +16,7 @@ const toast = useToast()
 const mode = ref<'ui' | 'text'>('ui')
 const vaultName = computed(() => {
   const vault = useVaultsStore().findVaultForPath(props.filePath)
-  return vault?.name || t('vault.configuration', 'Vault Configuration')
+  return vault?.name || t('vault.configuration')
 })
 
 const config = ref<VaultConfig | null>(null)
@@ -89,7 +89,7 @@ async function loadConfig() {
     lastSavedJson = JSON.stringify(sanitize(structuredClone(toRaw(rawConfig))))
   }
   catch (error) {
-    toast.add({ title: t('vault.loadConfigFailed', 'Failed to load configuration'), description: String(error), color: 'error' })
+    toast.add({ title: t('vault.loadConfigFailed'), description: String(error), color: 'error' })
     config.value = {
       version: 1,
       mediaDir: {
@@ -127,7 +127,7 @@ async function saveConfig(): Promise<void> {
   }
   catch (error) {
     saveStatus.value = 'error'
-    toast.add({ title: t('vault.saveConfigFailed', 'Failed to save configuration'), description: String(error), color: 'error' })
+    toast.add({ title: t('vault.saveConfigFailed'), description: String(error), color: 'error' })
   }
 }
 
@@ -237,15 +237,15 @@ function removeExclude(idx: number) {
           name="i-lucide-settings"
           class="size-4 text-muted"
         />
-        {{ vaultName }} — {{ t('vault.configuration', 'Configuration') }}
+        {{ vaultName }} — {{ t('vault.configuration') }}
         <span
           v-if="saveStatus === 'saving'"
           class="text-xs text-muted ml-2"
-        >{{ t('vault.saving', 'Saving…') }}</span>
+        >{{ t('vault.saving') }}</span>
         <span
           v-else-if="saveStatus === 'saved'"
           class="text-xs text-success ml-2"
-        >{{ t('vault.saved', 'Saved') }}</span>
+        >{{ t('vault.saved') }}</span>
         <span
           v-else-if="saveStatus === 'error'"
           class="text-xs text-error ml-2"
@@ -258,14 +258,14 @@ function removeExclude(idx: number) {
           :class="mode === 'ui' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted hover:text-default'"
           @click="switchTo('ui')"
         >
-          {{ t('vault.visualEditor', 'Visual Editor') }}
+          {{ t('vault.visualEditor') }}
         </button>
         <button
           class="px-3 py-1 text-xs font-medium rounded transition-colors"
           :class="mode === 'text' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted hover:text-default'"
           @click="switchTo('text')"
         >
-          {{ t('vault.textEditor', 'Text Editor') }}
+          {{ t('vault.textEditor') }}
         </button>
       </div>
     </div>
@@ -290,10 +290,10 @@ function removeExclude(idx: number) {
       >
         <div>
           <h2 class="text-xl font-semibold mb-1">
-            {{ t('vault.configuration', 'Configuration') }}
+            {{ t('vault.configuration') }}
           </h2>
           <p class="text-sm text-muted mb-6">
-            {{ t('vault.configSubtitle', 'Manage settings specific to this vault.') }}
+            {{ t('vault.configSubtitle') }}
           </p>
 
           <div class="space-y-6 bg-elevated/30 border border-default rounded-lg p-6">

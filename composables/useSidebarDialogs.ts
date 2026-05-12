@@ -180,7 +180,7 @@ export function useSidebarDialogs() {
 
   async function browseFolder() {
     try {
-      const path = await useFs().pickDirectory({ title: 'Select vault folder' })
+      const path = await useFs().pickDirectory({ title: t('vault.selectVaultFolder') })
       if (path) newVaultPath.value = path
     }
     catch (error) {
@@ -346,7 +346,7 @@ export function useSidebarDialogs() {
       renameNodeOpen.value = false
     }
     catch (error) {
-      toast.add({ title: t('toast.renameFailed', 'Rename failed'), description: String(error), color: 'error' })
+      toast.add({ title: t('toast.renameFailed'), description: String(error), color: 'error' })
     }
   }
 

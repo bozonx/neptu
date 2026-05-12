@@ -47,7 +47,7 @@ async function onDrop() {
     await vaults.addFavorite(dnd.draggedPath.value)
   }
   catch (error) {
-    toast.add({ title: t('toast.addFavoriteFailed', 'Failed to add favorite'), description: String(error), color: 'error' })
+    toast.add({ title: t('toast.addFavoriteFailed'), description: String(error), color: 'error' })
   }
   finally {
     dnd.onDragEnd()

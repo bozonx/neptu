@@ -114,6 +114,7 @@ function pickVaultForPath(vaults: Vault[], filePath: string): Vault | null {
  * affects persisted data we call `useSettingsStore().persist()`.
  */
 export const useVaultsStore = defineStore('vaults', () => {
+  const { t } = useI18n()
   const list = ref<Vault[]>([])
   const trees = ref<Record<string, FileNode[]>>({})
   const groups = ref<VaultGroup[]>([])
@@ -639,8 +640,8 @@ export const useVaultsStore = defineStore('vaults', () => {
       const { useToast } = await import('#imports')
       const toast = useToast()
       toast.add({
-        title: 'Hidden files imported',
-        description: `${hiddenPaths.join(', ')} were copied but are hidden by your file filters.`,
+        title: t('toast.hiddenFilesImported'),
+        description: t('toast.hiddenFilesImportedDesc', { files: hiddenPaths.join(', ') }),
         color: 'warning',
       })
     }

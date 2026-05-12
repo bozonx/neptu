@@ -9,10 +9,11 @@ export const fileInfoPlugin: Plugin = {
     description: 'Shows name, vault and path of the current file.',
   },
   activate(ctx) {
+    const { t } = useI18n()
     const dispose = ctx.api.ui.addRightSidebarView({
       id: 'main',
       icon: 'i-lucide-info',
-      title: 'File Info',
+      title: t('sidebar.fileInfo'),
       order: 20,
       component: FileInfoView,
     })

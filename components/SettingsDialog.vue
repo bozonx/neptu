@@ -54,6 +54,14 @@ async function togglePlugin(pluginId: string, enabled: boolean) {
   await settingsStore.updateSettings({ enabledPlugins: Array.from(list) })
 }
 
+const pluginI18n: Record<string, { name: string; description: string }> = {
+  'com.neptu.backlinks': { name: 'plugins.backlinksName', description: 'plugins.backlinksDescription' },
+  'com.neptu.file-info': { name: 'plugins.fileInfoName', description: 'plugins.fileInfoDescription' },
+  'com.neptu.history': { name: 'plugins.historyName', description: 'plugins.historyDescription' },
+  'com.neptu.outline': { name: 'plugins.outlineName', description: 'plugins.outlineDescription' },
+  'com.neptu.content-types': { name: 'plugins.contentTypesName', description: 'plugins.contentTypesDescription' },
+}
+
 const autosaveSec = ref(0)
 const commitSec = ref(0)
 const authorName = ref('')
@@ -101,8 +109,8 @@ watch(open, async (value) => {
   confirmDeleteGit.value = s.confirmDeleteGit
   useTrash.value = s.useTrash
   gitAutoMessage.value = s.gitAutoMessage ?? true
-  gitAutoMessageTemplate.value = s.gitAutoMessageTemplate ?? 'Update notes ({files} {fileWord})'
-  dailyNotesPath.value = s.dailyNotesPath ?? '.neptu/daily_notes'
+  gitAutoMessageTemplate.value = s.gitAutoMessageTemplate ?? t('settings.gitAutoMessageTemplatePlaceholder')
+  dailyNotesPath.value = s.dailyNotesPath ?? t('settings.dailyNotesPathPlaceholder')
   newMainPath.value = ''
   try {
     const git = useGit()
@@ -121,11 +129,11 @@ watch(open, async (value) => {
 
 async function browseMainFolder() {
   try {
-    const path = await useFs().pickDirectory({ title: 'Select new main vault folder' })
+    const path = await useFs().pickDirectory({ title: t('settings.selectNewMainVaultFolder') })
     if (path) newMainPath.value = path
   }
   catch (error) {
-    toast.add({ title: 'Cannot open dialog', description: String(error), color: 'error' })
+    toast.add({ title: t('toast.cannotOpenDialog'), description: String(error), color: 'error' })
   }
 }
 
@@ -134,11 +142,11 @@ async function submitChangeMainRepo() {
   try {
     await settingsStore.setMainRepo(newMainPath.value)
     newMainPath.value = ''
-    toast.add({ title: 'Main vault updated', color: 'success' })
+    toast.add({ title: t('toast.mainVaultUpdated'), color: 'success' })
   }
   catch (error) {
     toast.add({
-      title: 'Failed to change main vault',
+      title: t('toast.changeMainVaultFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })
@@ -186,7 +194,7 @@ async function save() {
       useTrash: useTrash.value,
       gitAutoMessage: gitAutoMessage.value,
       gitAutoMessageTemplate: gitAutoMessageTemplate.value,
-      dailyNotesPath: dailyNotesPath.value.trim() || '.neptu/daily_notes',
+      dailyNotesPath: dailyNotesPath.value.trim() || t('settings.dailyNotesPathPlaceholder'),
     })
     colorMode.preference = theme.value
   }
@@ -334,7 +342,7 @@ watch(
                 <UInput
                   v-model="dailyNotesPath"
                   class="w-full"
-                  :placeholder="'.neptu/daily_notes'"
+                  :placeholder="t('settings.dailyNotesPathPlaceholder')"
                 />
               </UFormField>
               <p class="text-xs text-muted mt-1">
@@ -486,7 +494,7 @@ watch(
               <UFormField :label="$t('git.gitAutoMessageTemplate')">
                 <UInput
                   v-model="gitAutoMessageTemplate"
-                  :placeholder="'Update notes ({files} {fileWord})'"
+                  :placeholder="t('settings.gitAutoMessageTemplatePlaceholder')"
                   class="w-full"
                 />
                 <p class="text-xs text-muted mt-1">
@@ -513,10 +521,10 @@ watch(
                 >
                   <div>
                     <div class="font-medium text-sm">
-                      {{ plugin.manifest.name }}
+                      {{ t(pluginI18n[plugin.manifest.id]?.name || plugin.manifest.name || '') }}
                     </div>
                     <div class="text-xs text-muted">
-                      {{ plugin.manifest.description }}
+                      {{ t(pluginI18n[plugin.manifest.id]?.description || plugin.manifest.description || '') }}
                     </div>
                   </div>
                   <USwitch

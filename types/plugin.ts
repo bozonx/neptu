@@ -88,6 +88,21 @@ export interface ContentStructureSpec {
   config: VaultConfig
 }
 
+export interface CommandPaletteItem {
+  /** Id unique within the plugin (namespaced with pluginId at registration). */
+  id: string
+  label: string
+  icon?: string
+  /** Human-readable shortcut hint, e.g. "Ctrl+Shift+P". */
+  shortcut?: string
+  /** Extra searchable keywords. */
+  keywords?: string[]
+  /** Called when the command is selected. */
+  onRun: () => void
+  /** Reactive visibility flag; when false the command is skipped. */
+  visible?: () => boolean
+}
+
 /**
  * Registered variants carry the fully qualified id (`${pluginId}:${spec.id}`)
  * plus owner metadata so the registry can perform scoped operations
@@ -123,8 +138,15 @@ export interface RegisteredContentStructure extends ContentStructureSpec {
   fqid: string
 }
 
+export interface RegisteredCommandPaletteItem extends CommandPaletteItem {
+  pluginId: string
+  fqid: string
+}
+
 export interface PluginAPI {
   ui: {
+    /** Register a command-palette item. Returns a dispose fn. */
+    addCommand: (spec: CommandPaletteItem) => () => void
     /** Register a toolbar button. Returns a dispose fn. */
     addSidebarButton: (spec: SidebarButtonSpec) => () => void
     /** Register a left-sidebar view. Returns a dispose fn. */

@@ -9,10 +9,11 @@ export const historyPlugin: Plugin = {
     description: 'Shows recently modified files across all vaults.',
   },
   activate(ctx) {
+    const { t } = useI18n()
     const dispose = ctx.api.ui.addLeftSidebarView({
       id: 'main',
       icon: 'i-lucide-clock',
-      title: 'History',
+      title: t('sidebar.history'),
       order: 10,
       component: HistoryView,
     })

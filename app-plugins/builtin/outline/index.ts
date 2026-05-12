@@ -9,10 +9,11 @@ export const outlinePlugin: Plugin = {
     description: 'Shows the heading structure of the current markdown file.',
   },
   activate(ctx) {
+    const { t } = useI18n()
     const dispose = ctx.api.ui.addRightSidebarView({
       id: 'main',
       icon: 'i-lucide-list-tree',
-      title: 'Outline',
+      title: t('sidebar.outline'),
       order: 10,
       component: OutlineView,
     })

@@ -342,7 +342,7 @@ watchEffect(() => {
         v-else
         class="flex h-full items-center justify-center text-muted text-sm px-2 text-center"
       >
-        {{ $t('sidebar.noVaultSelected', 'Select a vault to view contents') }}
+        {{ $t('sidebar.noVaultSelected') }}
       </div>
     </Pane>
   </Splitpanes>

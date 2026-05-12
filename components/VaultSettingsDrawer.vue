@@ -116,7 +116,7 @@ function addCustomExtension(group: FileFilterGroup) {
 
 async function browseEditFolder() {
   try {
-    const path = await useFs().pickDirectory({ title: 'Select vault folder' })
+    const path = await useFs().pickDirectory({ title: t('vault.selectVaultFolder') })
     if (path) editVaultPath.value = path
   }
   catch (error) {

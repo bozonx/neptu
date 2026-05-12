@@ -59,7 +59,7 @@ async function submitConvert() {
     })
 
     toast.add({
-      title: t('toast.convertSuccess', 'Image converted'),
+      title: t('toast.convertSuccess'),
       description: finalPath.split(/[\\/]/).pop(),
       color: 'success',
     })
@@ -69,7 +69,7 @@ async function submitConvert() {
   }
   catch (error) {
     toast.add({
-      title: t('toast.convertFailed', 'Conversion failed'),
+      title: t('toast.convertFailed'),
       description: error instanceof Error ? error.message : String(error),
       color: 'error',
     })

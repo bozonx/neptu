@@ -10,7 +10,7 @@ async function chooseMainRepo() {
   loading.value = true
   try {
     const fs = useFs()
-    const path = await fs.pickDirectory({ title: 'Select main repository folder' })
+    const path = await fs.pickDirectory({ title: t('welcome.selectMainRepoFolder') })
     if (!path) return
     await settings.setMainRepo(path)
     open.value = false
