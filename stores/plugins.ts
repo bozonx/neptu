@@ -10,6 +10,7 @@ import type {
   RegisteredSettingsTab,
   RegisteredCommandPaletteItem,
   RegisteredSidebarButton,
+  RegisteredStatusBarItem,
   SidebarButtonLocation,
 } from '~/types/plugin'
 
@@ -40,6 +41,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   const contentStructures = shallowRef<RegisteredContentStructure[]>([])
   const commandPaletteItems = shallowRef<RegisteredCommandPaletteItem[]>([])
   const modals = shallowRef<RegisteredModal[]>([])
+  const statusBarItems = shallowRef<RegisteredStatusBarItem[]>([])
   const activeLeftSidebarView = ref<string | null>(null)
   const activeRightSidebarView = ref<string | null>(null)
   const loaded = ref<Map<string, LoadedPlugin>>(new Map())
@@ -53,6 +55,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   const sortedSettingsTabs = computed(() => sortByOrder(settingsTabs.value))
   const sortedContentStructures = computed(() => sortByOrder(contentStructures.value))
   const sortedCommandPaletteItems = computed(() => sortByOrder(commandPaletteItems.value))
+  const sortedStatusBarItems = computed(() => sortByOrder(statusBarItems.value))
 
   /** Currently active left-sidebar view. Null means the built-in Files panel. */
   const resolvedActiveLeftSidebarView = computed(() => {
@@ -124,6 +127,13 @@ export const usePluginsStore = defineStore('plugins', () => {
     }
   }
 
+  function registerStatusBarItem(item: RegisteredStatusBarItem) {
+    statusBarItems.value = [...statusBarItems.value.filter((i) => i.fqid !== item.fqid), item]
+    return () => {
+      statusBarItems.value = statusBarItems.value.filter((i) => i.fqid !== item.fqid)
+    }
+  }
+
   function pushModal(modal: RegisteredModal) {
     modals.value = [...modals.value, modal]
   }
@@ -177,6 +187,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     settingsTabs.value = settingsTabs.value.filter((t) => t.pluginId !== pluginId)
     contentStructures.value = contentStructures.value.filter((s) => s.pluginId !== pluginId)
     commandPaletteItems.value = commandPaletteItems.value.filter((i) => i.pluginId !== pluginId)
+    statusBarItems.value = statusBarItems.value.filter((i) => i.pluginId !== pluginId)
     // Drop any left sidebar views still owned by this plugin.
     const removedLsView = leftSidebarViews.value.find((v) => v.pluginId === pluginId)
     if (removedLsView) {
@@ -204,6 +215,8 @@ export const usePluginsStore = defineStore('plugins', () => {
     sortedContentStructures,
     commandPaletteItems,
     sortedCommandPaletteItems,
+    statusBarItems,
+    sortedStatusBarItems,
     resolvedActiveLeftSidebarView,
     resolvedActiveRightSidebarView,
     setActiveLeftSidebarView,
@@ -214,6 +227,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     registerSettingsTab,
     registerContentStructure,
     registerCommandPaletteItem,
+    registerStatusBarItem,
     pushModal,
     closeModal,
     load,

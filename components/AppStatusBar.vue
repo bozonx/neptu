@@ -3,6 +3,7 @@ const editorStore = useEditorStore()
 const gitStore = useGitStore()
 const settingsStore = useSettingsStore()
 const tabsStore = useTabsStore()
+const pluginsStore = usePluginsStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -19,16 +20,6 @@ const stats = computed(() => {
 
 const currentVault = computed(() => editorStore.currentVault)
 const isGit = computed(() => currentVault.value?.type === 'git')
-const isManualGit = computed(() => {
-  const v = currentVault.value
-  if (v?.type !== 'git') return false
-  const mode = v.git?.commitMode ?? 'respect_config'
-  if (mode === 'manual') return true
-  if (mode === 'respect_config') {
-    return settingsStore.settings.defaultCommitMode === 'manual'
-  }
-  return false
-})
 const showCommit = computed(() => {
   if (!isGit.value || !currentVault.value) return false
   const vId = currentVault.value.id
@@ -142,6 +133,14 @@ const showDiffModal = ref(false)
         @click="showDiffModal = true"
       />
     </template>
+
+    <component
+      :is="item.component"
+      v-for="item in pluginsStore.sortedStatusBarItems"
+      v-show="item.visible ? item.visible() : true"
+      :key="item.fqid"
+      class="shrink-0"
+    />
 
     <UButton
       :icon="tabsStore.rightSidebarCollapsed ? 'i-lucide-panel-right-close' : 'i-lucide-panel-right'"

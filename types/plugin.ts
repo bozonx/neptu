@@ -103,6 +103,17 @@ export interface CommandPaletteItem {
   visible?: () => boolean
 }
 
+export interface StatusBarItemSpec {
+  /** Id unique within the plugin. */
+  id: string
+  /** Lower first. Defaults to 100. */
+  order?: number
+  /** Component rendered inside the status bar. */
+  component: Component
+  /** Reactive visibility flag; when false the item is skipped. */
+  visible?: () => boolean
+}
+
 /**
  * Registered variants carry the fully qualified id (`${pluginId}:${spec.id}`)
  * plus owner metadata so the registry can perform scoped operations
@@ -143,6 +154,11 @@ export interface RegisteredCommandPaletteItem extends CommandPaletteItem {
   fqid: string
 }
 
+export interface RegisteredStatusBarItem extends StatusBarItemSpec {
+  pluginId: string
+  fqid: string
+}
+
 export interface PluginAPI {
   ui: {
     /** Register a command-palette item. Returns a dispose fn. */
@@ -157,6 +173,8 @@ export interface PluginAPI {
     addSettingsTab: (spec: SettingsTabSpec) => () => void
     /** Open a modal. Returns a handle with `close()` and the fqid. */
     openModal: (spec: ModalSpec) => { id: string, close: () => void }
+    /** Register an interactive block in the status bar. Returns a dispose fn. */
+    addStatusBarItem: (spec: StatusBarItemSpec) => () => void
   }
   storage: {
     /** Load persisted state for this plugin. */

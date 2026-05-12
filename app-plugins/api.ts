@@ -10,6 +10,7 @@ import type {
   RightSidebarViewSpec,
   SettingsTabSpec,
   SidebarButtonSpec,
+  StatusBarItemSpec,
 } from '~/types/plugin'
 
 function fqid(pluginId: string, localId: string) {
@@ -80,6 +81,13 @@ export function createPluginAPI(manifest: PluginManifest, cleanups?: Array<() =>
         }
         cleanups?.push(handle.close)
         return handle
+      },
+      addStatusBarItem(spec: StatusBarItemSpec) {
+        return trackCleanup(store.registerStatusBarItem({
+          ...spec,
+          pluginId,
+          fqid: fqid(pluginId, spec.id),
+        }))
       },
     },
     storage: {
