@@ -54,7 +54,7 @@ async function togglePlugin(pluginId: string, enabled: boolean) {
   await settingsStore.updateSettings({ enabledPlugins: Array.from(list) })
 }
 
-const pluginI18n: Record<string, { name: string; description: string }> = {
+const pluginI18n: Record<string, { name: string, description: string }> = {
   'com.neptu.backlinks': { name: 'plugins.backlinksName', description: 'plugins.backlinksDescription' },
   'com.neptu.file-info': { name: 'plugins.fileInfoName', description: 'plugins.fileInfoDescription' },
   'com.neptu.history': { name: 'plugins.historyName', description: 'plugins.historyDescription' },

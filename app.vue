@@ -11,7 +11,7 @@ const { isTauri, isMobile } = useTauri()
 const dnd = useDnd()
 const importPrompt = useEditorImport()
 const palette = useCommandPalette()
-const builtinCommands = useBuiltinCommands()
+useBuiltinCommands()
 
 const availableLocales = ['en-US', 'ru-RU'] as const
 type AppLocale = typeof availableLocales[number]

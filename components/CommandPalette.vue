@@ -1,9 +1,18 @@
 <script setup lang="ts">
-const palette = useCommandPalette()
+const {
+  isOpen,
+  query,
+  selectedIndex,
+  filteredCommands,
+  close,
+  selectNext,
+  selectPrev,
+  executeSelected,
+} = useCommandPalette()
+
 const { t } = useI18n()
 
 const inputRef = ref<HTMLInputElement | null>(null)
-
 const listRef = ref<HTMLDivElement | null>(null)
 
 function onAfterEnter() {
@@ -15,20 +24,20 @@ function onAfterEnter() {
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'ArrowDown') {
     event.preventDefault()
-    palette.selectNext()
+    selectNext()
     scrollSelectedIntoView()
   }
   else if (event.key === 'ArrowUp') {
     event.preventDefault()
-    palette.selectPrev()
+    selectPrev()
     scrollSelectedIntoView()
   }
   else if (event.key === 'Enter') {
     event.preventDefault()
-    palette.executeSelected()
+    executeSelected()
   }
   else if (event.key === 'Escape') {
-    palette.close()
+    close()
   }
 }
 
@@ -44,18 +53,18 @@ function scrollSelectedIntoView() {
 }
 
 function handleMouseEnter(index: number) {
-  palette.selectedIndex.value = index
+  selectedIndex.value = index
 }
 
 function handleClick(index: number) {
-  palette.selectedIndex.value = index
-  palette.executeSelected()
+  selectedIndex.value = index
+  executeSelected()
 }
 </script>
 
 <template>
   <UModal
-    v-model:open="palette.isOpen.value"
+    v-model:open="isOpen"
     :dismissible="true"
     :ui="{
       content: 'sm:max-w-xl overflow-hidden',
@@ -72,7 +81,7 @@ function handleClick(index: number) {
         <div class="border-b border-default p-2">
           <UInput
             ref="inputRef"
-            v-model="palette.query.value"
+            v-model="query"
             icon="i-lucide-search"
             :placeholder="t('commands.searchPlaceholder')"
             variant="none"
@@ -88,7 +97,7 @@ function handleClick(index: number) {
           class="flex-1 overflow-y-auto p-2"
         >
           <div
-            v-if="palette.filteredCommands.value.length === 0"
+            v-if="filteredCommands.length === 0"
             class="text-center text-sm text-muted py-8"
           >
             {{ t('commands.noResults') }}
@@ -96,12 +105,12 @@ function handleClick(index: number) {
 
           <template v-else>
             <div
-              v-for="(cmd, i) in palette.filteredCommands.value"
+              v-for="(cmd, i) in filteredCommands"
               :key="cmd.fqid"
-              :data-selected="palette.selectedIndex.value === i"
+              :data-selected="selectedIndex === i"
               :class="[
                 'flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer text-sm select-none',
-                palette.selectedIndex.value === i
+                selectedIndex === i
                   ? 'bg-primary/10 text-primary'
                   : 'hover:bg-elevated/50',
               ]"

@@ -49,15 +49,15 @@ export const MediaImage = Image.extend({
 
     const baseAttrs = {
       ...HTMLAttributes,
-      src: resolvedSrc,
+      'src': resolvedSrc,
       'data-original-src': rawSrc,
     }
 
     if (isVideoFile(rawSrc)) {
-      return ['video', { ...baseAttrs, controls: 'true', 'data-neptu-video': 'true', preload: 'metadata' }]
+      return ['video', { ...baseAttrs, 'controls': 'true', 'data-neptu-video': 'true', 'preload': 'metadata' }]
     }
     if (isAudioFile(rawSrc)) {
-      return ['audio', { ...baseAttrs, controls: 'true', 'data-neptu-audio': 'true', preload: 'metadata' }]
+      return ['audio', { ...baseAttrs, 'controls': 'true', 'data-neptu-audio': 'true', 'preload': 'metadata' }]
     }
     if (isImageFile(rawSrc) || rawSrc.startsWith('data:image/')) {
       return ['img', baseAttrs]
