@@ -4,6 +4,7 @@ const {
   query,
   selectedIndex,
   filteredCommands,
+  commandLabel,
   close,
   selectNext,
   selectPrev,
@@ -73,7 +74,6 @@ function handleClick(index: number) {
       footer: 'hidden',
     }"
     @after-enter="onAfterEnter"
-    @keydown="onKeydown"
   >
     <template #body>
       <div class="flex flex-col max-h-[60vh]">
@@ -122,7 +122,7 @@ function handleClick(index: number) {
                 class="shrink-0 text-muted"
               />
               <span class="flex-1 truncate">
-                {{ cmd.label }}
+                {{ commandLabel(cmd) }}
               </span>
               <span
                 v-if="cmd.shortcut"

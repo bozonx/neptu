@@ -118,7 +118,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   function registerCommandPaletteItem(item: RegisteredCommandPaletteItem) {
-    commandPaletteItems.value = [...commandPaletteItems.value, item]
+    commandPaletteItems.value = [...commandPaletteItems.value.filter((i) => i.fqid !== item.fqid), item]
     return () => {
       commandPaletteItems.value = commandPaletteItems.value.filter((i) => i.fqid !== item.fqid)
     }

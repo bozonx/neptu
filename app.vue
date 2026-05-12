@@ -75,16 +75,18 @@ function handleBeforeUnload() {
   void flushPendingWrites()
 }
 
+function handleGlobalKeydown(event: KeyboardEvent) {
+  const isPaletteKey = (event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'p'
+  if (isPaletteKey) {
+    event.preventDefault()
+    palette.toggle()
+  }
+}
+
 onMounted(async () => {
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', handleBeforeUnload)
-    window.addEventListener('keydown', (event: KeyboardEvent) => {
-      const isPaletteKey = (event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'P'
-      if (isPaletteKey) {
-        event.preventDefault()
-        palette.toggle()
-      }
-    })
+    window.addEventListener('keydown', handleGlobalKeydown)
   }
 
   if (isTauri.value) {
@@ -109,6 +111,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('beforeunload', handleBeforeUnload)
+    window.removeEventListener('keydown', handleGlobalKeydown)
   }
 })
 </script>

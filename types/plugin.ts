@@ -91,7 +91,7 @@ export interface ContentStructureSpec {
 export interface CommandPaletteItem {
   /** Id unique within the plugin (namespaced with pluginId at registration). */
   id: string
-  label: string
+  label: string | (() => string)
   icon?: string
   /** Human-readable shortcut hint, e.g. "Ctrl+Shift+P". */
   shortcut?: string

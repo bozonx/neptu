@@ -20,7 +20,7 @@ export function useBuiltinCommands() {
       id: 'open-command-palette',
       pluginId: 'core',
       fqid: 'core:open-command-palette',
-      label: t('commands.openCommandPalette'),
+      label: () => t('commands.openCommandPalette'),
       icon: 'i-lucide-terminal',
       shortcut: 'Ctrl+Shift+P',
       onRun: () => palette.toggle(),
@@ -29,7 +29,7 @@ export function useBuiltinCommands() {
       id: 'open-settings',
       pluginId: 'core',
       fqid: 'core:open-settings',
-      label: t('commands.openSettings'),
+      label: () => t('commands.openSettings'),
       icon: 'i-lucide-settings',
       onRun: () => settings.openSettingsDialog(),
     },
@@ -37,7 +37,7 @@ export function useBuiltinCommands() {
       id: 'open-files',
       pluginId: 'core',
       fqid: 'core:open-files',
-      label: t('commands.openFiles'),
+      label: () => t('commands.openFiles'),
       icon: 'i-lucide-files',
       onRun: () => {
         tabs.leftSidebarTab = 'files'
@@ -48,7 +48,7 @@ export function useBuiltinCommands() {
       id: 'open-search',
       pluginId: 'core',
       fqid: 'core:open-search',
-      label: t('commands.openSearch'),
+      label: () => t('commands.openSearch'),
       icon: 'i-lucide-search',
       onRun: () => {
         tabs.leftSidebarTab = 'search'
@@ -59,7 +59,7 @@ export function useBuiltinCommands() {
       id: 'open-daily-notes',
       pluginId: 'core',
       fqid: 'core:open-daily-notes',
-      label: t('commands.openDailyNotes'),
+      label: () => t('commands.openDailyNotes'),
       icon: 'i-lucide-calendar-days',
       onRun: () => {
         tabs.leftSidebarTab = 'dailyNotes'
@@ -70,7 +70,7 @@ export function useBuiltinCommands() {
       id: 'open-trash',
       pluginId: 'core',
       fqid: 'core:open-trash',
-      label: t('commands.openTrash'),
+      label: () => t('commands.openTrash'),
       icon: 'i-lucide-trash-2',
       visible: () => settings.settings.useTrash && vaults.list.some((v) => v.type === 'local'),
       onRun: () => {
@@ -82,7 +82,7 @@ export function useBuiltinCommands() {
       id: 'toggle-right-sidebar',
       pluginId: 'core',
       fqid: 'core:toggle-right-sidebar',
-      label: t('commands.toggleRightSidebar'),
+      label: () => t('commands.toggleRightSidebar'),
       icon: 'i-lucide-panel-right',
       onRun: () => {
         tabs.rightSidebarCollapsed = !tabs.rightSidebarCollapsed
@@ -92,7 +92,7 @@ export function useBuiltinCommands() {
       id: 'toggle-expand-all',
       pluginId: 'core',
       fqid: 'core:toggle-expand-all',
-      label: t('commands.toggleExpandAll'),
+      label: () => t('commands.toggleExpandAll'),
       icon: 'i-lucide-chevrons-up-down',
       onRun: () => tabs.toggleExpandAll(),
     },
@@ -100,7 +100,7 @@ export function useBuiltinCommands() {
       id: 'toggle-auto-reveal',
       pluginId: 'core',
       fqid: 'core:toggle-auto-reveal',
-      label: t('commands.toggleAutoReveal'),
+      label: () => t('commands.toggleAutoReveal'),
       icon: 'i-lucide-crosshair',
       onRun: () => tabs.toggleAutoReveal(),
     },
@@ -108,7 +108,7 @@ export function useBuiltinCommands() {
       id: 'toggle-hidden-files',
       pluginId: 'core',
       fqid: 'core:toggle-hidden-files',
-      label: t('commands.toggleHiddenFiles'),
+      label: () => t('commands.toggleHiddenFiles'),
       icon: 'i-lucide-eye',
       onRun: async () => {
         settings.settings.showHiddenFiles = !settings.settings.showHiddenFiles
@@ -120,7 +120,7 @@ export function useBuiltinCommands() {
       id: 'new-note',
       pluginId: 'core',
       fqid: 'core:new-note',
-      label: t('commands.newNote'),
+      label: () => t('commands.newNote'),
       icon: 'i-lucide-file-plus',
       visible: () => vaults.list.length > 0,
       onRun: () => {
@@ -132,7 +132,7 @@ export function useBuiltinCommands() {
       id: 'new-file',
       pluginId: 'core',
       fqid: 'core:new-file',
-      label: t('commands.newFile'),
+      label: () => t('commands.newFile'),
       icon: 'i-lucide-file-plus-2',
       visible: () => vaults.list.length > 0,
       onRun: () => {
@@ -144,7 +144,7 @@ export function useBuiltinCommands() {
       id: 'save-current-file',
       pluginId: 'core',
       fqid: 'core:save-current-file',
-      label: t('commands.saveCurrentFile'),
+      label: () => t('commands.saveCurrentFile'),
       icon: 'i-lucide-save',
       shortcut: 'Ctrl+S',
       visible: () => {
@@ -160,7 +160,7 @@ export function useBuiltinCommands() {
       id: 'close-current-tab',
       pluginId: 'core',
       fqid: 'core:close-current-tab',
-      label: t('commands.closeCurrentTab'),
+      label: () => t('commands.closeCurrentTab'),
       icon: 'i-lucide-x',
       visible: () => {
         const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
@@ -177,7 +177,7 @@ export function useBuiltinCommands() {
       id: 'close-all-tabs',
       pluginId: 'core',
       fqid: 'core:close-all-tabs',
-      label: t('commands.closeAllTabs'),
+      label: () => t('commands.closeAllTabs'),
       icon: 'i-lucide-x-square',
       visible: () => {
         const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
@@ -192,7 +192,7 @@ export function useBuiltinCommands() {
       id: 'close-other-tabs',
       pluginId: 'core',
       fqid: 'core:close-other-tabs',
-      label: t('commands.closeOtherTabs'),
+      label: () => t('commands.closeOtherTabs'),
       icon: 'i-lucide-x-circle',
       visible: () => {
         const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
@@ -209,7 +209,7 @@ export function useBuiltinCommands() {
       id: 'split-right',
       pluginId: 'core',
       fqid: 'core:split-right',
-      label: t('commands.splitRight'),
+      label: () => t('commands.splitRight'),
       icon: 'i-lucide-columns-2',
       visible: () => {
         const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
@@ -227,7 +227,7 @@ export function useBuiltinCommands() {
       id: 'git-commit',
       pluginId: 'core',
       fqid: 'core:git-commit',
-      label: t('commands.gitCommit'),
+      label: () => t('commands.gitCommit'),
       icon: 'i-lucide-git-commit-horizontal',
       visible: () => {
         const path = editor.currentFilePath
@@ -246,7 +246,7 @@ export function useBuiltinCommands() {
       id: 'git-refresh',
       pluginId: 'core',
       fqid: 'core:git-refresh',
-      label: t('commands.gitRefresh'),
+      label: () => t('commands.gitRefresh'),
       icon: 'i-lucide-refresh-cw',
       visible: () => vaults.list.some((v) => v.type === 'git'),
       onRun: () => void git.refreshAllStatuses(),

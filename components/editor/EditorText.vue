@@ -188,7 +188,7 @@ const editor = useEditor({
   contentType: 'markdown',
   extensions: [
     StarterKit.configure({
-      heading: { levels: [1, 2, 3] },
+      heading: { levels: [2, 3, 4] },
       link: false,
     }),
     Link.configure({
@@ -274,7 +274,7 @@ const editor = useEditor({
     transformPastedHTML(html: string) {
       const allowedTags = new Set([
         'p', 'br', 'strong', 'b', 'em', 'i', 's', 'del', 'a', 'code', 'pre',
-        'blockquote', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'hr', 'img',
+        'blockquote', 'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'hr', 'img',
         'table', 'thead', 'tbody', 'tr', 'th', 'td',
       ])
       const doc = new DOMParser().parseFromString(html, 'text/html')
@@ -1059,13 +1059,6 @@ onUnmounted(() => {
         />
         <div class="mx-1 h-5 w-px bg-default" />
         <UButton
-          :color="editor.isActive('heading', { level: 1 }) ? 'primary' : 'neutral'"
-          :variant="editor.isActive('heading', { level: 1 }) ? 'soft' : 'ghost'"
-          size="xs"
-          label="H1"
-          @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-        />
-        <UButton
           :color="editor.isActive('heading', { level: 2 }) ? 'primary' : 'neutral'"
           :variant="editor.isActive('heading', { level: 2 }) ? 'soft' : 'ghost'"
           size="xs"
@@ -1078,6 +1071,13 @@ onUnmounted(() => {
           size="xs"
           label="H3"
           @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
+        />
+        <UButton
+          :color="editor.isActive('heading', { level: 4 }) ? 'primary' : 'neutral'"
+          :variant="editor.isActive('heading', { level: 4 }) ? 'soft' : 'ghost'"
+          size="xs"
+          label="H4"
+          @click="editor.chain().focus().toggleHeading({ level: 4 }).run()"
         />
         <div class="mx-1 h-5 w-px bg-default" />
         <UButton
@@ -1273,18 +1273,18 @@ onUnmounted(() => {
           @click="editor.chain().focus().toggleStrike().run()"
         />
         <UButton
-          :color="editor.isActive('heading', { level: 1 }) ? 'primary' : 'neutral'"
-          :variant="editor.isActive('heading', { level: 1 }) ? 'soft' : 'ghost'"
-          size="xs"
-          label="H1"
-          @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-        />
-        <UButton
           :color="editor.isActive('heading', { level: 2 }) ? 'primary' : 'neutral'"
           :variant="editor.isActive('heading', { level: 2 }) ? 'soft' : 'ghost'"
           size="xs"
           label="H2"
           @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
+        />
+        <UButton
+          :color="editor.isActive('heading', { level: 4 }) ? 'primary' : 'neutral'"
+          :variant="editor.isActive('heading', { level: 4 }) ? 'soft' : 'ghost'"
+          size="xs"
+          label="H4"
+          @click="editor.chain().focus().toggleHeading({ level: 4 }).run()"
         />
         <UButton
           :color="editor.isActive('bulletList') ? 'primary' : 'neutral'"
@@ -1400,6 +1400,13 @@ onUnmounted(() => {
   font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.75rem;
+}
+
+:deep(.neptu-tiptap h4) {
+  margin-top: 0.85rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5rem;
 }
 
 :deep(.neptu-tiptap ul),

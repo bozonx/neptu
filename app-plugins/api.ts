@@ -24,55 +24,62 @@ function generateModalId() {
  * Builds a PluginAPI bound to a specific plugin identity. All registrations
  * are routed through `usePluginsStore`, which is the single source of truth.
  */
-export function createPluginAPI(manifest: PluginManifest): PluginAPI {
+export function createPluginAPI(manifest: PluginManifest, cleanups?: Array<() => void>): PluginAPI {
   const pluginId = manifest.id
   const store = usePluginsStore()
   const config = useConfig()
 
+  function trackCleanup(cleanup: () => void) {
+    cleanups?.push(cleanup)
+    return cleanup
+  }
+
   return {
     ui: {
       addCommand(spec: CommandPaletteItem) {
-        return store.registerCommandPaletteItem({
+        return trackCleanup(store.registerCommandPaletteItem({
           ...spec,
           pluginId,
           fqid: fqid(pluginId, spec.id),
-        })
+        }))
       },
       addSidebarButton(spec: SidebarButtonSpec) {
-        return store.registerSidebarButton({
+        return trackCleanup(store.registerSidebarButton({
           ...spec,
           pluginId,
           fqid: fqid(pluginId, spec.id),
-        })
+        }))
       },
       addLeftSidebarView(spec: LeftSidebarViewSpec) {
-        return store.registerLeftSidebarView({
+        return trackCleanup(store.registerLeftSidebarView({
           ...spec,
           pluginId,
           fqid: fqid(pluginId, spec.id),
-        })
+        }))
       },
       addRightSidebarView(spec: RightSidebarViewSpec) {
-        return store.registerRightSidebarView({
+        return trackCleanup(store.registerRightSidebarView({
           ...spec,
           pluginId,
           fqid: fqid(pluginId, spec.id),
-        })
+        }))
       },
       addSettingsTab(spec: SettingsTabSpec) {
-        return store.registerSettingsTab({
+        return trackCleanup(store.registerSettingsTab({
           ...spec,
           pluginId,
           fqid: fqid(pluginId, spec.id),
-        })
+        }))
       },
       openModal(spec: ModalSpec) {
         const modalFqid = fqid(pluginId, spec.id || generateModalId())
         store.pushModal({ ...spec, pluginId, fqid: modalFqid })
-        return {
+        const handle = {
           id: modalFqid,
           close: () => store.closeModal(modalFqid),
         }
+        cleanups?.push(handle.close)
+        return handle
       },
     },
     storage: {
@@ -89,11 +96,11 @@ export function createPluginAPI(manifest: PluginManifest): PluginAPI {
     },
     content: {
       addStructure(spec: ContentStructureSpec) {
-        return store.registerContentStructure({
+        return trackCleanup(store.registerContentStructure({
           ...spec,
           pluginId,
           fqid: fqid(pluginId, spec.id),
-        })
+        }))
       },
     },
   }
@@ -109,7 +116,7 @@ export function createPluginContext(
 ): PluginContext {
   return {
     manifest,
-    api: createPluginAPI(manifest),
+    api: createPluginAPI(manifest, cleanups),
     onUnload(cb: () => void) {
       cleanups.push(cb)
     },

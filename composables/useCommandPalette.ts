@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { RegisteredCommandPaletteItem } from '~/types/plugin'
 
 const isOpen = ref(false)
@@ -9,11 +9,15 @@ function normalizeSearch(text: string): string {
   return text.toLowerCase().trim()
 }
 
+function commandLabel(cmd: RegisteredCommandPaletteItem): string {
+  return typeof cmd.label === 'function' ? cmd.label() : cmd.label
+}
+
 function matches(cmd: RegisteredCommandPaletteItem, q: string): boolean {
   if (!q) return true
   const searchTerms = q.split(/\s+/).filter(Boolean)
   const haystack = normalizeSearch([
-    cmd.label,
+    commandLabel(cmd),
     ...(cmd.keywords ?? []),
   ].join(' '))
   return searchTerms.every((term) => haystack.includes(normalizeSearch(term)))
@@ -25,11 +29,20 @@ export function useCommandPalette() {
   const allCommands = computed(() => plugins.sortedCommandPaletteItems)
 
   const filteredCommands = computed(() => {
-    const list = allCommands.value.filter((cmd) => {
+    return allCommands.value.filter((cmd) => {
       if (cmd.visible && !cmd.visible()) return false
       return matches(cmd, query.value)
     })
-    return list
+  })
+
+  watch(filteredCommands, (commands) => {
+    if (commands.length === 0) {
+      selectedIndex.value = 0
+      return
+    }
+    if (selectedIndex.value >= commands.length) {
+      selectedIndex.value = commands.length - 1
+    }
   })
 
   function open() {
@@ -80,6 +93,7 @@ export function useCommandPalette() {
     query,
     selectedIndex,
     filteredCommands,
+    commandLabel,
     open,
     close,
     toggle,
