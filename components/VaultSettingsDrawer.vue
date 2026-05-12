@@ -773,7 +773,7 @@ function resetAutoConvertOverride() {
                   <UInput
                     v-model="editAutoConvertBackgroundColor"
                     type="text"
-                    placeholder="#ffffff"
+                    :placeholder="$t('convertImage.backgroundColorPlaceholder')"
                   />
                 </UFormField>
               </template>

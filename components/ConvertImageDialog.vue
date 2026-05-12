@@ -92,7 +92,7 @@ async function submitConvert() {
             v-if="previewUrl"
             :src="previewUrl"
             class="max-h-48 max-w-full object-contain rounded shadow-sm"
-            alt="Preview"
+            :alt="$t('convertImage.previewAlt')"
           />
         </div>
 
@@ -140,7 +140,7 @@ async function submitConvert() {
           <UInput
             v-model="backgroundColor"
             type="text"
-            placeholder="#ffffff"
+            :placeholder="$t('convertImage.backgroundColorPlaceholder')"
           />
         </UFormField>
       </div>

@@ -6,6 +6,8 @@ const props = defineProps<{
   viewType: 'image' | 'video' | 'audio'
 }>()
 
+const { t } = useI18n()
+
 const assetUrl = ref('')
 
 // Image Viewer State
@@ -71,7 +73,7 @@ watch(() => props.filePath, (path) => {
     <template v-if="props.viewType === 'image'">
       <UContextMenu
         :items="[
-          [{ label: 'Сбросить pan и zoom', icon: 'i-lucide-maximize', onSelect: resetView }],
+          [{ label: t('editor.imageResetPanZoom'), icon: 'i-lucide-maximize', onSelect: resetView }],
         ]"
         :modal="false"
         class="w-full h-full flex items-center justify-center"
@@ -90,7 +92,7 @@ watch(() => props.filePath, (path) => {
             :src="assetUrl"
             class="max-w-full max-h-full object-contain rounded shadow-sm select-none pointer-events-none"
             :style="{ transform: `translate(${panX}px, ${panY}px) scale(${scale})`, transformOrigin: 'center center' }"
-            alt="Image Viewer"
+            :alt="$t('editor.imageViewerAlt')"
             draggable="false"
           />
         </div>

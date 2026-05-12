@@ -347,6 +347,8 @@
     "maxDimensionPlaceholder": "Original size",
     "preserveTransparency": "Preserve transparency",
     "backgroundColor": "Background color",
+    "backgroundColorPlaceholder": "#ffffff",
+    "previewAlt": "Preview",
     "convert": "Convert"
   },
   "toast": {
@@ -469,6 +471,8 @@
       "warning": "Warning",
       "caution": "Caution"
     },
+    "imageResetPanZoom": "Reset pan and zoom",
+    "imageViewerAlt": "Image Viewer",
     "dropHere": "Drop files here to insert",
     "overwrite": {
       "title": "File already exists",

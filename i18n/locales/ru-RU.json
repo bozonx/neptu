@@ -347,6 +347,8 @@
     "maxDimensionPlaceholder": "Исходный размер",
     "preserveTransparency": "Сохранять прозрачность",
     "backgroundColor": "Цвет фона",
+    "backgroundColorPlaceholder": "#ffffff",
+    "previewAlt": "Предпросмотр",
     "convert": "Конвертировать"
   },
   "toast": {
@@ -469,6 +471,8 @@
       "warning": "Предупреждение",
       "caution": "Внимание"
     },
+    "imageResetPanZoom": "Сбросить pan и zoom",
+    "imageViewerAlt": "Просмотр изображения",
     "dropHere": "Бросьте файлы сюда, чтобы вставить",
     "overwrite": {
       "title": "Файл уже существует",
