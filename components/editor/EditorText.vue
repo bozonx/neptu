@@ -159,6 +159,7 @@ const editor = useEditor({
   onCreate: ({ editor }) => {
     const storage = editor.storage as unknown as Record<string, { documentPath?: string | null } | undefined>
     if (storage.image) storage.image.documentPath = props.filePath
+    if (storage.wikilink) storage.wikilink.documentPath = props.filePath
   },
   onUpdate: ({ editor }) => {
     if (isApplyingEditorUpdate.value) return
@@ -183,6 +184,7 @@ watch(() => props.filePath, (path) => {
   if (e) {
     const storage = e.storage as unknown as Record<string, { documentPath?: string | null } | undefined>
     if (storage.image) storage.image.documentPath = path
+    if (storage.wikilink) storage.wikilink.documentPath = path
     // Re-render so MediaImage picks up the new documentPath for src resolution.
     e.view.updateState(e.state)
   }

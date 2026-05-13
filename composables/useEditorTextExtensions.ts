@@ -11,6 +11,7 @@ import { TaskItem } from '@tiptap/extension-task-item'
 import { Markdown } from '@tiptap/markdown'
 import { MediaImage } from '~/app-extensions/Media'
 import { SearchHighlight } from '~/app-extensions/SearchHighlight'
+import { Wikilink } from '~/app-extensions/Wikilink'
 
 export function useEditorTextExtensions(t: (key: string) => string): AnyExtension[] {
   return [
@@ -33,6 +34,7 @@ export function useEditorTextExtensions(t: (key: string) => string): AnyExtensio
         class: 'max-w-full rounded-md border border-default',
       },
     }),
+    Wikilink,
     TaskList.configure({
       HTMLAttributes: { class: 'neptu-task-list' },
     }),

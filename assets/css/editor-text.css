@@ -224,3 +224,20 @@
 .neptu-tiptap a[data-attachment="true"]:hover {
   background: var(--ui-bg-elevated);
 }
+
+.neptu-tiptap a.neptu-wikilink {
+  color: var(--ui-primary);
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.neptu-tiptap a.neptu-wikilink:hover {
+  text-decoration-style: solid;
+}
+
+.neptu-tiptap a.neptu-wikilink.ProseMirror-selectednode {
+  outline: 2px solid var(--ui-primary);
+  border-radius: 2px;
+}
