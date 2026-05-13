@@ -68,11 +68,14 @@ useHead({
 
 const layoutName = computed(() => settings.settings.layoutMode)
 const initError = ref<string | null>(null)
+let unlistenCloseRequested: (() => void) | null = null
+let closing = false
 
 const ready = computed(() => !isTauri.value || (settings.initialized && editor.hydrated))
 
 function handleBeforeUnload() {
   // Best-effort flush of debounced writes before the window unloads.
+  void editor.flushAll()
   void flushPendingWrites()
 }
 
@@ -103,6 +106,20 @@ onMounted(async () => {
         const first = plugins.sortedRightSidebarViews[0]
         if (first) plugins.setActiveRightSidebarView(first.fqid)
       }
+      const { getCurrentWindow } = await import('@tauri-apps/api/window')
+      const appWindow = getCurrentWindow()
+      unlistenCloseRequested = await appWindow.onCloseRequested(async (event) => {
+        if (closing) return
+        event.preventDefault()
+        closing = true
+        try {
+          await editor.flushAll()
+          await flushPendingWrites()
+        }
+        finally {
+          await appWindow.destroy()
+        }
+      })
     }
     catch (error) {
       console.error('Failed to initialize app:', error)
@@ -116,6 +133,8 @@ onBeforeUnmount(() => {
     window.removeEventListener('beforeunload', handleBeforeUnload)
     window.removeEventListener('keydown', handleGlobalKeydown)
   }
+  unlistenCloseRequested?.()
+  unlistenCloseRequested = null
 })
 </script>
 

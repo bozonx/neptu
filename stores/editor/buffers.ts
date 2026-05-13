@@ -18,6 +18,7 @@ function findVaultForPath(path: string | null): Vault | null {
 export function useEditorBuffers() {
   const buffers = ref<Record<string, EditorBuffer>>({})
   const savedHintTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const saveQueues = new Map<string, Promise<void>>()
   const settings = useSettingsStore()
   const debounceMs = computed(
     () => Math.max(100, settings.settings.autosaveDebounceMs),
@@ -88,6 +89,7 @@ export function useEditorBuffers() {
       saveStatus: 'idle',
       saveError: null,
       openEpoch: Date.now(),
+      revision: 0,
       lastEditTimestamp: Date.now(),
       frontmatter,
       extraFrontmatter,
@@ -100,6 +102,7 @@ export function useEditorBuffers() {
     const buffer = buffers.value[path]
     if (!buffer) return
     buffer.isDirty = true
+    buffer.revision += 1
     buffer.lastEditTimestamp = Date.now()
 
     const vault = findVaultForPath(path)
@@ -120,31 +123,75 @@ export function useEditorBuffers() {
     markDirty(path)
   }
 
-  async function save(path: string) {
+  function buildFileContent(buffer: EditorBuffer): string {
+    if (buffer.schema && buffer.frontmatter !== undefined) {
+      const merged = { ...(buffer.extraFrontmatter ?? {}), ...(buffer.frontmatter ?? {}) }
+      return synthesizeFile(merged, buffer.content)
+    }
+    return buffer.content
+  }
+
+  async function writeDirtySnapshot(path: string): Promise<boolean> {
     const buffer = buffers.value[path]
-    if (!buffer || !buffer.isDirty) return
+    if (!buffer || !buffer.isDirty) return false
 
     const fs = useFs()
+    const snapshotRevision = buffer.revision
+    const fileContent = buildFileContent(buffer)
     setSaveStatus(path, 'saving')
     try {
-      let fileContent = buffer.content
-      if (buffer.schema && buffer.frontmatter !== undefined) {
-        const merged = { ...(buffer.extraFrontmatter ?? {}), ...(buffer.frontmatter ?? {}) }
-        fileContent = synthesizeFile(merged, buffer.content)
-      }
       await fs.writeText(path, fileContent)
-      buffer.isDirty = false
+
+      const latest = buffers.value[path]
+      if (!latest) return false
+
+      useSearchStore().updateFile(path, fileContent)
+
+      if (latest.revision !== snapshotRevision) {
+        latest.isDirty = true
+        return true
+      }
+
+      latest.isDirty = false
       setSaveStatus(path, 'saved')
       const vault = findVaultForPath(path)
-      if (vault?.type === 'git' && vault.git?.commitMode === 'auto') {
+      if (vault?.type === 'git') {
         useGitStore().scheduleCommit(vault.id)
       }
-      useSearchStore().updateFile(path, fileContent)
+      return false
     }
     catch (error) {
       setSaveStatus(path, 'error', error instanceof Error ? error.message : String(error))
       throw error
     }
+  }
+
+  async function drainSaveQueue(path: string) {
+    while (buffers.value[path]?.isDirty) {
+      await writeDirtySnapshot(path)
+    }
+  }
+
+  function save(path: string): Promise<void> {
+    const existing = saveQueues.get(path) ?? Promise.resolve()
+    const next = existing
+      .catch(() => {
+        // Preserve queue continuity after a failed write; the new caller should
+        // still get a chance to save the latest dirty buffer.
+      })
+      .then(() => drainSaveQueue(path))
+      .finally(() => {
+        if (saveQueues.get(path) === next) {
+          saveQueues.delete(path)
+        }
+      })
+    saveQueues.set(path, next)
+    return next
+  }
+
+  async function waitForSave(path: string) {
+    const pending = saveQueues.get(path)
+    if (pending) await pending
   }
 
   async function flushVault(vault: Vault) {
@@ -161,6 +208,17 @@ export function useEditorBuffers() {
     }
   }
 
+  async function flushAll() {
+    for (const path of Object.keys(buffers.value)) {
+      try {
+        await save(path)
+      }
+      catch {
+        // Error already handled in save().
+      }
+    }
+  }
+
   function reset(path?: string) {
     if (path) {
       const timer = savedHintTimers.get(path)
@@ -168,11 +226,13 @@ export function useEditorBuffers() {
         clearTimeout(timer)
         savedHintTimers.delete(path)
       }
+      saveQueues.delete(path)
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete buffers.value[path]
     }
     else {
       clearSavedHintTimers()
+      saveQueues.clear()
       buffers.value = {}
     }
   }
@@ -221,7 +281,9 @@ export function useEditorBuffers() {
     setContent,
     setFrontmatter,
     save,
+    waitForSave,
     flushVault,
+    flushAll,
     reset,
     migrateBufferPath,
     clearTimers: clearBufferTimers,

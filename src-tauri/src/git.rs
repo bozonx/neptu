@@ -1,6 +1,6 @@
 use git2::{
-    Config, FetchOptions, IndexAddOption, Oid, PushOptions, RemoteCallbacks, Repository, Signature,
-    StatusOptions,
+    build::CheckoutBuilder, Config, FetchOptions, IndexAddOption, Oid, PushOptions,
+    RemoteCallbacks, Repository, Signature, StatusOptions,
 };
 use serde::Serialize;
 use std::{
@@ -41,6 +41,7 @@ enum GitError {
     PushFailed(git2::Error),
     CannotDetermineMergeBase(git2::Error),
     InvalidBranchName,
+    DirtyWorkTree,
     NonFastForwardPull,
     RelativizePath(std::path::StripPrefixError),
     Git(git2::Error),
@@ -68,6 +69,10 @@ impl Display for GitError {
                 write!(f, "Cannot determine merge base: {source}")
             }
             Self::InvalidBranchName => write!(f, "Invalid branch name"),
+            Self::DirtyWorkTree => write!(
+                f,
+                "Working tree has uncommitted changes. Commit or discard them before pulling."
+            ),
             Self::NonFastForwardPull => write!(
                 f,
                 "Pull requires a non-fast-forward merge, which is not supported. \
@@ -93,7 +98,10 @@ impl Error for GitError {
             | Self::CannotDetermineMergeBase(source)
             | Self::Git(source) => Some(source),
             Self::RelativizePath(source) => Some(source),
-            Self::AuthorNotConfigured | Self::InvalidBranchName | Self::NonFastForwardPull => None,
+            Self::AuthorNotConfigured
+            | Self::InvalidBranchName
+            | Self::DirtyWorkTree
+            | Self::NonFastForwardPull => None,
         }
     }
 }
@@ -183,6 +191,10 @@ fn git_status_impl(repo: &Repository) -> GitResult<GitStatus> {
     })
 }
 
+fn repo_is_dirty(repo: &Repository) -> GitResult<bool> {
+    Ok(git_status_impl(repo)?.dirty)
+}
+
 fn git_global_author_impl() -> GitResult<GitAuthor> {
     let cfg = Config::open_default().map_err(GitError::GitConfigOpen)?;
     Ok(author_from_config(&cfg))
@@ -235,6 +247,10 @@ fn git_commit_all_impl(
 }
 
 fn git_pull_impl(repo: &Repository) -> GitResult<String> {
+    if repo_is_dirty(repo)? {
+        return Err(GitError::DirtyWorkTree);
+    }
+
     let mut remote = repo
         .find_remote("origin")
         .map_err(GitError::MissingOrigin)?;
@@ -270,6 +286,16 @@ fn git_pull_impl(repo: &Repository) -> GitResult<String> {
         PullAction::AlreadyUpToDate => Ok("Already up to date".to_string()),
         PullAction::FastForward => {
             head.set_target(fetch_oid, "Fast-forward pull")?;
+            let object = repo.find_object(fetch_oid, Some(git2::ObjectType::Commit))?;
+            repo.checkout_tree(
+                &object,
+                Some(
+                    CheckoutBuilder::new()
+                        .safe()
+                        .remove_untracked(true)
+                        .remove_ignored(false),
+                ),
+            )?;
             Ok("Pulled successfully".to_string())
         }
     }

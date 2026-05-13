@@ -7,6 +7,7 @@ export interface EditorBuffer {
   saveStatus: SaveStatus
   saveError: string | null
   openEpoch: number
+  revision: number
   lastEditTimestamp: number
   frontmatter?: Record<string, unknown>
   extraFrontmatter?: Record<string, unknown>

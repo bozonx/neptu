@@ -109,6 +109,8 @@ export const useGitStore = defineStore('git', () => {
     const vault = useVaultsStore().findById(vaultId)
     if (!vault || vault.type !== 'git') return
 
+    await useEditorStore().flushVault(vault)
+
     const author = await resolveAuthor()
     if (!author) {
       commitStatus.value[vaultId] = 'error'

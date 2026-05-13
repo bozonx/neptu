@@ -1,5 +1,9 @@
 import { vi } from 'vitest'
 
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(async () => undefined),
+}))
+
 vi.mock('@tauri-apps/api/path', () => ({
   appConfigDir: vi.fn(async () => '/tmp/neptu-test-config'),
   basename: vi.fn(async (path: string) => path.split(/[\\/]/).filter(Boolean).at(-1) ?? ''),

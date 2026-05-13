@@ -11,6 +11,7 @@ import {
   writeFile,
   writeTextFile,
 } from '@tauri-apps/plugin-fs'
+import { invoke } from '@tauri-apps/api/core'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { dirname, join } from '@tauri-apps/api/path'
 import { load, dump } from 'js-yaml'
@@ -58,7 +59,7 @@ export function useFs() {
   }
 
   async function writeText(path: string, content: string) {
-    await writeTextFile(path, content)
+    await invoke('write_text_atomic', { path, content })
   }
 
   async function writeBytes(path: string, content: Uint8Array) {

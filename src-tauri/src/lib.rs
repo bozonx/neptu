@@ -1,3 +1,4 @@
+mod file_ops;
 mod git;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -16,6 +17,7 @@ pub fn run() {
             git::git_pull,
             git::git_push,
             git::git_diff,
+            file_ops::write_text_atomic,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
