@@ -1,5 +1,11 @@
 import { defineStore } from 'pinia'
-import { basename, dirname, fileExt, fileStem, relativePath } from '~/utils/paths'
+import {
+  basename,
+  dirname,
+  fileExt,
+  fileStem,
+  relativePath,
+} from '~/utils/paths'
 import {
   DEFAULT_FILE_FILTERS,
   type AddVaultPayload,
@@ -10,10 +16,17 @@ import {
   type Vault,
   type VaultGroup,
 } from '~/types'
-import { isImageFileName, type ConvertOptions } from '~/composables/useImageConvert'
+import {
+  isImageFileName,
+  type ConvertOptions,
+} from '~/composables/useImageConvert'
 import type { AutoConvertSettings, VaultConfig } from '~/types/vault-config'
 import { generateId, pickVaultForPath } from '~/utils/vaults/common'
-import { ensureVaultMarker as ensureVaultMarkerFile, getTemplateYaml, readVaultConfig } from '~/utils/vaults/config'
+import {
+  ensureVaultMarker as ensureVaultMarkerFile,
+  getTemplateYaml,
+  readVaultConfig,
+} from '~/utils/vaults/config'
 import { createVaultFileActions } from '~/utils/vaults/file-actions'
 import {
   getEffectiveAutoConvert as resolveEffectiveAutoConvert,
@@ -59,7 +72,12 @@ export const useVaultsStore = defineStore('vaults', () => {
    * Initial load from `AppConfig`. Ensures the main repo is always present in
    * the vault list (in case the config file was edited manually).
    */
-  async function hydrate(vaults: Vault[], mainRepoPath: string, loadedGroups?: VaultGroup[], loadedFavorites?: string[]) {
+  async function hydrate(
+    vaults: Vault[],
+    mainRepoPath: string,
+    loadedGroups?: VaultGroup[],
+    loadedFavorites?: string[],
+  ) {
     let mutated = false
     if (!vaults.some((v) => v.path === mainRepoPath)) {
       vaults.unshift({
@@ -128,9 +146,11 @@ export const useVaultsStore = defineStore('vaults', () => {
       type: payload.type,
       path: payload.path,
       contentType: payload.contentType ?? 'vault',
-      contentStructureId: payload.contentType === 'custom' && payload.contentStructureId !== 'custom'
-        ? payload.contentStructureId
-        : undefined,
+      contentStructureId:
+        payload.contentType === 'custom'
+        && payload.contentStructureId !== 'custom'
+          ? payload.contentStructureId
+          : undefined,
       contentFolder: payload.contentFolder,
       filters: payload.filters,
       excludes: payload.excludes,
@@ -144,7 +164,11 @@ export const useVaultsStore = defineStore('vaults', () => {
       }
       else {
         const ok = await git.isRepo(payload.path)
-        if (!ok) throw Object.assign(new Error('Selected folder is not a git repository'), { code: 'NOT_GIT_REPO' })
+        if (!ok)
+          throw Object.assign(
+            new Error('Selected folder is not a git repository'),
+            { code: 'NOT_GIT_REPO' },
+          )
       }
       vault.git = payload.git ?? {
         commitMode: 'respect_config',
@@ -185,7 +209,20 @@ export const useVaultsStore = defineStore('vaults', () => {
 
   async function updateVault(
     id: string,
-    updates: Partial<Pick<Vault, 'name' | 'path' | 'filters' | 'contentType' | 'contentStructureId' | 'contentFolder' | 'excludes' | 'mediaDir' | 'autoConvert'>> & { git?: GitVaultSettings },
+    updates: Partial<
+      Pick<
+        Vault,
+        | 'name'
+        | 'path'
+        | 'filters'
+        | 'contentType'
+        | 'contentStructureId'
+        | 'contentFolder'
+        | 'excludes'
+        | 'mediaDir'
+        | 'autoConvert'
+      >
+    > & { git?: GitVaultSettings },
   ) {
     const vault = findById(id)
     if (!vault) return
@@ -302,11 +339,17 @@ export const useVaultsStore = defineStore('vaults', () => {
     return resolveEffectiveMediaDir(vault, vaultConfigs.value[vault.id])
   }
 
-  function getEffectiveAutoConvert(vault: Vault): AutoConvertSettings | undefined {
+  function getEffectiveAutoConvert(
+    vault: Vault,
+  ): AutoConvertSettings | undefined {
     return resolveEffectiveAutoConvert(vault, vaultConfigs.value[vault.id])
   }
 
-  async function convertImageFile(vaultId: string, filePath: string, options: ConvertOptions): Promise<string> {
+  async function convertImageFile(
+    vaultId: string,
+    filePath: string,
+    options: ConvertOptions,
+  ): Promise<string> {
     if (!isImageFileName(filePath)) return filePath
 
     const vault = findById(vaultId) ?? findVaultForPath(filePath)
@@ -352,17 +395,32 @@ export const useVaultsStore = defineStore('vaults', () => {
       const item = items[i]!
       try {
         const fallbackExt = extFromMime(item.type ?? '') || '.png'
-        const sourceName = fileExt(item.name) ? item.name : `${fileStem(item.name || 'clipboard-image')}${fallbackExt}`
-        const decision = await resolveConflictPolicy(vault, documentPath, sourceName, i, item.bytes, getEffectiveMediaDir(vault), options?.onConflict)
+        const sourceName = fileExt(item.name)
+          ? item.name
+          : `${fileStem(item.name || 'clipboard-image')}${fallbackExt}`
+        const decision = await resolveConflictPolicy(
+          vault,
+          documentPath,
+          sourceName,
+          i,
+          item.bytes,
+          getEffectiveMediaDir(vault),
+          options?.onConflict,
+        )
         if (!decision) continue
         const { destPath, markdownPath } = decision
         const destDir = dirname(destPath)
         await fs.ensureDir(destDir)
         await fs.writeBytes(destPath, item.bytes)
-        const finalPath = await applyAutoConvert(vault, destPath, getEffectiveAutoConvert)
-        const finalMarkdownPath = finalPath === destPath
-          ? markdownPath
-          : relativePath(dirname(documentPath), finalPath)
+        const finalPath = await applyAutoConvert(
+          vault,
+          destPath,
+          getEffectiveAutoConvert,
+        )
+        const finalMarkdownPath
+          = finalPath === destPath
+            ? markdownPath
+            : relativePath(dirname(documentPath), finalPath)
         imported.push({ path: finalPath, markdownPath: finalMarkdownPath })
       }
       catch (error) {
@@ -396,7 +454,15 @@ export const useVaultsStore = defineStore('vaults', () => {
       const sourcePath = paths[i]!
       try {
         const sourceBytes = await fs.readBytes(sourcePath)
-        const decision = await resolveConflictPolicy(vault, documentPath, basename(sourcePath), i, sourceBytes, getEffectiveMediaDir(vault), options?.onConflict)
+        const decision = await resolveConflictPolicy(
+          vault,
+          documentPath,
+          basename(sourcePath),
+          i,
+          sourceBytes,
+          getEffectiveMediaDir(vault),
+          options?.onConflict,
+        )
         if (!decision) continue
         const { destPath, markdownPath } = decision
         const destDir = dirname(destPath)
@@ -404,10 +470,14 @@ export const useVaultsStore = defineStore('vaults', () => {
         if (sourcePath !== destPath) {
           await fs.copyFile(sourcePath, destPath)
         }
-        const finalPath = await applyAutoConvert(vault, destPath, getEffectiveAutoConvert)
-        const finalMarkdownPath = finalPath === destPath
-          ? markdownPath
-          : relativePath(dirname(documentPath), finalPath)
+        const finalPath
+          = sourcePath === destPath
+            ? destPath
+            : await applyAutoConvert(vault, destPath, getEffectiveAutoConvert)
+        const finalMarkdownPath
+          = finalPath === destPath
+            ? markdownPath
+            : relativePath(dirname(documentPath), finalPath)
         imported.push({ path: finalPath, markdownPath: finalMarkdownPath })
       }
       catch (error) {

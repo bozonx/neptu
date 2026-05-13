@@ -1,7 +1,13 @@
 import type { Ref } from 'vue'
 import type { FileFilterSettings, Vault } from '~/types'
 import type { AutoConvertSettings } from '~/types/vault-config'
-import { basename, dirname, replacePathPrefix } from '~/utils/paths'
+import {
+  basename,
+  dirname,
+  fileExt,
+  fileStem,
+  replacePathPrefix,
+} from '~/utils/paths'
 import { applyAutoConvert, getVisibleImportIssue } from '~/utils/vaults/media'
 
 interface VaultFileActionsContext {
@@ -17,7 +23,11 @@ interface VaultFileActionsContext {
 }
 
 export function createVaultFileActions(ctx: VaultFileActionsContext) {
-  async function createVaultFolder(vault: Vault, parentDir: string, folderName: string) {
+  async function createVaultFolder(
+    vault: Vault,
+    parentDir: string,
+    folderName: string,
+  ) {
     const fs = useFs()
     const fullPath = await fs.createFolder(parentDir, folderName)
     await ctx.refreshTree(vault)
@@ -46,17 +56,28 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
     const targetVault = ctx.findVaultForPath(targetDirPath)
 
     if (sourceVault) await editor.flushVault(sourceVault)
-    if (targetVault && targetVault.id !== sourceVault?.id) await editor.flushVault(targetVault)
+    if (targetVault && targetVault.id !== sourceVault?.id)
+      await editor.flushVault(targetVault)
 
     await fs.moveFile(sourcePath, destPath)
     useSearchStore().removeFile(sourcePath)
 
     if (sourceVault) await ctx.refreshTree(sourceVault)
-    if (targetVault && targetVault.id !== sourceVault?.id) await ctx.refreshTree(targetVault)
+    if (targetVault && targetVault.id !== sourceVault?.id)
+      await ctx.refreshTree(targetVault)
 
-    await useTabsStore().updatePath(sourcePath, destPath, sourceInfo.isDirectory)
+    await useTabsStore().updatePath(
+      sourcePath,
+      destPath,
+      sourceInfo.isDirectory,
+    )
 
-    const favoritesChanged = updateMovedFavorites(ctx.favorites, sourcePath, destPath, sourceInfo.isDirectory)
+    const favoritesChanged = updateMovedFavorites(
+      ctx.favorites,
+      sourcePath,
+      destPath,
+      sourceInfo.isDirectory,
+    )
 
     if (sourceVault?.type === 'git') {
       await git.commitIfAuto(sourceVault.id)
@@ -103,7 +124,11 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
     }
   }
 
-  async function renameNode(vaultId: string, sourcePath: string, newName: string) {
+  async function renameNode(
+    vaultId: string,
+    sourcePath: string,
+    newName: string,
+  ) {
     if (!newName.trim()) return
 
     const fs = useFs()
@@ -131,7 +156,12 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
     await ctx.refreshTree(vault)
     await tabs.updatePath(sourcePath, destPath, sourceInfo.isDirectory)
 
-    const favoritesChanged = updateMovedFavorites(ctx.favorites, sourcePath, destPath, sourceInfo.isDirectory)
+    const favoritesChanged = updateMovedFavorites(
+      ctx.favorites,
+      sourcePath,
+      destPath,
+      sourceInfo.isDirectory,
+    )
 
     if (vault.type === 'git') {
       await git.commitIfAuto(vault.id)
@@ -139,7 +169,10 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
     if (favoritesChanged) await useSettingsStore().persist()
   }
 
-  async function importExternalFiles(paths: string[], targetDir: string): Promise<string[]> {
+  async function importExternalFiles(
+    paths: string[],
+    targetDir: string,
+  ): Promise<string[]> {
     const fs = useFs()
     const vault = ctx.findVaultForPath(targetDir)
     if (!vault) return []
@@ -162,24 +195,42 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
           continue
         }
 
+        let finalDestPath = destPath
         if (await fs.exists(destPath)) {
-          importedPaths.push(destPath)
-          continue
+          const destDir = dirname(destPath)
+          const name = basename(destPath)
+          const stem = fileStem(name)
+          const ext = fileExt(name)
+          let suffix = 2
+          let candidate = await fs.join(destDir, `${stem}-${suffix}${ext}`)
+          while (await fs.exists(candidate)) {
+            suffix++
+            candidate = await fs.join(destDir, `${stem}-${suffix}${ext}`)
+          }
+          finalDestPath = candidate
         }
 
         const info = await fs.stat(sourcePath)
         if (info.isDirectory) {
-          await fs.copyFolder(sourcePath, destPath)
-          importedPaths.push(destPath)
+          await fs.copyFolder(sourcePath, finalDestPath)
+          importedPaths.push(finalDestPath)
         }
         else {
-          await fs.copyFile(sourcePath, destPath)
-          const finalPath = await applyAutoConvert(vault, destPath, ctx.getEffectiveAutoConvert)
+          await fs.copyFile(sourcePath, finalDestPath)
+          const finalPath = await applyAutoConvert(
+            vault,
+            finalDestPath,
+            ctx.getEffectiveAutoConvert,
+          )
           importedPath = finalPath
           importedPaths.push(finalPath)
         }
 
-        const hiddenName = getVisibleImportIssue(importedPath, { showHidden, filters, excludes })
+        const hiddenName = getVisibleImportIssue(importedPath, {
+          showHidden,
+          filters,
+          excludes,
+        })
         if (hiddenName) hiddenPaths.push(hiddenName)
       }
       catch (e) {
@@ -200,7 +251,9 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
       const toast = useToast()
       toast.add({
         title: ctx.t('toast.hiddenFilesImported'),
-        description: ctx.t('toast.hiddenFilesImportedDesc', { files: hiddenPaths.join(', ') }),
+        description: ctx.t('toast.hiddenFilesImportedDesc', {
+          files: hiddenPaths.join(', '),
+        }),
         color: 'warning',
       })
     }
@@ -217,10 +270,19 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
   }
 }
 
-function updateMovedFavorites(favorites: Ref<string[]>, sourcePath: string, destPath: string, isDirectory: boolean): boolean {
+function updateMovedFavorites(
+  favorites: Ref<string[]>,
+  sourcePath: string,
+  destPath: string,
+  isDirectory: boolean,
+): boolean {
   let changed = false
   favorites.value = favorites.value.map((favoritePath) => {
-    const nextPath = isDirectory ? replacePathPrefix(favoritePath, sourcePath, destPath) : favoritePath === sourcePath ? destPath : favoritePath
+    const nextPath = isDirectory
+      ? replacePathPrefix(favoritePath, sourcePath, destPath)
+      : favoritePath === sourcePath
+        ? destPath
+        : favoritePath
     if (nextPath !== favoritePath) changed = true
     return nextPath
   })

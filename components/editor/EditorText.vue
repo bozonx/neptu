@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { isMediaFile } from '~/utils/fileTypes'
+import type { LinkSuggestionContext, LinkSuggestionItem } from '~/composables/useLinkSuggestions'
+import { filterSuggestions, findEditorLinkContext, findLinkContextInText, listSuggestionFiles } from '~/composables/useLinkSuggestions'
+import { getTextareaCaretPosition } from '~/composables/useTextareaCaretPosition'
 
 type CalloutVariant = 'note' | 'tip' | 'important' | 'warning' | 'caution'
 
@@ -48,6 +51,12 @@ const isSearchOpen = ref(false)
 const isSystemDropTarget = ref(false)
 const contextMenuOpen = ref(false)
 const contextMenuVirtualEl = ref<HTMLElement | null>(null)
+
+const linkSuggestionsOpen = ref(false)
+const linkSuggestionItems = ref<LinkSuggestionItem[]>([])
+const linkSuggestionPosition = ref<{ left: number; top: number } | null>(null)
+const linkSuggestionContext = ref<LinkSuggestionContext | null>(null)
+const linkSuggestionsRef = ref<{ handleKeydown: (event: KeyboardEvent) => void } | null>(null)
 
 const buffer = computed(() => props.filePath ? editorStore.buffers[props.filePath] : null)
 const sourceTextareaRef = computed(() => sourceModeRef.value?.textarea ?? null)
@@ -164,10 +173,12 @@ const editor = useEditor({
   onUpdate: ({ editor }) => {
     if (isApplyingEditorUpdate.value) return
     setStoreContent(editor.getMarkdown())
+    checkEditorLinkSuggestions()
   },
   onSelectionUpdate: ({ editor }) => {
     const { from, to, empty } = editor.state.selection
     editorStore.activeSelectionText = empty ? '' : editor.state.doc.textBetween(from, to, '\n')
+    checkEditorLinkSuggestions()
   },
 })
 
@@ -216,6 +227,7 @@ function onSourceInput(event: Event) {
   setStoreContent(target.value)
   setMarkdownContent(target.value)
   updateSourceSelection()
+  checkSourceLinkSuggestions()
 }
 
 function onSourcePaste(event: ClipboardEvent) {
@@ -244,6 +256,13 @@ function onTitleKeydown(event: KeyboardEvent) {
 }
 
 function onEditorKeydown(event: KeyboardEvent) {
+  if (linkSuggestionsOpen.value && linkSuggestionsRef.value) {
+    if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(event.key)) {
+      linkSuggestionsRef.value.handleKeydown(event)
+      return
+    }
+  }
+
   const e = editor.value
   if (!e || isSourceMode.value) return
   const selection = e.state.selection
@@ -254,6 +273,13 @@ function onEditorKeydown(event: KeyboardEvent) {
 }
 
 function onSourceKeydown(event: KeyboardEvent) {
+  if (linkSuggestionsOpen.value && linkSuggestionsRef.value) {
+    if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(event.key)) {
+      linkSuggestionsRef.value.handleKeydown(event)
+      return
+    }
+  }
+
   const textarea = sourceTextareaRef.value
   if (!textarea) return
   if (event.key === 'ArrowLeft' && textarea.selectionStart === 0 && textarea.selectionEnd === 0) {
@@ -263,6 +289,159 @@ function onSourceKeydown(event: KeyboardEvent) {
   else if (event.key === 'ArrowUp' && !textarea.value.substring(0, textarea.selectionStart).includes('\n')) {
     event.preventDefault()
     focusTitleAtEnd()
+  }
+}
+
+function onSourceMouseup() {
+  updateSourceSelection()
+  checkSourceLinkSuggestions()
+}
+
+function onSourceSelect() {
+  updateSourceSelection()
+  checkSourceLinkSuggestions()
+}
+
+function closeLinkSuggestions() {
+  linkSuggestionsOpen.value = false
+  linkSuggestionItems.value = []
+  linkSuggestionPosition.value = null
+  linkSuggestionContext.value = null
+}
+
+function checkEditorLinkSuggestions() {
+  const e = editor.value
+  if (!e || isSourceMode.value) {
+    closeLinkSuggestions()
+    return
+  }
+
+  const ctx = findEditorLinkContext(e)
+  if (!ctx) {
+    closeLinkSuggestions()
+    return
+  }
+
+  const searchQuery = ctx.query.split('|')[0].split('#')[0].trim()
+  const { items } = listSuggestionFiles(props.filePath)
+  const filtered = filterSuggestions(items, searchQuery, {
+    documentPath: props.filePath,
+    mode: ctx.mode,
+    limit: 20,
+  })
+
+  if (filtered.length === 0 && !searchQuery) {
+    closeLinkSuggestions()
+    return
+  }
+
+  linkSuggestionContext.value = ctx
+  linkSuggestionItems.value = filtered
+  const coords = e.view.coordsAtPos(e.state.selection.from)
+  linkSuggestionPosition.value = { left: coords.left, top: coords.bottom }
+  linkSuggestionsOpen.value = true
+}
+
+function checkSourceLinkSuggestions() {
+  const textarea = sourceTextareaRef.value
+  if (!textarea || !isSourceMode.value) {
+    closeLinkSuggestions()
+    return
+  }
+
+  const cursorPos = textarea.selectionStart
+  const ctx = findLinkContextInText(textarea.value, cursorPos)
+  if (!ctx) {
+    closeLinkSuggestions()
+    return
+  }
+
+  const searchQuery = ctx.query.split('|')[0].split('#')[0].trim()
+  const { items } = listSuggestionFiles(props.filePath)
+  const filtered = filterSuggestions(items, searchQuery, {
+    documentPath: props.filePath,
+    mode: ctx.mode,
+    limit: 20,
+  })
+
+  if (filtered.length === 0 && !searchQuery) {
+    closeLinkSuggestions()
+    return
+  }
+
+  linkSuggestionContext.value = ctx
+  linkSuggestionItems.value = filtered
+  const caretPos = getTextareaCaretPosition(textarea)
+  linkSuggestionPosition.value = { left: caretPos.left, top: caretPos.top + 20 }
+  linkSuggestionsOpen.value = true
+}
+
+function onLinkSuggestionSelect(item: LinkSuggestionItem) {
+  const ctx = linkSuggestionContext.value
+  if (!ctx) {
+    closeLinkSuggestions()
+    return
+  }
+
+  if (isSourceMode.value) {
+    const textarea = sourceTextareaRef.value
+    if (!textarea) return
+    const content = textarea.value
+    const before = content.slice(0, ctx.start)
+    const after = content.slice(ctx.end)
+
+    const inserted = ctx.mode === 'wiki'
+      ? `[[${item.vaultRelativeStem}]]`
+      : `[${ctx.displayText}](${item.vaultRelative})`
+
+    const next = before + inserted + after
+    setStoreContent(next)
+    setMarkdownContent(next)
+
+    nextTick(() => {
+      textarea.focus()
+      const newCursor = ctx.start + inserted.length
+      textarea.setSelectionRange(newCursor, newCursor)
+      saveCursorState()
+    })
+  }
+  else {
+    const e = editor.value
+    if (!e) return
+
+    if (ctx.mode === 'wiki') {
+      e.chain()
+        .focus()
+        .deleteRange({ from: ctx.start, to: ctx.end })
+        .insertContent({
+          type: 'wikilink',
+          attrs: { target: item.vaultRelativeStem, alias: null, anchor: null },
+        })
+        .run()
+    }
+    else {
+      e.chain()
+        .focus()
+        .deleteRange({ from: ctx.start, to: ctx.end })
+        .insertContent({
+          type: 'text',
+          text: ctx.displayText,
+          marks: [{ type: 'link', attrs: { href: item.vaultRelative } }],
+        })
+        .run()
+    }
+  }
+
+  closeLinkSuggestions()
+}
+
+function onLinkSuggestionFocusEditor() {
+  closeLinkSuggestions()
+  if (isSourceMode.value) {
+    sourceTextareaRef.value?.focus()
+  }
+  else {
+    editor.value?.commands.focus()
   }
 }
 
@@ -745,6 +924,15 @@ onUnmounted(() => {
       @close="isSearchOpen = false"
     />
 
+    <LinkSuggestions
+      ref="linkSuggestionsRef"
+      :items="linkSuggestionItems"
+      :position="linkSuggestionPosition"
+      @select="onLinkSuggestionSelect"
+      @close="closeLinkSuggestions"
+      @focus-editor="onLinkSuggestionFocusEditor"
+    />
+
     <div
       ref="editorScrollerRef"
       class="relative min-h-0 flex-1 overflow-y-auto px-8 pb-6"
@@ -797,9 +985,9 @@ onUnmounted(() => {
         @paste="onSourcePaste"
         @keydown="onSourceKeydown"
         @keyup="updateSourceSelection"
-        @mouseup="updateSourceSelection"
+        @mouseup="onSourceMouseup"
         @blur="saveCursorState"
-        @select="updateSourceSelection"
+        @select="onSourceSelect"
       />
     </div>
   </div>

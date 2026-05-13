@@ -69,7 +69,11 @@ async function onDrop(event: DragEvent) {
     }
   }
   catch (error) {
-    toast.add({ title: t('toast.moveFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('toast.moveFailed'),
+      description: String(error),
+      color: 'error',
+    })
   }
 }
 
@@ -85,9 +89,21 @@ function onVaultDragEnd() {
 const vaultMenuItems = computed<DropdownMenuItem[][]>(() => {
   const groups: DropdownMenuItem[][] = []
   const top: DropdownMenuItem[] = [
-    { label: t('vault.newFileBtn'), icon: 'i-lucide-file-plus', onSelect: () => emit('createFile', props.vault) },
-    { label: t('vault.newFolderBtn'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', props.vault) },
-    { label: t('vault.editVault'), icon: 'i-lucide-pencil', onSelect: () => emit('editVault', props.vault) },
+    {
+      label: t('vault.newFileBtn'),
+      icon: 'i-lucide-file-plus',
+      onSelect: () => emit('createFile', props.vault),
+    },
+    {
+      label: t('vault.newFolderBtn'),
+      icon: 'i-lucide-folder-plus',
+      onSelect: () => emit('createFolder', props.vault),
+    },
+    {
+      label: t('vault.editVault'),
+      icon: 'i-lucide-pencil',
+      onSelect: () => emit('editVault', props.vault),
+    },
   ]
   if (props.vault.path !== settings.mainRepoPath) {
     top.push({
@@ -100,8 +116,16 @@ const vaultMenuItems = computed<DropdownMenuItem[][]>(() => {
   if (top.length) groups.push(top)
   if (props.vault.type === 'git') {
     groups.push([
-      { label: t('vault.pull'), icon: 'i-lucide-git-pull-request', onSelect: () => handlePull() },
-      { label: t('vault.push'), icon: 'i-lucide-git-pull-request-arrow', onSelect: () => handlePush() },
+      {
+        label: t('vault.pull'),
+        icon: 'i-lucide-git-pull-request',
+        onSelect: () => handlePull(),
+      },
+      {
+        label: t('vault.push'),
+        icon: 'i-lucide-git-pull-request-arrow',
+        onSelect: () => handlePush(),
+      },
     ])
   }
   return groups
@@ -114,7 +138,11 @@ async function handleSync() {
     toast.add({ title: t('toast.syncCompleted'), color: 'success' })
   }
   catch (error) {
-    toast.add({ title: t('toast.syncFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('toast.syncFailed'),
+      description: String(error),
+      color: 'error',
+    })
   }
 }
 
@@ -122,10 +150,18 @@ async function handlePull() {
   if (props.vault.type !== 'git') return
   try {
     const output = await git.pull(props.vault.id)
-    toast.add({ title: t('toast.pullCompleted'), description: output || undefined, color: 'success' })
+    toast.add({
+      title: t('toast.pullCompleted'),
+      description: output || undefined,
+      color: 'success',
+    })
   }
   catch (error) {
-    toast.add({ title: t('toast.pullFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('toast.pullFailed'),
+      description: String(error),
+      color: 'error',
+    })
   }
 }
 
@@ -133,10 +169,18 @@ async function handlePush() {
   if (props.vault.type !== 'git') return
   try {
     const output = await git.push(props.vault.id)
-    toast.add({ title: t('toast.pushCompleted'), description: output || undefined, color: 'success' })
+    toast.add({
+      title: t('toast.pushCompleted'),
+      description: output || undefined,
+      color: 'success',
+    })
   }
   catch (error) {
-    toast.add({ title: t('toast.pushFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('toast.pushFailed'),
+      description: String(error),
+      color: 'error',
+    })
   }
 }
 
@@ -148,7 +192,9 @@ const showCommit = computed(() => {
   return pending
 })
 
-const committing = computed(() => git.commitStatus[props.vault.id] === 'committing')
+const committing = computed(
+  () => git.commitStatus[props.vault.id] === 'committing',
+)
 
 async function handleVaultCommit() {
   if (props.vault.type !== 'git') return
@@ -167,38 +213,59 @@ async function handleVaultCommit() {
     await git.refreshStatus(props.vault.id)
   }
   catch (error) {
-    toast.add({ title: t('toast.commitFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('toast.commitFailed'),
+      description: String(error),
+      color: 'error',
+    })
   }
 }
 
 function openFile(path: string) {
   tabs.openFile(path).catch((error: unknown) => {
-    toast.add({ title: t('toast.openFileFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('toast.openFileFailed'),
+      description: String(error),
+      color: 'error',
+    })
   })
 }
 
 function openFileInNewPanel(path: string) {
   tabs.openFileInNewPanel(path).catch((error: unknown) => {
-    toast.add({ title: t('toast.openFilePanelFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('toast.openFilePanelFailed'),
+      description: String(error),
+      color: 'error',
+    })
   })
 }
 
 async function handleDelete(node: FileNode) {
-  const needsConfirm = props.vault.type === 'git'
-    ? settings.settings.confirmDeleteGit
-    : settings.settings.confirmDeleteLocal
-  if (needsConfirm && !confirm(t('confirm.deleteFile', { name: node.name }))) return
+  const needsConfirm
+    = props.vault.type === 'git'
+      ? settings.settings.confirmDeleteGit
+      : settings.settings.confirmDeleteLocal
+  if (needsConfirm && !confirm(t('confirm.deleteFile', { name: node.name })))
+    return
   try {
     await editor.deleteNote({ vault: props.vault, path: node.path })
   }
   catch (error) {
-    toast.add({ title: t('toast.deleteFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('toast.deleteFailed'),
+      description: String(error),
+      color: 'error',
+    })
   }
 }
 </script>
 
 <template>
-  <div>
+  <div
+    data-drop-zone="vault-root"
+    :data-vault-id="vault.id"
+  >
     <UContextMenu
       :items="vaultMenuItems"
       :modal="false"
@@ -207,7 +274,9 @@ async function handleDelete(node: FileNode) {
       <div
         class="group flex flex-col gap-1 px-2.5 py-1.5 rounded-md cursor-pointer bg-elevated transition-all"
         :class="[
-          isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary/50' : 'hover:ring-1 hover:ring-inset hover:ring-border/50',
+          isDropTarget
+            ? 'bg-primary/20 ring-2 ring-inset ring-primary/50'
+            : 'hover:ring-1 hover:ring-inset hover:ring-border/50',
         ]"
         :draggable="allowVaultDrag"
         data-drop-zone="vault-root"
@@ -221,11 +290,23 @@ async function handleDelete(node: FileNode) {
       >
         <div class="flex items-center gap-1 min-w-0">
           <UIcon
-            :name="vault.path === settings.mainRepoPath ? 'i-lucide-folder-heart' : vault.type === 'git' ? 'i-lucide-git-branch' : 'i-lucide-folder'"
+            :name="
+              vault.path === settings.mainRepoPath
+                ? 'i-lucide-folder-heart'
+                : vault.type === 'git'
+                  ? 'i-lucide-git-branch'
+                  : 'i-lucide-folder'
+            "
             class="size-4 shrink-0"
-            :class="vault.path === settings.mainRepoPath ? 'text-primary' : 'text-muted'"
+            :class="
+              vault.path === settings.mainRepoPath
+                ? 'text-primary'
+                : 'text-muted'
+            "
           />
-          <span class="truncate text-sm font-medium">{{ vault.name }}</span>
+          <span class="truncate text-sm font-medium">{{
+            vault.name
+          }}</span>
           <UIcon
             name="i-lucide-chevron-right"
             class="size-4 text-muted shrink-0 transition-transform"
@@ -233,11 +314,26 @@ async function handleDelete(node: FileNode) {
           />
         </div>
 
-        <div class="flex items-center justify-between gap-1 min-w-0 h-6">
-          <span class="text-[11px] text-muted tracking-wide uppercase leading-none">
-            {{ vault.type }}{{ vault.contentType && vault.contentType !== 'vault' ? ` / ${$t(`vault.contentType${vault.contentType.charAt(0).toUpperCase() + vault.contentType.slice(1)}`)}` : '' }}{{ vault.path === settings.mainRepoPath ? ` - ${$t('vault.main')}` : '' }}
+        <div
+          class="flex items-center justify-between gap-1 min-w-0 h-6"
+        >
+          <span
+            class="text-[11px] text-muted tracking-wide uppercase leading-none"
+          >
+            {{ vault.type
+            }}{{
+              vault.contentType && vault.contentType !== "vault"
+                ? ` / ${$t(`vault.contentType${vault.contentType.charAt(0).toUpperCase() + vault.contentType.slice(1)}`)}`
+                : ""
+            }}{{
+              vault.path === settings.mainRepoPath
+                ? ` - ${$t("vault.main")}`
+                : ""
+            }}
           </span>
-          <div class="flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+          <div
+            class="flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity"
+          >
             <UButton
               icon="i-lucide-file-plus"
               size="xs"
@@ -305,17 +401,35 @@ async function handleDelete(node: FileNode) {
 
     <UContextMenu
       v-if="expanded"
-      :items="[[
-        { label: $t('vault.newNoteBtn', 'New Note'), icon: 'i-lucide-file-plus', onSelect: () => emit('createNote', vault) },
-        { label: $t('vault.newFileBtn', 'New File'), icon: 'i-lucide-file-plus', onSelect: () => emit('createFile', vault) },
-        { label: $t('vault.newFolderBtn', 'New Folder'), icon: 'i-lucide-folder-plus', onSelect: () => emit('createFolder', vault) },
-      ]]"
+      :items="[
+        [
+          {
+            label: $t('vault.newNoteBtn', 'New Note'),
+            icon: 'i-lucide-file-plus',
+            onSelect: () => emit('createNote', vault),
+          },
+          {
+            label: $t('vault.newFileBtn', 'New File'),
+            icon: 'i-lucide-file-plus',
+            onSelect: () => emit('createFile', vault),
+          },
+          {
+            label: $t('vault.newFolderBtn', 'New Folder'),
+            icon: 'i-lucide-folder-plus',
+            onSelect: () => emit('createFolder', vault),
+          },
+        ],
+      ]"
       :modal="false"
       class="w-full"
     >
       <div
         class="w-full h-8 flex items-center justify-center opacity-0 hover:opacity-100 text-xs text-muted/50 cursor-context-menu"
-        :class="[isDropTarget ? 'bg-primary/10 ring-1 ring-inset ring-primary/40' : '']"
+        :class="[
+          isDropTarget
+            ? 'bg-primary/10 ring-1 ring-inset ring-primary/40'
+            : '',
+        ]"
         data-drop-zone="vault-root"
         :data-vault-id="vault.id"
         @dragover="onDragOver"
