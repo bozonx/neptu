@@ -49,23 +49,29 @@ function fromRelativeFavorites(rel: string[], root: string): string[] {
   return rel.map((p) => makeAbsolute(p, root))
 }
 
+const SHARED_SETTINGS_KEYS: Array<keyof SharedSettings> = [
+  'autosaveDebounceMs',
+  'defaultCommitDebounceMs',
+  'gitAuthorName',
+  'gitAuthorEmail',
+  'fileSortMode',
+  'showHiddenFiles',
+  'confirmDeleteLocal',
+  'confirmDeleteGit',
+  'useTrash',
+  'enabledPlugins',
+  'defaultCommitMode',
+  'gitAutoMessage',
+  'gitAutoMessageTemplate',
+  'dailyNotesPath',
+]
+
 function pickSharedSettings(s: AppSettings): SharedSettings {
-  return {
-    autosaveDebounceMs: s.autosaveDebounceMs,
-    defaultCommitDebounceMs: s.defaultCommitDebounceMs,
-    gitAuthorName: s.gitAuthorName,
-    gitAuthorEmail: s.gitAuthorEmail,
-    fileSortMode: s.fileSortMode,
-    showHiddenFiles: s.showHiddenFiles,
-    confirmDeleteLocal: s.confirmDeleteLocal,
-    confirmDeleteGit: s.confirmDeleteGit,
-    useTrash: s.useTrash,
-    enabledPlugins: s.enabledPlugins,
-    defaultCommitMode: s.defaultCommitMode,
-    gitAutoMessage: s.gitAutoMessage,
-    gitAutoMessageTemplate: s.gitAutoMessageTemplate,
-    dailyNotesPath: s.dailyNotesPath,
+  const result = {} as Record<keyof SharedSettings, unknown>
+  for (const key of SHARED_SETTINGS_KEYS) {
+    result[key] = s[key as keyof AppSettings]
   }
+  return result as SharedSettings
 }
 
 /**

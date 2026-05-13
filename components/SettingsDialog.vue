@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AppSettings, GitAuthor } from '~/types'
+import { builtinPlugins } from '~/app-plugins'
 
 const open = defineModel<boolean>('open', { required: true })
 
@@ -13,15 +14,15 @@ const activeTab = computed({
   set: (val) => { settingsStore.settingsDialogTab = val },
 })
 
-const builtInTabs = [
+const builtInTabs = computed(() => [
   { label: t('settings.general'), value: 'general', icon: 'i-lucide-settings' },
   { label: t('settings.appearance'), value: 'appearance', icon: 'i-lucide-palette' },
   { label: t('settings.git'), value: 'git', icon: 'i-lucide-git-branch' },
   { label: t('settings.plugins'), value: 'plugins', icon: 'i-lucide-plug' },
-]
+])
 
 const allTabs = computed(() => [
-  ...builtInTabs,
+  ...builtInTabs.value,
   ...plugins.sortedSettingsTabs.map((t) => ({
     label: t.label,
     value: t.fqid,
@@ -33,8 +34,6 @@ const allTabs = computed(() => [
 const activePluginTab = computed(() =>
   plugins.sortedSettingsTabs.find((t) => t.fqid === activeTab.value),
 )
-
-const { builtinPlugins } = await import('~/app-plugins')
 
 function isPluginEnabled(pluginId: string) {
   return (settingsStore.settings.enabledPlugins ?? []).includes(pluginId)

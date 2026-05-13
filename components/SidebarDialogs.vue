@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { SidebarDialogsContext } from '~/composables/useSidebarDialogs'
+import { SidebarDialogsKey } from '~/composables/useSidebarDialogs'
 
-defineProps<{ ctx: SidebarDialogsContext }>()
+const ctx = inject(SidebarDialogsKey)!
 
 function selectBaseName(event: FocusEvent) {
   const target = event.target as HTMLInputElement | null

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { dump } from 'js-yaml'
-import { relativePath, normalizeRelativePath, stripTrailingSlash } from '~/utils/paths'
+import { basename, dirname, fileStem, relativePath, replacePathPrefix, stripTrailingSlash } from '~/utils/paths'
 import {
   DEFAULT_FILE_FILTERS,
   type AddVaultPayload,
@@ -30,39 +30,6 @@ function generateId() {
 export type ConflictChoice = 'rename' | 'overwrite' | 'skip'
 export type ConflictPolicy = ConflictChoice
   | ((info: { name: string, existingPath: string }) => Promise<ConflictChoice>)
-
-function basename(path: string): string {
-  const norm = path.replace(/[\\/]+$/, '')
-  const parts = norm.split(/[\\/]/)
-  return parts[parts.length - 1] ?? norm
-}
-
-function dirname(path: string): string {
-  const norm = path.replace(/[\\/]+$/, '')
-  const parts = norm.split(/[\\/]/)
-  parts.pop()
-  return parts.join('/') || '/'
-}
-
-function replacePathPrefix(path: string, oldPrefix: string, newPrefix: string): string {
-  if (path === oldPrefix) return newPrefix
-
-  const sep = oldPrefix.endsWith('/') || oldPrefix.endsWith('\\') ? oldPrefix : `${oldPrefix}/`
-  if (!path.startsWith(sep)) return path
-
-  const targetBase = newPrefix.endsWith('/') || newPrefix.endsWith('\\') ? newPrefix.slice(0, -1) : newPrefix
-  return `${targetBase}/${path.slice(sep.length)}`
-}
-
-function filename(path: string): string {
-  const parts = path.split(/[\\/]/)
-  return parts[parts.length - 1] ?? path
-}
-
-function fileStem(name: string): string {
-  const lastDot = name.lastIndexOf('.')
-  return lastDot > 0 ? name.slice(0, lastDot) : name
-}
 
 function fileExt(name: string): string {
   const lastDot = name.lastIndexOf('.')
@@ -115,6 +82,7 @@ function pickVaultForPath(vaults: Vault[], filePath: string): Vault | null {
  */
 export const useVaultsStore = defineStore('vaults', () => {
   const { t } = useI18n()
+  const confirm = useConfirm()
   const list = ref<Vault[]>([])
   const trees = ref<Record<string, FileNode[]>>({})
   const groups = ref<VaultGroup[]>([])
@@ -430,7 +398,11 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (sourcePath === destPath) return
 
     if (await fs.exists(destPath)) {
-      if (!confirm(`An item named "${name}" already exists in the destination. Do you want to replace it?`)) return
+      const overwrite = await confirm.ask(
+        t('confirm.overwriteTitle'),
+        t('confirm.overwriteMessage', { name }),
+      )
+      if (!overwrite) return
     }
 
     const sourceVault = findVaultForPath(sourcePath)
@@ -441,6 +413,9 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (targetVault && targetVault.id !== sourceVault?.id) await editor.flushVault(targetVault)
 
     await fs.moveFile(sourcePath, destPath)
+
+    // Clean up stale search index entries
+    useSearchStore().removeFile(sourcePath)
 
     if (sourceVault) await refreshTree(sourceVault)
     if (targetVault && targetVault.id !== sourceVault?.id) await refreshTree(targetVault)
@@ -477,7 +452,11 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (sourcePath === destPath) return
 
     if (await fs.exists(destPath)) {
-      if (!confirm(`An item named "${name}" already exists in the destination. Do you want to replace it?`)) return
+      const overwrite = await confirm.ask(
+        t('confirm.overwriteTitle'),
+        t('confirm.overwriteMessage', { name }),
+      )
+      if (!overwrite) return
     }
 
     const targetVault = findVaultForPath(targetDirPath)
@@ -526,6 +505,9 @@ export const useVaultsStore = defineStore('vaults', () => {
     await editor.flushVault(vault)
 
     await fs.renameFile(sourcePath, destPath)
+
+    // Clean up stale search index entries
+    useSearchStore().removeFile(sourcePath)
 
     await refreshTree(vault)
 
@@ -782,7 +764,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     const settings = getEffectiveMediaDir(vault)
     const documentDir = dirname(documentPath)
     const ext = fileExt(sourceName)
-    const documentStem = sanitizeFilenamePart(fileStem(filename(documentPath)))
+    const documentStem = sanitizeFilenamePart(fileStem(basename(documentPath)))
 
     let destDir = documentDir
     if (settings.mode === 'global-folder') {
@@ -917,7 +899,7 @@ export const useVaultsStore = defineStore('vaults', () => {
       const sourcePath = paths[i]!
       try {
         const sourceBytes = await fs.readBytes(sourcePath)
-        const decision = await resolveConflictPolicy(vault, documentPath, filename(sourcePath), i, sourceBytes, options?.onConflict)
+        const decision = await resolveConflictPolicy(vault, documentPath, basename(sourcePath), i, sourceBytes, options?.onConflict)
         if (!decision) continue
         const { destPath, markdownPath } = decision
         const destDir = dirname(destPath)

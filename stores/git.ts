@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { CommitStatus, GitStatusInfo, Vault } from '~/types'
+import type { CommitStatus, GitAuthor, GitStatusInfo, Vault } from '~/types'
 
 /** Resolves the effective commit mode for a vault, honouring `respect_config`. */
 function getEffectiveCommitMode(vault: Vault): 'auto' | 'manual' {
@@ -68,7 +68,13 @@ export const useGitStore = defineStore('git', () => {
       return { name: overrideName, email: overrideEmail }
     }
     const git = useGit()
-    const global = await git.globalAuthor()
+    let global: GitAuthor = { name: null, email: null }
+    try {
+      global = await git.globalAuthor()
+    }
+    catch {
+      // Fall back to empty strings below
+    }
     const name = overrideName || (global.name ?? '').trim()
     const email = overrideEmail || (global.email ?? '').trim()
     if (!name || !email) return null

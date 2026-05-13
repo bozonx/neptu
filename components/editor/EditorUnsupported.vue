@@ -3,7 +3,7 @@ const props = defineProps<{
   filePath: string
 }>()
 
-const fileName = computed(() => props.filePath.split(/[\/\\]/).pop() || '')
+const fileName = computed(() => props.filePath.split(/[/\\]/).pop() || '')
 </script>
 
 <template>

@@ -10,13 +10,24 @@ export const backlinksPlugin: Plugin = {
   },
   activate(ctx) {
     const { t } = useI18n()
-    const dispose = ctx.api.ui.addRightSidebarView({
+    const viewFqid = `${ctx.manifest.id}:main`
+    const plugins = usePluginsStore()
+    const tabs = useTabsStore()
+    ctx.api.ui.addRightSidebarView({
       id: 'main',
       icon: 'i-lucide-link',
       title: t('sidebar.backlinks'),
       order: 15,
       component: BacklinksView,
     })
-    ctx.onUnload(dispose)
+    ctx.api.ui.addCommand({
+      id: 'open-backlinks',
+      label: () => t('commands.openBacklinks'),
+      icon: 'i-lucide-link',
+      onRun: () => {
+        plugins.setActiveRightSidebarView(viewFqid)
+        tabs.rightSidebarCollapsed = false
+      },
+    })
   },
 }

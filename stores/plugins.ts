@@ -17,6 +17,7 @@ import type {
 interface LoadedPlugin {
   manifest: PluginManifest
   cleanups: Array<() => void>
+  deactivate?: () => void
 }
 
 function sortByOrder<T extends { order?: number, fqid: string }>(items: T[]): T[] {
@@ -152,7 +153,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     const ctx = createPluginContext(plugin.manifest, cleanups)
     try {
       await plugin.activate(ctx)
-      loaded.value.set(plugin.manifest.id, { manifest: plugin.manifest, cleanups })
+      loaded.value.set(plugin.manifest.id, { manifest: plugin.manifest, cleanups, deactivate: plugin.deactivate })
     }
     catch (error) {
       for (const fn of cleanups) {
@@ -171,6 +172,14 @@ export const usePluginsStore = defineStore('plugins', () => {
   async function unload(pluginId: string) {
     const entry = loaded.value.get(pluginId)
     if (!entry) return
+
+    try {
+      entry.deactivate?.()
+    }
+    catch (e) {
+      console.error(`Plugin deactivate failed for ${pluginId}:`, e)
+    }
+
     for (const fn of entry.cleanups) {
       try {
         fn()

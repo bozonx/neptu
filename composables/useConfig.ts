@@ -85,11 +85,28 @@ const uiStateWriter = createSerializedWriter<UiState>(async (data) => {
   await writeTextFile(uiStatePathCache, JSON.stringify(data, null, 2))
 })
 
+const sharedConfigWriters = new Map<string, ReturnType<typeof createSerializedWriter<SharedConfig>>>()
+
+function getSharedConfigWriter(path: string) {
+  let writer = sharedConfigWriters.get(path)
+  if (!writer) {
+    writer = createSerializedWriter<SharedConfig>(async (data) => {
+      await writeTextFile(path, JSON.stringify(data, null, 2))
+    })
+    sharedConfigWriters.set(path, writer)
+  }
+  return writer
+}
+
 /**
  * Flushes any pending debounced writes. Call on app shutdown.
  */
 export async function flushPendingWrites() {
-  await Promise.all([instanceConfigWriter.flush(), uiStateWriter.flush()])
+  await Promise.all([
+    instanceConfigWriter.flush(),
+    uiStateWriter.flush(),
+    ...Array.from(sharedConfigWriters.values()).map((w) => w.flush()),
+  ])
 }
 
 /**
@@ -239,7 +256,8 @@ export function useConfig() {
   async function saveSharedConfig(mainRepoPath: string, config: SharedConfig): Promise<void> {
     const path = await sharedConfigPath(mainRepoPath)
     await ensureNeptuDir(mainRepoPath)
-    await fs.writeText(path, JSON.stringify(config, null, 2))
+    const writer = getSharedConfigWriter(path)
+    writer.schedule(config)
   }
 
   async function loadUiState(): Promise<UiState> {

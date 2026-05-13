@@ -8,10 +8,8 @@ const props = defineProps<{
 }>()
 
 const tabsStore = useTabsStore()
-const editorStore = useEditorStore()
 const vaults = useVaultsStore()
 const settingsStore = useSettingsStore()
-const dnd = useDnd()
 
 const scrollContainer = ref<HTMLElement | null>(null)
 

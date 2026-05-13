@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { EditorTab } from '~/types'
 
-const props = defineProps<{
+defineProps<{
   tab: EditorTab
   activeId: string | null
   isMobile?: boolean

@@ -15,6 +15,17 @@ export function useBuiltinCommands() {
   const dialogs = useSidebarDialogs()
   const palette = useCommandPalette()
 
+  function activeDesktopPanel() {
+    return tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
+  }
+
+  function activeDesktopTab() {
+    const panel = activeDesktopPanel()
+    if (!panel?.activeId) return null
+    const tab = panel.tabs.find((tabItem) => tabItem.id === panel.activeId)
+    return tab ? { panel, tab } : null
+  }
+
   const commands: RegisteredCommandPaletteItem[] = [
     {
       id: 'open-command-palette',
@@ -163,11 +174,11 @@ export function useBuiltinCommands() {
       label: () => t('commands.closeCurrentTab'),
       icon: 'i-lucide-x',
       visible: () => {
-        const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
+        const panel = activeDesktopPanel()
         return !!panel && panel.tabs.length > 0
       },
       onRun: () => {
-        const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
+        const panel = activeDesktopPanel()
         if (panel && panel.activeId) {
           void tabs.closeTab(panel.id, panel.activeId)
         }
@@ -180,11 +191,11 @@ export function useBuiltinCommands() {
       label: () => t('commands.closeAllTabs'),
       icon: 'i-lucide-x-square',
       visible: () => {
-        const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
+        const panel = activeDesktopPanel()
         return !!panel && panel.tabs.length > 0
       },
       onRun: () => {
-        const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
+        const panel = activeDesktopPanel()
         if (panel) void tabs.closeAll(panel.id)
       },
     },
@@ -195,14 +206,55 @@ export function useBuiltinCommands() {
       label: () => t('commands.closeOtherTabs'),
       icon: 'i-lucide-x-circle',
       visible: () => {
-        const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
+        const panel = activeDesktopPanel()
         return !!panel && panel.tabs.length > 1
       },
       onRun: () => {
-        const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
+        const panel = activeDesktopPanel()
         if (panel && panel.activeId) {
           void tabs.closeOthers(panel.id, panel.activeId)
         }
+      },
+    },
+    {
+      id: 'close-tabs-right',
+      pluginId: 'core',
+      fqid: 'core:close-tabs-right',
+      label: () => t('commands.closeTabsRight'),
+      icon: 'i-lucide-panel-right-close',
+      visible: () => {
+        const active = activeDesktopTab()
+        if (!active) return false
+        const idx = active.panel.tabs.findIndex((tabItem) => tabItem.id === active.tab.id)
+        return active.panel.tabs.slice(idx + 1).some((tabItem) => !tabItem.pinned)
+      },
+      onRun: () => {
+        const active = activeDesktopTab()
+        if (active) void tabs.closeAllRight(active.panel.id, active.tab.id)
+      },
+    },
+    {
+      id: 'toggle-pin-tab',
+      pluginId: 'core',
+      fqid: 'core:toggle-pin-tab',
+      label: () => t('commands.togglePinTab'),
+      icon: 'i-lucide-pin',
+      visible: () => !!activeDesktopTab(),
+      onRun: () => {
+        const active = activeDesktopTab()
+        if (active) void tabs.togglePin(active.panel.id, active.tab.id)
+      },
+    },
+    {
+      id: 'split-left',
+      pluginId: 'core',
+      fqid: 'core:split-left',
+      label: () => t('commands.splitLeft'),
+      icon: 'i-lucide-columns-2',
+      visible: () => !!activeDesktopTab(),
+      onRun: () => {
+        const active = activeDesktopTab()
+        if (active) void tabs.duplicateTo(active.panel.id, 'left', active.tab)
       },
     },
     {
@@ -211,16 +263,34 @@ export function useBuiltinCommands() {
       fqid: 'core:split-right',
       label: () => t('commands.splitRight'),
       icon: 'i-lucide-columns-2',
-      visible: () => {
-        const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
-        return !!panel && !!panel.activeId
-      },
+      visible: () => !!activeDesktopTab(),
       onRun: () => {
-        const panel = tabs.findLeaf(tabs.desktopLayout, tabs.activeDesktopPanelId)
-        if (panel && panel.activeId) {
-          const tab = panel.tabs.find((tabItem) => tabItem.id === panel.activeId)
-          if (tab) void tabs.duplicateTo(panel.id, 'right', tab)
-        }
+        const active = activeDesktopTab()
+        if (active) void tabs.duplicateTo(active.panel.id, 'right', active.tab)
+      },
+    },
+    {
+      id: 'split-top',
+      pluginId: 'core',
+      fqid: 'core:split-top',
+      label: () => t('commands.splitTop'),
+      icon: 'i-lucide-rows-2',
+      visible: () => !!activeDesktopTab(),
+      onRun: () => {
+        const active = activeDesktopTab()
+        if (active) void tabs.duplicateTo(active.panel.id, 'top', active.tab)
+      },
+    },
+    {
+      id: 'split-bottom',
+      pluginId: 'core',
+      fqid: 'core:split-bottom',
+      label: () => t('commands.splitBottom'),
+      icon: 'i-lucide-rows-2',
+      visible: () => !!activeDesktopTab(),
+      onRun: () => {
+        const active = activeDesktopTab()
+        if (active) void tabs.duplicateTo(active.panel.id, 'bottom', active.tab)
       },
     },
     {

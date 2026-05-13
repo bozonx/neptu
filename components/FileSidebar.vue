@@ -1,12 +1,17 @@
 <script setup lang="ts">
 const editor = useEditorStore()
 const plugins = usePluginsStore()
+
+withDefaults(defineProps<{ showToolbar?: boolean }>(), { showToolbar: true })
 </script>
 
 <template>
   <div class="flex flex-col h-full bg-default">
     <!-- Right Sidebar Toolbar -->
-    <div class="h-9 border-b border-default flex items-center px-2 shrink-0">
+    <div
+      v-if="showToolbar"
+      class="h-9 border-b border-default flex items-center px-2 shrink-0"
+    >
       <FileSidebarToolbar class="flex-1" />
     </div>
 

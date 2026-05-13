@@ -11,6 +11,7 @@ const { isTauri, isMobile } = useTauri()
 const dnd = useDnd()
 const importPrompt = useEditorImport()
 const palette = useCommandPalette()
+const confirm = useConfirm()
 useBuiltinCommands()
 
 const availableLocales = ['en-US', 'ru-RU'] as const
@@ -76,8 +77,10 @@ function handleBeforeUnload() {
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {
+  const target = event.target as HTMLElement | null
+  const isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
   const isPaletteKey = (event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'p'
-  if (isPaletteKey) {
+  if (isPaletteKey && !isTyping) {
     event.preventDefault()
     palette.toggle()
   }
@@ -167,6 +170,30 @@ onBeforeUnmount(() => {
       @resolve="importPrompt.resolvePrompt"
       @cancel="importPrompt.cancelPrompt"
     />
+
+    <UModal
+      v-model:open="confirm.open.value"
+      :title="confirm.title.value"
+      :dismissible="true"
+    >
+      <template #body>
+        <p>{{ confirm.message.value }}</p>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            :label="$t('vault.cancel')"
+            @click="confirm.resolve(false)"
+          />
+          <UButton
+            :label="$t('vault.overwrite')"
+            @click="confirm.resolve(true)"
+          />
+        </div>
+      </template>
+    </UModal>
 
     <div
       v-if="dnd.isOsDragging.value"

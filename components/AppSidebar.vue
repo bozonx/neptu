@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
+import { SidebarDialogsKey } from '~/composables/useSidebarDialogs'
 
 const settings = useSettingsStore()
 const vaults = useVaultsStore()
@@ -8,6 +9,7 @@ const plugins = usePluginsStore()
 const { t } = useI18n()
 
 const dialogs = useSidebarDialogs()
+provide(SidebarDialogsKey, dialogs)
 
 useAutoReveal()
 
@@ -153,6 +155,6 @@ const contextMenuItems = computed<DropdownMenuItem[][]>(() => [
     </div>
 
     <!-- All dialogs -->
-    <SidebarDialogs :ctx="dialogs" />
+    <SidebarDialogs />
   </div>
 </template>

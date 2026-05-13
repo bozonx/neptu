@@ -90,8 +90,8 @@ watch(() => {
     >
       <template #content>
         <div class="flex-1 overflow-hidden">
-          <!-- We hide the toolbar inside FileSidebar when in mobile drawer because it's already in the Top Bar -->
-          <FileSidebar class="hide-toolbar" />
+          <!-- Toolbar hidden because it is already in the Top Bar -->
+          <FileSidebar :show-toolbar="false" />
         </div>
       </template>
     </USlideover>
@@ -99,8 +99,4 @@ watch(() => {
 </template>
 
 <style scoped>
-/* Hide the internal toolbar when FileSidebar is used in the mobile drawer */
-:deep(.hide-toolbar) > div:first-child {
-  display: none;
-}
 </style>

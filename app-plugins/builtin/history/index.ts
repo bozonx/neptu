@@ -10,13 +10,20 @@ export const historyPlugin: Plugin = {
   },
   activate(ctx) {
     const { t } = useI18n()
-    const dispose = ctx.api.ui.addLeftSidebarView({
+    const viewFqid = `${ctx.manifest.id}:main`
+    const plugins = usePluginsStore()
+    ctx.api.ui.addLeftSidebarView({
       id: 'main',
       icon: 'i-lucide-clock',
       title: t('sidebar.history'),
       order: 10,
       component: HistoryView,
     })
-    ctx.onUnload(dispose)
+    ctx.api.ui.addCommand({
+      id: 'open-history',
+      label: () => t('commands.openHistory'),
+      icon: 'i-lucide-clock',
+      onRun: () => plugins.setActiveLeftSidebarView(viewFqid),
+    })
   },
 }

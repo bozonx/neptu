@@ -17,6 +17,9 @@ export function useGit() {
     return invoke<GitStatusInfo>('git_status', { path })
   }
 
+  /**
+   * Reads the global git author. Rejects when the git config cannot be opened.
+   */
   function globalAuthor(): Promise<GitAuthor> {
     return invoke<GitAuthor>('git_global_author')
   }

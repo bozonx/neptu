@@ -10,13 +10,24 @@ export const fileInfoPlugin: Plugin = {
   },
   activate(ctx) {
     const { t } = useI18n()
-    const dispose = ctx.api.ui.addRightSidebarView({
+    const viewFqid = `${ctx.manifest.id}:main`
+    const plugins = usePluginsStore()
+    const tabs = useTabsStore()
+    ctx.api.ui.addRightSidebarView({
       id: 'main',
       icon: 'i-lucide-info',
       title: t('sidebar.fileInfo'),
       order: 20,
       component: FileInfoView,
     })
-    ctx.onUnload(dispose)
+    ctx.api.ui.addCommand({
+      id: 'open-file-info',
+      label: () => t('commands.openFileInfo'),
+      icon: 'i-lucide-info',
+      onRun: () => {
+        plugins.setActiveRightSidebarView(viewFqid)
+        tabs.rightSidebarCollapsed = false
+      },
+    })
   },
 }

@@ -1,5 +1,8 @@
 import { DEFAULT_FILE_FILTERS } from '~/types'
 import type { FileFilterGroup, FileFilterSettings, FileNode, GitCommitMode, MediaDirSettings, MediaNamingMode, MediaUploadMode, Vault, VaultGroup, VaultType } from '~/types'
+import type { InjectionKey } from 'vue'
+
+export const SidebarDialogsKey: InjectionKey<ReturnType<typeof useSidebarDialogs>> = Symbol('sidebar-dialogs')
 
 /**
  * Composable that manages all sidebar dialog state and CRUD actions.

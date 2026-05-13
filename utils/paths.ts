@@ -39,6 +39,21 @@ export function normalizeRelativePath(path: string): string {
  * Resolve a (possibly relative) path against a document path.
  * Returns the absolute path. External URLs and absolute paths are returned as-is.
  */
+export function fileStem(name: string): string {
+  const lastDot = name.lastIndexOf('.')
+  return lastDot > 0 ? name.slice(0, lastDot) : name
+}
+
+export function replacePathPrefix(path: string, oldPrefix: string, newPrefix: string): string {
+  if (path === oldPrefix) return newPrefix
+
+  const sep = oldPrefix.endsWith('/') || oldPrefix.endsWith('\\') ? oldPrefix : `${oldPrefix}/`
+  if (!path.startsWith(sep)) return path
+
+  const targetBase = newPrefix.endsWith('/') || newPrefix.endsWith('\\') ? newPrefix.slice(0, -1) : newPrefix
+  return `${targetBase}/${path.slice(sep.length)}`
+}
+
 export function resolveAbsolutePath(documentPath: string, relOrAbs: string): string | null {
   if (!relOrAbs) return null
   if (/^[a-z]+:\/\//i.test(relOrAbs) || relOrAbs.startsWith('data:') || relOrAbs.startsWith('blob:')) {

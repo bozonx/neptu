@@ -129,6 +129,7 @@ export const SearchHighlight = Extension.create({
   },
 
   addProseMirrorPlugins() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const extension = this
     return [
       new Plugin<SearchState>({

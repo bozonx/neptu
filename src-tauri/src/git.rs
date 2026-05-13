@@ -1,4 +1,7 @@
-use git2::{Config, IndexAddOption, Repository, Signature, StatusOptions};
+use git2::{
+    Config, FetchOptions, IndexAddOption, PushOptions, RemoteCallbacks, Repository,
+    Signature, StatusOptions,
+};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -14,7 +17,7 @@ pub struct GitAuthor {
     pub email: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct CommitResult {
     pub committed: bool,
     pub oid: Option<String>,
@@ -22,9 +25,24 @@ pub struct CommitResult {
     pub changed_files: u32,
 }
 
+fn setup_remote_callbacks() -> RemoteCallbacks<'static> {
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(|_url, username_from_url, allowed_types| {
+        if allowed_types.contains(git2::CredentialType::SSH_KEY) {
+            return git2::Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"));
+        }
+        git2::Cred::default()
+    });
+    callbacks
+}
+
 #[tauri::command]
-pub fn git_is_repo(path: String) -> bool {
-    Repository::open(&path).is_ok()
+pub fn git_is_repo(path: String) -> Result<bool, String> {
+    match Repository::open(&path) {
+        Ok(_) => Ok(true),
+        Err(e) if e.code() == git2::ErrorCode::NotFound => Ok(false),
+        Err(e) => Err(format!("Failed to open repository at '{}': {}", path, e)),
+    }
 }
 
 #[tauri::command]
@@ -52,20 +70,13 @@ pub fn git_status(path: String) -> Result<GitStatus, String> {
 /// Reads `user.name` / `user.email` from git's global/system config.
 /// Returns `None` for fields that are not set anywhere.
 #[tauri::command]
-pub fn git_global_author() -> GitAuthor {
-    let cfg = match Config::open_default() {
-        Ok(c) => c,
-        Err(_) => {
-            return GitAuthor {
-                name: None,
-                email: None,
-            }
-        }
-    };
-    GitAuthor {
+pub fn git_global_author() -> Result<GitAuthor, String> {
+    let cfg = Config::open_default()
+        .map_err(|e| format!("Failed to open git config: {e}"))?;
+    Ok(GitAuthor {
         name: cfg.get_string("user.name").ok(),
         email: cfg.get_string("user.email").ok(),
-    }
+    })
 }
 
 /// Stages all changes (respecting `.gitignore`) and creates a commit.
@@ -131,36 +142,67 @@ pub fn git_commit_all(
     })
 }
 
+/// Fast-forward pull from the default remote (`origin`).
+/// Non-fast-forward merges are rejected so the user can resolve them manually.
 #[tauri::command]
 pub fn git_pull(path: String) -> Result<String, String> {
-    let output = std::process::Command::new("git")
-        .arg("pull")
-        .current_dir(&path)
-        .output()
-        .map_err(|e| e.to_string())?;
+    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
+    let mut remote = repo.find_remote("origin")
+        .map_err(|e| format!("No remote 'origin' configured: {e}"))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("git pull failed: {}", stderr));
+    let callbacks = setup_remote_callbacks();
+    let mut fetch_opts = FetchOptions::new();
+    fetch_opts.remote_callbacks(callbacks);
+
+    remote.fetch(&[] as &[&str], Some(&mut fetch_opts), None)
+        .map_err(|e| format!("Fetch failed: {e}"))?;
+
+    let fetch_head = repo.find_reference("FETCH_HEAD")
+        .map_err(|e| format!("No FETCH_HEAD after fetch: {e}"))?;
+    let fetch_commit = fetch_head.peel_to_commit().map_err(|e| e.to_string())?;
+    let fetch_oid = fetch_commit.id();
+
+    let mut head = repo.head().map_err(|e| e.to_string())?;
+    let current_commit = head.peel_to_commit().map_err(|e| e.to_string())?;
+
+    if current_commit.id() == fetch_oid {
+        return Ok("Already up to date".to_string());
     }
 
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    let merge_base = repo.merge_base(current_commit.id(), fetch_oid)
+        .map_err(|e| format!("Cannot determine merge base: {e}"))?;
+
+    if merge_base != current_commit.id() {
+        return Err(
+            "Pull requires a non-fast-forward merge, which is not supported. \
+             Please resolve manually.".to_string(),
+        );
+    }
+
+    head.set_target(fetch_oid, "Fast-forward pull")
+        .map_err(|e| e.to_string())?;
+
+    Ok("Pulled successfully".to_string())
 }
 
 #[tauri::command]
 pub fn git_push(path: String) -> Result<String, String> {
-    let output = std::process::Command::new("git")
-        .arg("push")
-        .current_dir(&path)
-        .output()
-        .map_err(|e| e.to_string())?;
+    let repo = Repository::open(&path).map_err(|e| e.to_string())?;
+    let mut remote = repo.find_remote("origin")
+        .map_err(|e| format!("No remote 'origin' configured: {e}"))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("git push failed: {}", stderr));
-    }
+    let head = repo.head().map_err(|e| e.to_string())?;
+    let branch_name = head.shorthand().ok_or("Invalid branch name")?;
+    let refspec = format!("refs/heads/{0}:refs/heads/{0}", branch_name);
 
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    let callbacks = setup_remote_callbacks();
+    let mut opts = PushOptions::new();
+    opts.remote_callbacks(callbacks);
+
+    remote.push(&[&refspec], Some(&mut opts))
+        .map_err(|e| format!("Push failed: {e}"))?;
+
+    Ok("Pushed successfully".to_string())
 }
 
 /// Returns a unified diff of the working tree against HEAD.
@@ -175,6 +217,7 @@ pub fn git_diff(path: String, file_path: Option<String>) -> Result<String, Strin
     };
 
     let mut opts = git2::DiffOptions::new();
+    opts.include_untracked(true);
     if let Some(ref fp) = file_path {
         let repo_root = std::path::Path::new(&path);
         let file = std::path::Path::new(fp);
@@ -201,5 +244,147 @@ pub fn git_diff(path: String, file_path: Option<String>) -> Result<String, Strin
     })
     .map_err(|e| e.to_string())?;
 
-    String::from_utf8(buf).map_err(|e| e.to_string())
+    Ok(String::from_utf8_lossy(&buf).to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_git_is_repo_detects_git_directory() {
+        let temp = tempfile::tempdir().unwrap();
+        Repository::init(temp.path()).unwrap();
+        assert!(git_is_repo(temp.path().to_string_lossy().to_string()).unwrap());
+    }
+
+    #[test]
+    fn test_git_is_repo_returns_false_for_non_repo() {
+        let temp = tempfile::tempdir().unwrap();
+        assert!(!git_is_repo(temp.path().to_string_lossy().to_string()).unwrap());
+    }
+
+    #[test]
+    fn test_git_init_repo_creates_repo() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        git_init_repo(path.clone()).unwrap();
+        assert!(git_is_repo(path).unwrap());
+    }
+
+    #[test]
+    fn test_git_status_counts_untracked() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        Repository::init(&path).unwrap();
+        fs::write(temp.path().join("note.md"), "hello").unwrap();
+        let status = git_status(path).unwrap();
+        assert!(status.dirty);
+        assert_eq!(status.changed_files, 1);
+    }
+
+    #[test]
+    fn test_git_commit_all_creates_first_commit_on_empty_repo() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        Repository::init(&path).unwrap();
+        // No HEAD yet — the commit will create the first one even with an empty tree.
+        // This is expected git behaviour for a brand-new repository.
+        let result = git_commit_all(
+            path,
+            "test".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+        assert!(result.committed);
+    }
+
+    #[test]
+    fn test_git_commit_all_stages_and_commits() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        Repository::init(&path).unwrap();
+        fs::write(temp.path().join("note.md"), "hello").unwrap();
+        let result = git_commit_all(
+            path,
+            "Initial commit".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+        assert!(result.committed);
+        assert_eq!(result.changed_files, 1);
+        assert!(result.oid.is_some());
+    }
+
+    #[test]
+    fn test_git_commit_all_is_idempotent() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        Repository::init(&path).unwrap();
+        fs::write(temp.path().join("note.md"), "hello").unwrap();
+
+        let first = git_commit_all(
+            path.clone(),
+            "Initial".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+        assert!(first.committed);
+
+        let second = git_commit_all(
+            path,
+            "Again".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+        assert!(!second.committed);
+        assert_eq!(second.changed_files, 0);
+    }
+
+    #[test]
+    fn test_git_commit_all_rejects_empty_author() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        Repository::init(&path).unwrap();
+        let err = git_commit_all(
+            path,
+            "test".to_string(),
+            "".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap_err();
+        assert!(err.contains("author"));
+    }
+
+    #[test]
+    fn test_git_diff_empty_repo() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        Repository::init(&path).unwrap();
+        let diff = git_diff(path, None).unwrap();
+        assert!(diff.is_empty());
+    }
+
+    #[test]
+    fn test_git_diff_shows_changes() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        Repository::init(&path).unwrap();
+        fs::write(temp.path().join("note.md"), "hello").unwrap();
+        git_commit_all(
+            path.clone(),
+            "Initial".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+        fs::write(temp.path().join("note.md"), "world").unwrap();
+        let diff = git_diff(path, None).unwrap();
+        assert!(diff.contains("world"));
+    }
 }

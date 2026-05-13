@@ -538,11 +538,22 @@
     "closeCurrentTab": "Закрыть текущую вкладку",
     "closeAllTabs": "Закрыть все вкладки",
     "closeOtherTabs": "Закрыть другие вкладки",
+    "closeTabsRight": "Закрыть вкладки справа",
+    "togglePinTab": "Закрепить / открепить текущую вкладку",
+    "splitLeft": "Разделить влево",
     "splitRight": "Разделить вправо",
+    "splitTop": "Разделить вверх",
+    "splitBottom": "Разделить вниз",
+    "openOutline": "Открыть структуру",
+    "openBacklinks": "Открыть обратные ссылки",
+    "openFileInfo": "Открыть информацию о файле",
+    "openHistory": "Открыть историю",
     "gitCommit": "Git коммит",
     "gitRefresh": "Обновить статус git"
   },
   "confirm": {
-    "deleteFile": "Удалить \"{name}\"? Это действие нельзя отменить."
+    "deleteFile": "Удалить \"{name}\"? Это действие нельзя отменить.",
+    "overwriteTitle": "Заменить файл?",
+    "overwriteMessage": "Элемент с именем \"{name}\" уже существует в пункте назначения. Заменить его?"
   }
 }

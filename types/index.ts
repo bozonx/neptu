@@ -355,7 +355,6 @@ export interface AddVaultPayload {
   contentType?: ContentType
   contentStructureId?: string
   contentFolder?: string
-  siteLangMode?: SiteLangMode
   filters?: FileFilterSettings
   excludes?: string[]
   mediaDir?: MediaDirSettings

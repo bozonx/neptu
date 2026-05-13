@@ -538,11 +538,22 @@
     "closeCurrentTab": "Close current tab",
     "closeAllTabs": "Close all tabs",
     "closeOtherTabs": "Close other tabs",
+    "closeTabsRight": "Close tabs to the right",
+    "togglePinTab": "Pin / unpin current tab",
+    "splitLeft": "Split to the left",
     "splitRight": "Split to the right",
+    "splitTop": "Split above",
+    "splitBottom": "Split below",
+    "openOutline": "Open outline",
+    "openBacklinks": "Open backlinks",
+    "openFileInfo": "Open file info",
+    "openHistory": "Open history",
     "gitCommit": "Git commit",
     "gitRefresh": "Refresh git status"
   },
   "confirm": {
-    "deleteFile": "Delete \"{name}\"? This cannot be undone."
+    "deleteFile": "Delete \"{name}\"? This cannot be undone.",
+    "overwriteTitle": "Overwrite file?",
+    "overwriteMessage": "An item named \"{name}\" already exists in the destination. Do you want to replace it?"
   }
 }
