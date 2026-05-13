@@ -46,6 +46,7 @@ impl From<tempfile::PersistError> for FileOpsError {
 }
 
 fn sync_parent_dir(path: &Path) -> Result<(), std::io::Error> {
+    let _ = path;
     #[cfg(unix)]
     {
         if let Some(parent) = path.parent() {

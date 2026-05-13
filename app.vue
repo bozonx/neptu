@@ -75,8 +75,12 @@ const ready = computed(() => !isTauri.value || (settings.initialized && editor.h
 
 function handleBeforeUnload() {
   // Best-effort flush of debounced writes before the window unloads.
-  void editor.flushAll()
-  void flushPendingWrites()
+  void editor.flushAll().catch((error) => {
+    console.error('Failed to flush editor buffers before unload', error)
+  })
+  void flushPendingWrites().catch((error) => {
+    console.error('Failed to flush config writes before unload', error)
+  })
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {
@@ -115,9 +119,11 @@ onMounted(async () => {
         try {
           await editor.flushAll()
           await flushPendingWrites()
-        }
-        finally {
           await appWindow.destroy()
+        }
+        catch (error) {
+          console.error('Failed to flush pending writes before close', error)
+          closing = false
         }
       })
     }

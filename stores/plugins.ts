@@ -17,7 +17,7 @@ import type {
 interface LoadedPlugin {
   manifest: PluginManifest
   cleanups: Array<() => void>
-  deactivate?: () => void
+  deactivate?: () => void | Promise<void>
 }
 
 function sortByOrder<T extends { order?: number, fqid: string }>(items: T[]): T[] {
@@ -27,6 +27,45 @@ function sortByOrder<T extends { order?: number, fqid: string }>(items: T[]): T[
     if (ao !== bo) return ao - bo
     return a.fqid.localeCompare(b.fqid)
   })
+}
+
+function reportPluginError(message: string, error: unknown) {
+  console.error(`[plugins] ${message}`, error)
+}
+
+function safeRun<TArgs extends unknown[]>(label: string, fn: (...args: TArgs) => unknown): (...args: TArgs) => void {
+  return (...args) => {
+    try {
+      const result = fn(...args)
+      if (result && typeof (result as Promise<void>).catch === 'function') {
+        void (result as Promise<void>).catch((error) => reportPluginError(label, error))
+      }
+    }
+    catch (error) {
+      reportPluginError(label, error)
+    }
+  }
+}
+
+function safePredicate(label: string, fn?: () => boolean): (() => boolean) | undefined {
+  if (!fn) return undefined
+  return () => {
+    try {
+      return fn()
+    }
+    catch (error) {
+      reportPluginError(label, error)
+      return false
+    }
+  }
+}
+
+function replaceByFqid<T extends { fqid: string }>(items: T[], item: T): T[] {
+  return [...items.filter((i) => i.fqid !== item.fqid), item]
+}
+
+function removeRegistered<T>(items: T[], item: T): T[] {
+  return items.filter((i) => i !== item)
 }
 
 /**
@@ -46,6 +85,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   const activeLeftSidebarView = ref<string | null>(null)
   const activeRightSidebarView = ref<string | null>(null)
   const loaded = ref<Map<string, LoadedPlugin>>(new Map())
+  const loading = new Map<string, Promise<void>>()
 
   function buttonsFor(location: SidebarButtonLocation) {
     return computed(() => sortByOrder(sidebarButtons.value.filter((b) => b.location === location)))
@@ -81,16 +121,22 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   function registerSidebarButton(button: RegisteredSidebarButton) {
-    sidebarButtons.value = [...sidebarButtons.value, button]
+    const registered = {
+      ...button,
+      onClick: safeRun(`${button.fqid} sidebar button failed`, button.onClick),
+      visible: safePredicate(`${button.fqid} sidebar button visibility failed`, button.visible),
+      active: safePredicate(`${button.fqid} sidebar button active state failed`, button.active),
+    }
+    sidebarButtons.value = replaceByFqid(sidebarButtons.value, registered)
     return () => {
-      sidebarButtons.value = sidebarButtons.value.filter((b) => b.fqid !== button.fqid)
+      sidebarButtons.value = removeRegistered(sidebarButtons.value, registered)
     }
   }
 
   function registerLeftSidebarView(view: RegisteredLeftSidebarView) {
-    leftSidebarViews.value = [...leftSidebarViews.value, view]
+    leftSidebarViews.value = replaceByFqid(leftSidebarViews.value, view)
     return () => {
-      leftSidebarViews.value = leftSidebarViews.value.filter((v) => v.fqid !== view.fqid)
+      leftSidebarViews.value = removeRegistered(leftSidebarViews.value, view)
       if (activeLeftSidebarView.value === view.fqid) {
         activeLeftSidebarView.value = null
       }
@@ -98,9 +144,9 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   function registerRightSidebarView(view: RegisteredRightSidebarView) {
-    rightSidebarViews.value = [...rightSidebarViews.value, view]
+    rightSidebarViews.value = replaceByFqid(rightSidebarViews.value, view)
     return () => {
-      rightSidebarViews.value = rightSidebarViews.value.filter((v) => v.fqid !== view.fqid)
+      rightSidebarViews.value = removeRegistered(rightSidebarViews.value, view)
       if (activeRightSidebarView.value === view.fqid) {
         activeRightSidebarView.value = null
       }
@@ -108,30 +154,39 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   function registerSettingsTab(tab: RegisteredSettingsTab) {
-    settingsTabs.value = [...settingsTabs.value, tab]
+    settingsTabs.value = replaceByFqid(settingsTabs.value, tab)
     return () => {
-      settingsTabs.value = settingsTabs.value.filter((t) => t.fqid !== tab.fqid)
+      settingsTabs.value = removeRegistered(settingsTabs.value, tab)
     }
   }
 
   function registerContentStructure(structure: RegisteredContentStructure) {
-    contentStructures.value = [...contentStructures.value.filter((item) => item.fqid !== structure.fqid), structure]
+    contentStructures.value = replaceByFqid(contentStructures.value, structure)
     return () => {
-      contentStructures.value = contentStructures.value.filter((item) => item.fqid !== structure.fqid)
+      contentStructures.value = removeRegistered(contentStructures.value, structure)
     }
   }
 
   function registerCommandPaletteItem(item: RegisteredCommandPaletteItem) {
-    commandPaletteItems.value = [...commandPaletteItems.value.filter((i) => i.fqid !== item.fqid), item]
+    const registered = {
+      ...item,
+      onRun: safeRun(`${item.fqid} command failed`, item.onRun),
+      visible: safePredicate(`${item.fqid} command visibility failed`, item.visible),
+    }
+    commandPaletteItems.value = replaceByFqid(commandPaletteItems.value, registered)
     return () => {
-      commandPaletteItems.value = commandPaletteItems.value.filter((i) => i.fqid !== item.fqid)
+      commandPaletteItems.value = removeRegistered(commandPaletteItems.value, registered)
     }
   }
 
   function registerStatusBarItem(item: RegisteredStatusBarItem) {
-    statusBarItems.value = [...statusBarItems.value.filter((i) => i.fqid !== item.fqid), item]
+    const registered = {
+      ...item,
+      visible: safePredicate(`${item.fqid} status bar item visibility failed`, item.visible),
+    }
+    statusBarItems.value = replaceByFqid(statusBarItems.value, registered)
     return () => {
-      statusBarItems.value = statusBarItems.value.filter((i) => i.fqid !== item.fqid)
+      statusBarItems.value = removeRegistered(statusBarItems.value, registered)
     }
   }
 
@@ -143,30 +198,43 @@ export const usePluginsStore = defineStore('plugins', () => {
     const modal = modals.value.find((m) => m.fqid === fqid)
     if (!modal) return
     modals.value = modals.value.filter((m) => m.fqid !== fqid)
-    modal.onClose?.()
+    if (modal.onClose) {
+      safeRun(`${modal.fqid} modal close failed`, modal.onClose)()
+    }
   }
 
   async function load(plugin: Plugin) {
     if (loaded.value.has(plugin.manifest.id)) return
+    const activeLoad = loading.get(plugin.manifest.id)
+    if (activeLoad) return activeLoad
+
     const cleanups: Array<() => void> = []
-    const { createPluginContext } = await import('~/app-plugins/api')
-    const ctx = createPluginContext(plugin.manifest, cleanups)
-    try {
-      await plugin.activate(ctx)
-      loaded.value.set(plugin.manifest.id, { manifest: plugin.manifest, cleanups, deactivate: plugin.deactivate })
-    }
-    catch (error) {
-      for (const fn of cleanups) {
-        try {
-          fn()
-        }
-        catch {
-          /* ignore */
-        }
+    const loadPromise = (async () => {
+      const { createPluginContext } = await import('~/app-plugins/api')
+      const ctx = createPluginContext(plugin.manifest, cleanups)
+      try {
+        await plugin.activate(ctx)
+        loaded.value.set(plugin.manifest.id, { manifest: plugin.manifest, cleanups, deactivate: plugin.deactivate })
       }
-      console.error(`[plugins] failed to activate ${plugin.manifest.id}`, error)
-      throw error
-    }
+      catch (error) {
+        for (const fn of cleanups) {
+          try {
+            fn()
+          }
+          catch {
+            /* ignore */
+          }
+        }
+        console.error(`[plugins] failed to activate ${plugin.manifest.id}`, error)
+        throw error
+      }
+      finally {
+        loading.delete(plugin.manifest.id)
+      }
+    })()
+
+    loading.set(plugin.manifest.id, loadPromise)
+    return loadPromise
   }
 
   async function unload(pluginId: string) {
@@ -174,7 +242,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     if (!entry) return
 
     try {
-      entry.deactivate?.()
+      await entry.deactivate?.()
     }
     catch (e) {
       console.error(`Plugin deactivate failed for ${pluginId}:`, e)
@@ -193,6 +261,9 @@ export const usePluginsStore = defineStore('plugins', () => {
     modals.value = modals.value.filter((m) => m.pluginId !== pluginId)
     sidebarButtons.value = sidebarButtons.value.filter((b) => b.pluginId !== pluginId)
     rightSidebarViews.value = rightSidebarViews.value.filter((v) => v.pluginId !== pluginId)
+    if (activeRightSidebarView.value && !rightSidebarViews.value.some((v) => v.fqid === activeRightSidebarView.value)) {
+      activeRightSidebarView.value = null
+    }
     settingsTabs.value = settingsTabs.value.filter((t) => t.pluginId !== pluginId)
     contentStructures.value = contentStructures.value.filter((s) => s.pluginId !== pluginId)
     commandPaletteItems.value = commandPaletteItems.value.filter((i) => i.pluginId !== pluginId)

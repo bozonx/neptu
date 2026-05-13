@@ -164,7 +164,11 @@ export function useBuiltinCommands() {
       },
       onRun: () => {
         const path = editor.currentFilePath
-        if (path) void editor.save(path)
+        if (path) {
+          editor.save(path).catch(() => {
+            // Error state and user-facing notification are handled by the editor store/layout watcher.
+          })
+        }
       },
     },
     {

@@ -99,6 +99,7 @@ export function useDailyNotes() {
     const author = await gitStore.resolveAuthor()
     if (!author) return
     const settings = useSettingsStore().settings
+    if (settings.defaultCommitMode !== 'auto') return
     const current = await git.status(mainRepoPath)
     const autoMessage = buildCommitMessage(settings.gitAutoMessageTemplate, current.changedFiles)
     await git.commitAll({

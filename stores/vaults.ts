@@ -330,8 +330,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     })
 
     if (vault.type === 'git') {
-      await git.commit(vault.id)
-      await git.refreshStatus(vault.id)
+      await git.commitIfAuto(vault.id)
     }
     if (favoritesChanged) await useSettingsStore().persist()
 
@@ -375,8 +374,7 @@ export const useVaultsStore = defineStore('vaults', () => {
       await refreshTree(vault)
       if (vault.type === 'git') {
         const git = useGitStore()
-        await git.commit(vault.id)
-        await git.refreshStatus(vault.id)
+        await git.commitIfAuto(vault.id)
       }
     }
 
@@ -421,8 +419,7 @@ export const useVaultsStore = defineStore('vaults', () => {
       await refreshTree(vault)
       if (vault.type === 'git') {
         const git = useGitStore()
-        await git.commit(vault.id)
-        await git.refreshStatus(vault.id)
+        await git.commitIfAuto(vault.id)
       }
     }
 

@@ -110,36 +110,19 @@ const vaultMenuItems = computed<DropdownMenuItem[][]>(() => {
 async function handleSync() {
   if (props.vault.type !== 'git') return
   try {
-    await git.commit(props.vault.id)
-  }
-  catch (error) {
-    toast.add({ title: t('toast.syncFailed'), description: String(error), color: 'error' })
-    return
-  }
-  try {
-    await useGit().pull(props.vault.path)
-  }
-  catch (error) {
-    toast.add({ title: t('toast.commitPullFailed'), description: String(error), color: 'error' })
-    await git.refreshStatus(props.vault.id)
-    return
-  }
-  try {
-    await useGit().push(props.vault.path)
+    await git.sync(props.vault.id)
     toast.add({ title: t('toast.syncCompleted'), color: 'success' })
   }
   catch (error) {
-    toast.add({ title: t('toast.commitPushFailed'), description: String(error), color: 'error' })
+    toast.add({ title: t('toast.syncFailed'), description: String(error), color: 'error' })
   }
-  await git.refreshStatus(props.vault.id)
 }
 
 async function handlePull() {
   if (props.vault.type !== 'git') return
   try {
-    const output = await useGit().pull(props.vault.path)
+    const output = await git.pull(props.vault.id)
     toast.add({ title: t('toast.pullCompleted'), description: output || undefined, color: 'success' })
-    await git.refreshStatus(props.vault.id)
   }
   catch (error) {
     toast.add({ title: t('toast.pullFailed'), description: String(error), color: 'error' })
@@ -149,9 +132,8 @@ async function handlePull() {
 async function handlePush() {
   if (props.vault.type !== 'git') return
   try {
-    const output = await useGit().push(props.vault.path)
+    const output = await git.push(props.vault.id)
     toast.add({ title: t('toast.pushCompleted'), description: output || undefined, color: 'success' })
-    await git.refreshStatus(props.vault.id)
   }
   catch (error) {
     toast.add({ title: t('toast.pushFailed'), description: String(error), color: 'error' })
@@ -162,7 +144,7 @@ const showCommit = computed(() => {
   if (props.vault.type !== 'git' || !props.vault.git) return false
   const dirty = git.status[props.vault.id]?.dirty ?? false
   const pending = git.pendingCommits[props.vault.id] ?? false
-  if (props.vault.git.commitMode === 'manual') return dirty
+  if (git.effectiveCommitMode(props.vault.id) === 'manual') return dirty
   return pending
 })
 
@@ -171,7 +153,7 @@ const committing = computed(() => git.commitStatus[props.vault.id] === 'committi
 async function handleVaultCommit() {
   if (props.vault.type !== 'git') return
   git.cancelCommit(props.vault.id)
-  const isManual = props.vault.git?.commitMode === 'manual'
+  const isManual = git.effectiveCommitMode(props.vault.id) === 'manual'
   const useAuto = settings.settings.gitAutoMessage ?? true
   let message: string | undefined
   if (isManual && !useAuto) {

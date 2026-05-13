@@ -156,7 +156,13 @@ export function useEditorBuffers() {
       setSaveStatus(path, 'saved')
       const vault = findVaultForPath(path)
       if (vault?.type === 'git') {
-        useGitStore().scheduleCommit(vault.id)
+        const git = useGitStore()
+        if (git.effectiveCommitMode(vault.id) === 'auto') {
+          git.scheduleCommit(vault.id)
+        }
+        else {
+          await git.refreshStatus(vault.id)
+        }
       }
       return false
     }
@@ -196,27 +202,31 @@ export function useEditorBuffers() {
 
   async function flushVault(vault: Vault) {
     const prefix = vault.path.replace(/[/\\]+$/, '') + '/'
+    let firstError: unknown = null
     for (const [path, buffer] of Object.entries(buffers.value)) {
       if (!buffer.isDirty) continue
       if (!path.startsWith(prefix)) continue
       try {
         await save(path)
       }
-      catch {
-        // Error already handled in save().
+      catch (error) {
+        firstError ??= error
       }
     }
+    if (firstError) throw firstError
   }
 
   async function flushAll() {
+    let firstError: unknown = null
     for (const path of Object.keys(buffers.value)) {
       try {
         await save(path)
       }
-      catch {
-        // Error already handled in save().
+      catch (error) {
+        firstError ??= error
       }
     }
+    if (firstError) throw firstError
   }
 
   function reset(path?: string) {

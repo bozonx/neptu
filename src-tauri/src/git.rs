@@ -285,17 +285,15 @@ fn git_pull_impl(repo: &Repository) -> GitResult<String> {
     match pull_action(current_oid, fetch_oid, merge_base)? {
         PullAction::AlreadyUpToDate => Ok("Already up to date".to_string()),
         PullAction::FastForward => {
+            let head_name = head.name().ok_or(GitError::InvalidBranchName)?.to_string();
             head.set_target(fetch_oid, "Fast-forward pull")?;
-            let object = repo.find_object(fetch_oid, Some(git2::ObjectType::Commit))?;
-            repo.checkout_tree(
-                &object,
-                Some(
-                    CheckoutBuilder::new()
-                        .safe()
-                        .remove_untracked(true)
-                        .remove_ignored(false),
-                ),
-            )?;
+            repo.set_head(&head_name)?;
+            repo.checkout_head(Some(
+                CheckoutBuilder::new()
+                    .force()
+                    .remove_untracked(true)
+                    .remove_ignored(false),
+            ))?;
             Ok("Pulled successfully".to_string())
         }
     }
@@ -516,6 +514,36 @@ mod tests {
     }
 
     #[test]
+    fn test_git_commit_all_stages_deletions() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+        Repository::init(&path).unwrap();
+        let note_path = temp.path().join("note.md");
+        fs::write(&note_path, "hello").unwrap();
+        git_commit_all(
+            path.clone(),
+            "Initial".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+
+        fs::remove_file(note_path).unwrap();
+        let result = git_commit_all(
+            path.clone(),
+            "Delete".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+
+        assert!(result.committed);
+        assert_eq!(result.changed_files, 1);
+        let status = git_status(path).unwrap();
+        assert!(!status.dirty);
+    }
+
+    #[test]
     fn test_git_commit_all_rejects_empty_author() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().to_string_lossy().to_string();
@@ -555,5 +583,67 @@ mod tests {
         fs::write(temp.path().join("note.md"), "world").unwrap();
         let diff = git_diff(path, None).unwrap();
         assert!(diff.contains("world"));
+    }
+
+    #[test]
+    fn test_git_pull_fast_forward_updates_worktree() {
+        let origin_dir = tempfile::tempdir().unwrap();
+        let origin_path = origin_dir.path().to_string_lossy().to_string();
+        Repository::init(&origin_path).unwrap();
+        fs::write(origin_dir.path().join("note.md"), "hello").unwrap();
+        git_commit_all(
+            origin_path.clone(),
+            "Initial".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+
+        let clone_dir = tempfile::tempdir().unwrap();
+        let clone_path = clone_dir.path().join("clone");
+        Repository::clone(&origin_path, &clone_path).unwrap();
+
+        fs::write(origin_dir.path().join("note.md"), "world").unwrap();
+        git_commit_all(
+            origin_path,
+            "Update".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+
+        let output = git_pull(clone_path.to_string_lossy().to_string()).unwrap();
+
+        assert_eq!(output, "Pulled successfully");
+        assert_eq!(
+            fs::read_to_string(clone_path.join("note.md")).unwrap(),
+            "world"
+        );
+        let status = git_status(clone_path.to_string_lossy().to_string()).unwrap();
+        assert!(!status.dirty);
+    }
+
+    #[test]
+    fn test_git_pull_rejects_dirty_worktree() {
+        let origin_dir = tempfile::tempdir().unwrap();
+        let origin_path = origin_dir.path().to_string_lossy().to_string();
+        Repository::init(&origin_path).unwrap();
+        fs::write(origin_dir.path().join("note.md"), "hello").unwrap();
+        git_commit_all(
+            origin_path.clone(),
+            "Initial".to_string(),
+            "Test".to_string(),
+            "test@example.com".to_string(),
+        )
+        .unwrap();
+
+        let clone_dir = tempfile::tempdir().unwrap();
+        let clone_path = clone_dir.path().join("clone");
+        Repository::clone(&origin_path, &clone_path).unwrap();
+        fs::write(clone_path.join("local.md"), "local").unwrap();
+
+        let err = git_pull(clone_path.to_string_lossy().to_string()).unwrap_err();
+
+        assert!(err.contains("uncommitted changes"));
     }
 }

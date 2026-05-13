@@ -59,12 +59,10 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
     const favoritesChanged = updateMovedFavorites(ctx.favorites, sourcePath, destPath, sourceInfo.isDirectory)
 
     if (sourceVault?.type === 'git') {
-      await git.commit(sourceVault.id)
-      await git.refreshStatus(sourceVault.id)
+      await git.commitIfAuto(sourceVault.id)
     }
     if (targetVault?.type === 'git' && targetVault.id !== sourceVault?.id) {
-      await git.commit(targetVault.id)
-      await git.refreshStatus(targetVault.id)
+      await git.commitIfAuto(targetVault.id)
     }
     if (favoritesChanged) await useSettingsStore().persist()
   }
@@ -100,8 +98,7 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
     if (targetVault) {
       await ctx.refreshTree(targetVault)
       if (targetVault.type === 'git') {
-        await git.commit(targetVault.id)
-        await git.refreshStatus(targetVault.id)
+        await git.commitIfAuto(targetVault.id)
       }
     }
   }
@@ -137,8 +134,7 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
     const favoritesChanged = updateMovedFavorites(ctx.favorites, sourcePath, destPath, sourceInfo.isDirectory)
 
     if (vault.type === 'git') {
-      await git.commit(vault.id)
-      await git.refreshStatus(vault.id)
+      await git.commitIfAuto(vault.id)
     }
     if (favoritesChanged) await useSettingsStore().persist()
   }
@@ -195,8 +191,7 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
       await ctx.refreshTree(vault)
       if (vault.type === 'git') {
         const git = useGitStore()
-        await git.commit(vault.id)
-        await git.refreshStatus(vault.id)
+        await git.commitIfAuto(vault.id)
       }
     }
 

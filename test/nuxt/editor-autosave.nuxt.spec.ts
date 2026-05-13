@@ -22,6 +22,10 @@ mockNuxtImport('useGit', () => {
   return () => gitMock
 })
 
+mockNuxtImport('useI18n', () => {
+  return () => ({ t: (key: string) => key })
+})
+
 function deferred() {
   let resolve!: () => void
   let reject!: (error: unknown) => void
@@ -51,8 +55,7 @@ function makeBuffer(content = ''): EditorBuffer {
 
 function installVault(vault: Vault) {
   const vaults = useVaultsStore()
-  vaults.list = [vault]
-  return vault
+  vaults.list.splice(0, vaults.list.length, vault)
 }
 
 describe('editor autosave', () => {
@@ -67,7 +70,8 @@ describe('editor autosave', () => {
 
   it('keeps dirty and writes a second snapshot when content changes during an in-flight save', async () => {
     const path = '/vault/note.md'
-    installVault({ id: 'v1', name: 'Vault', type: 'local', path: '/vault' })
+    const vault = { id: 'v1', name: 'Vault', type: 'local', path: '/vault' } satisfies Vault
+    installVault(vault)
     const editor = useEditorStore()
     editor.buffers[path] = makeBuffer('initial')
 
@@ -95,7 +99,8 @@ describe('editor autosave', () => {
 
   it('serializes overlapping save calls for the same file', async () => {
     const path = '/vault/note.md'
-    installVault({ id: 'v1', name: 'Vault', type: 'local', path: '/vault' })
+    const vault = { id: 'v1', name: 'Vault', type: 'local', path: '/vault' } satisfies Vault
+    installVault(vault)
     const editor = useEditorStore()
     editor.buffers[path] = makeBuffer('initial')
 
@@ -125,13 +130,14 @@ describe('editor autosave', () => {
 
   it('flushes dirty editor buffers before committing a git vault', async () => {
     const path = '/repo/note.md'
-    const vault = installVault({
+    const vault = {
       id: 'git-vault',
       name: 'Repo',
       type: 'git',
       path: '/repo',
       git: { commitMode: 'auto' },
-    })
+    } satisfies Vault
+    installVault(vault)
     const settings = useSettingsStore()
     settings.settings.gitAuthorName = 'Test User'
     settings.settings.gitAuthorEmail = 'test@example.com'
@@ -149,5 +155,31 @@ describe('editor autosave', () => {
       authorEmail: 'test@example.com',
     }))
     expect(editor.buffers[path]?.isDirty).toBe(false)
+  })
+
+  it('does not commit when the pre-commit editor flush fails', async () => {
+    const path = '/repo/note.md'
+    const vault = {
+      id: 'git-vault',
+      name: 'Repo',
+      type: 'git',
+      path: '/repo',
+      git: { commitMode: 'auto' },
+    } satisfies Vault
+    installVault(vault)
+    const settings = useSettingsStore()
+    settings.settings.gitAuthorName = 'Test User'
+    settings.settings.gitAuthorEmail = 'test@example.com'
+
+    const editor = useEditorStore()
+    editor.buffers[path] = makeBuffer('initial')
+    editor.setContent(path, 'dirty before commit')
+    fsMock.writeText.mockRejectedValueOnce(new Error('disk full'))
+
+    await expect(useGitStore().commit(vault.id)).rejects.toThrow('disk full')
+
+    expect(gitMock.commitAll).not.toHaveBeenCalled()
+    expect(editor.buffers[path]?.isDirty).toBe(true)
+    expect(editor.buffers[path]?.saveStatus).toBe('error')
   })
 })

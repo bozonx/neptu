@@ -151,6 +151,15 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     }
     settings.value = { ...settings.value, ...patch }
+    if (patch.defaultCommitMode === 'manual') {
+      const vaults = useVaultsStore()
+      const git = useGitStore()
+      for (const vault of vaults.list) {
+        if (vault.type === 'git' && (vault.git?.commitMode ?? 'respect_config') === 'respect_config') {
+          git.cancelCommit(vault.id)
+        }
+      }
+    }
     await persist()
   }
 
