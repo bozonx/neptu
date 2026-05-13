@@ -1,4 +1,8 @@
-import type { FileFilterSettings, ImageFormat, AutoConvertSettings } from './index'
+import type {
+  FileFilterSettings,
+  ImageFormat,
+  AutoConvertSettings,
+} from './index'
 
 export type { AutoConvertSettings }
 export type { ImageFormat }
@@ -6,22 +10,6 @@ export type { ImageFormat }
 export type UploadMode = 'adjacent' | 'adjacent-folder' | 'global-folder'
 
 export type MediaNamingMode = 'original' | 'document-index' | 'hash'
-
-export interface CompressionSettings {
-  enabled: boolean
-  /** Max dimension for the larger side (width or height) */
-  maxDimension?: number
-  /** Quality 0.0 - 1.0 */
-  quality?: number
-  format?: ImageFormat
-}
-
-export interface MediaSettings {
-  uploadMode: UploadMode
-  /** Relative path inside vault when uploadMode is 'global-folder' */
-  globalFolder?: string
-  compression?: CompressionSettings
-}
 
 export interface MediaDirSettings {
   mode: UploadMode
@@ -133,7 +121,6 @@ export interface VaultConfig {
   /** Relative folder inside the vault treated as content root (e.g. "src") */
   contentRoot?: string
   mediaDir?: MediaDirSettings
-  media?: MediaSettings
   autoConvert?: AutoConvertSettings
   schemas?: Schema[]
   filters?: FileFilterSettings
@@ -192,24 +179,112 @@ export const BLOG_VAULT_CONFIG: VaultConfig = {
       glob: 'src/post/**/*.md',
       fields: [
         { key: 'title', type: 'text', label: 'Title', required: true },
-        { key: 'date', type: 'datetime', label: 'Publication date', required: true },
-        { key: 'description', type: 'textarea', label: 'Description', required: false },
-        { key: 'previewText', type: 'textarea', label: 'Replace text for preview', required: false },
-        { key: 'descrAsPreview', type: 'checkbox', label: 'Use description as a preview', default: true },
-        { key: 'canonical', type: 'text', label: 'Canonical URL', default: 'self', required: false },
-        { key: 'jsonLd', type: 'textarea', label: 'JSON-LD in YAML format', required: false },
+        {
+          key: 'date',
+          type: 'datetime',
+          label: 'Publication date',
+          required: true,
+        },
+        {
+          key: 'description',
+          type: 'textarea',
+          label: 'Description',
+          required: false,
+        },
+        {
+          key: 'previewText',
+          type: 'textarea',
+          label: 'Replace text for preview',
+          required: false,
+        },
+        {
+          key: 'descrAsPreview',
+          type: 'checkbox',
+          label: 'Use description as a preview',
+          default: true,
+        },
+        {
+          key: 'canonical',
+          type: 'text',
+          label: 'Canonical URL',
+          default: 'self',
+          required: false,
+        },
+        {
+          key: 'jsonLd',
+          type: 'textarea',
+          label: 'JSON-LD in YAML format',
+          required: false,
+        },
         { key: 'cover', type: 'image', label: 'Cover', required: false },
-        { key: 'coverDescr', type: 'text', label: 'Cover description', required: false },
-        { key: 'coverAlt', type: 'text', label: 'Cover alt text', required: false },
-        { key: 'commentUrl', type: 'text', label: 'Comment URL', required: false },
-        { key: 'authorId', type: 'select', label: 'Author', required: false, options: [{ label: 'Ivan K', value: 'ivan-k' }] },
+        {
+          key: 'coverDescr',
+          type: 'text',
+          label: 'Cover description',
+          required: false,
+        },
+        {
+          key: 'coverAlt',
+          type: 'text',
+          label: 'Cover alt text',
+          required: false,
+        },
+        {
+          key: 'commentUrl',
+          type: 'text',
+          label: 'Comment URL',
+          required: false,
+        },
+        {
+          key: 'authorId',
+          type: 'select',
+          label: 'Author',
+          required: false,
+          options: [{ label: 'Ivan K', value: 'ivan-k' }],
+        },
         { key: 'videoLink', type: 'text', label: 'Video URL', required: false },
-        { key: 'videoLinkLang', type: 'select', label: 'Video language', default: '', required: false, options: [{ label: 'Default', value: '' }, { label: 'Russian', value: 'RU' }, { label: 'English', value: 'EN' }] },
-        { key: 'podcastCastbox', type: 'text', label: 'Podcast Castbox', required: false },
-        { key: 'podcastSoundstream', type: 'text', label: 'Podcast Soundstream', required: false },
-        { key: 'podcastSpotify', type: 'text', label: 'Podcast Spotify', required: false },
-        { key: 'podcastVk', type: 'text', label: 'Podcast VK', required: false },
-        { key: 'podcastYandexmusic', type: 'text', label: 'Podcast Yandex Music', required: false },
+        {
+          key: 'videoLinkLang',
+          type: 'select',
+          label: 'Video language',
+          default: '',
+          required: false,
+          options: [
+            { label: 'Default', value: '' },
+            { label: 'Russian', value: 'RU' },
+            { label: 'English', value: 'EN' },
+          ],
+        },
+        {
+          key: 'podcastCastbox',
+          type: 'text',
+          label: 'Podcast Castbox',
+          required: false,
+        },
+        {
+          key: 'podcastSoundstream',
+          type: 'text',
+          label: 'Podcast Soundstream',
+          required: false,
+        },
+        {
+          key: 'podcastSpotify',
+          type: 'text',
+          label: 'Podcast Spotify',
+          required: false,
+        },
+        {
+          key: 'podcastVk',
+          type: 'text',
+          label: 'Podcast VK',
+          required: false,
+        },
+        {
+          key: 'podcastYandexmusic',
+          type: 'text',
+          label: 'Podcast Yandex Music',
+          required: false,
+        },
         { key: 'tags', type: 'text', label: 'Tags', required: false },
       ],
     },
@@ -221,17 +296,20 @@ export function isValidVaultConfig(obj: unknown): obj is VaultConfig {
   if (!obj || typeof obj !== 'object') return false
   const o = obj as Record<string, unknown>
   if (typeof o.version !== 'number') return false
-  if (o.contentRoot !== undefined && typeof o.contentRoot !== 'string') return false
-  if (o.mediaDir !== undefined && !isValidMediaDirSettings(o.mediaDir)) return false
-  if (o.media !== undefined && !isValidMediaSettings(o.media)) return false
-  if (o.autoConvert !== undefined && !isValidAutoConvertSettings(o.autoConvert)) return false
+  if (o.contentRoot !== undefined && typeof o.contentRoot !== 'string')
+    return false
+  if (o.mediaDir !== undefined && !isValidMediaDirSettings(o.mediaDir))
+    return false
+  if (o.autoConvert !== undefined && !isValidAutoConvertSettings(o.autoConvert))
+    return false
   if (o.schemas !== undefined && !Array.isArray(o.schemas)) return false
   if (Array.isArray(o.schemas)) {
     for (const s of o.schemas) {
       if (!isValidSchema(s)) return false
     }
   }
-  if (o.filters !== undefined && !isValidFileFilterSettings(o.filters)) return false
+  if (o.filters !== undefined && !isValidFileFilterSettings(o.filters))
+    return false
   if (o.excludes !== undefined && !isValidExcludes(o.excludes)) return false
   return true
 }
@@ -239,9 +317,13 @@ export function isValidVaultConfig(obj: unknown): obj is VaultConfig {
 function isValidMediaDirSettings(obj: unknown): boolean {
   if (!obj || typeof obj !== 'object') return false
   const o = obj as Record<string, unknown>
-  if (!['adjacent', 'adjacent-folder', 'global-folder'].includes(o.mode as string)) return false
+  if (
+    !['adjacent', 'adjacent-folder', 'global-folder'].includes(o.mode as string)
+  )
+    return false
   if (o.folder !== undefined && typeof o.folder !== 'string') return false
-  if (!['original', 'document-index', 'hash'].includes(o.naming as string)) return false
+  if (!['original', 'document-index', 'hash'].includes(o.naming as string))
+    return false
   return true
 }
 
@@ -274,33 +356,16 @@ function isValidExcludes(obj: unknown): boolean {
   return true
 }
 
-function isValidMediaSettings(obj: unknown): boolean {
-  if (!obj || typeof obj !== 'object') return false
-  const o = obj as Record<string, unknown>
-  if (!['adjacent', 'adjacent-folder', 'global-folder'].includes(o.uploadMode as string)) return false
-  if (o.globalFolder !== undefined && typeof o.globalFolder !== 'string') return false
-  if (o.compression !== undefined && !isValidCompressionSettings(o.compression)) return false
-  return true
-}
-
-function isValidCompressionSettings(obj: unknown): boolean {
-  if (!obj || typeof obj !== 'object') return false
-  const o = obj as Record<string, unknown>
-  if (typeof o.enabled !== 'boolean') return false
-  if (o.maxDimension !== undefined && typeof o.maxDimension !== 'number') return false
-  if (o.quality !== undefined && typeof o.quality !== 'number') return false
-  if (o.format !== undefined && typeof o.format !== 'string') return false
-  return true
-}
-
 function isValidAutoConvertSettings(obj: unknown): boolean {
   if (!obj || typeof obj !== 'object') return false
   const o = obj as Record<string, unknown>
   if (typeof o.enabled !== 'boolean') return false
   if (!['webp', 'jpeg', 'png'].includes(o.format as string)) return false
   if (o.quality !== undefined && typeof o.quality !== 'number') return false
-  if (o.maxDimension !== undefined && typeof o.maxDimension !== 'number') return false
-  if (o.backgroundColor !== undefined && typeof o.backgroundColor !== 'string') return false
+  if (o.maxDimension !== undefined && typeof o.maxDimension !== 'number')
+    return false
+  if (o.backgroundColor !== undefined && typeof o.backgroundColor !== 'string')
+    return false
   if (typeof o.preserveTransparency !== 'boolean') return false
   return true
 }
@@ -323,8 +388,17 @@ function isValidField(obj: unknown): boolean {
   if (typeof o.label !== 'string') return false
   const type = o.type as string
   const validTypes = [
-    'text', 'textarea', 'number', 'select', 'multi-select',
-    'checkbox', 'radio', 'image', 'file', 'date', 'datetime',
+    'text',
+    'textarea',
+    'number',
+    'select',
+    'multi-select',
+    'checkbox',
+    'radio',
+    'image',
+    'file',
+    'date',
+    'datetime',
   ]
   if (!validTypes.includes(type)) return false
   return true

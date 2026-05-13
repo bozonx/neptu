@@ -116,15 +116,16 @@ export function filterSuggestions(
  * the cursor up to `maxChars`. Skips non-text inline atoms (e.g. existing
  * wikilinks) so only raw typed text is considered.
  */
-function collectTextBeforeEditor(editor: Editor, maxChars = 500): { text: string, positions: number[] } {
+function collectTextBeforeEditor(editor: Editor): { text: string, positions: number[] } {
   const { from } = editor.state.selection
+  const $from = editor.state.doc.resolve(from)
+  const blockStart = $from.start()
   const text: string[] = []
   const positions: number[] = []
-  const startPos = Math.max(0, from - maxChars * 2)
 
-  editor.state.doc.nodesBetween(startPos, from, (node, pos) => {
+  editor.state.doc.nodesBetween(blockStart, from, (node, pos) => {
     if (node.isText && node.text) {
-      const sliceStart = Math.max(pos, startPos)
+      const sliceStart = Math.max(pos, blockStart)
       const sliceEnd = Math.min(pos + node.text.length, from)
       const slice = node.text.slice(sliceStart - pos, sliceEnd - pos)
       for (let i = 0; i < slice.length; i++) {
@@ -147,7 +148,7 @@ function collectTextBeforeEditor(editor: Editor, maxChars = 500): { text: string
  */
 export function findEditorLinkContext(editor: Editor): LinkSuggestionContext | null {
   const { from } = editor.state.selection
-  const { text, positions } = collectTextBeforeEditor(editor, from)
+  const { text, positions } = collectTextBeforeEditor(editor)
 
   const wikiMatch = text.match(/\[\[([^[\]\n]*)$/)
   if (wikiMatch) {

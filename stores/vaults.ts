@@ -5,6 +5,7 @@ import {
   fileExt,
   fileStem,
   relativePath,
+  stripLeadingDot,
 } from '~/utils/paths'
 import {
   DEFAULT_FILE_FILTERS,
@@ -395,9 +396,11 @@ export const useVaultsStore = defineStore('vaults', () => {
       const item = items[i]!
       try {
         const fallbackExt = extFromMime(item.type ?? '') || '.png'
-        const sourceName = fileExt(item.name)
-          ? item.name
-          : `${fileStem(item.name || 'clipboard-image')}${fallbackExt}`
+        const sourceName = stripLeadingDot(
+          fileExt(item.name)
+            ? item.name
+            : `${fileStem(item.name || 'clipboard-image')}${fallbackExt}`,
+        )
         const decision = await resolveConflictPolicy(
           vault,
           documentPath,
@@ -457,7 +460,7 @@ export const useVaultsStore = defineStore('vaults', () => {
         const decision = await resolveConflictPolicy(
           vault,
           documentPath,
-          basename(sourcePath),
+          stripLeadingDot(basename(sourcePath)),
           i,
           sourceBytes,
           getEffectiveMediaDir(vault),

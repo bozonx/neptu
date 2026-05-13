@@ -14,6 +14,10 @@ export function stripTrailingSlash(path: string): string {
   return path.replace(/[/\\]+$/, '')
 }
 
+export function stripLeadingDot(name: string): string {
+  return name.replace(/^\.+/, '')
+}
+
 export function isAbsolutePath(path: string): boolean {
   return path.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(path)
 }
@@ -33,7 +37,10 @@ export function makePathAbsoluteFromRoot(path: string, root: string): string {
 }
 
 export function relativePath(fromDir: string, toPath: string): string {
-  const from = stripTrailingSlash(fromDir).replace(/\\/g, '/').split('/').filter(Boolean)
+  const from = stripTrailingSlash(fromDir)
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter(Boolean)
   const to = toPath.replace(/\\/g, '/').split('/').filter(Boolean)
   while (from.length && to.length && from[0] === to[0]) {
     from.shift()
@@ -50,7 +57,11 @@ export function fileExt(name: string): string {
 }
 
 export function normalizeRelativePath(path: string): string {
-  return path.trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
+  return path
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '')
 }
 
 /**
@@ -62,19 +73,36 @@ export function fileStem(name: string): string {
   return lastDot > 0 ? name.slice(0, lastDot) : name
 }
 
-export function replacePathPrefix(path: string, oldPrefix: string, newPrefix: string): string {
+export function replacePathPrefix(
+  path: string,
+  oldPrefix: string,
+  newPrefix: string,
+): string {
   if (path === oldPrefix) return newPrefix
 
-  const sep = oldPrefix.endsWith('/') || oldPrefix.endsWith('\\') ? oldPrefix : `${oldPrefix}/`
+  const sep
+    = oldPrefix.endsWith('/') || oldPrefix.endsWith('\\')
+      ? oldPrefix
+      : `${oldPrefix}/`
   if (!path.startsWith(sep)) return path
 
-  const targetBase = newPrefix.endsWith('/') || newPrefix.endsWith('\\') ? newPrefix.slice(0, -1) : newPrefix
+  const targetBase
+    = newPrefix.endsWith('/') || newPrefix.endsWith('\\')
+      ? newPrefix.slice(0, -1)
+      : newPrefix
   return `${targetBase}/${path.slice(sep.length)}`
 }
 
-export function resolveAbsolutePath(documentPath: string, relOrAbs: string): string | null {
+export function resolveAbsolutePath(
+  documentPath: string,
+  relOrAbs: string,
+): string | null {
   if (!relOrAbs) return null
-  if (/^[a-z]+:\/\//i.test(relOrAbs) || relOrAbs.startsWith('data:') || relOrAbs.startsWith('blob:')) {
+  if (
+    /^[a-z]+:\/\//i.test(relOrAbs)
+    || relOrAbs.startsWith('data:')
+    || relOrAbs.startsWith('blob:')
+  ) {
     return null
   }
   if (relOrAbs.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(relOrAbs)) {

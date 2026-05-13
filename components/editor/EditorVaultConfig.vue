@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import EditorCode from './EditorCode.vue'
-import { DEFAULT_AUTO_CONVERT_SETTINGS, type VaultConfig } from '~/types/vault-config'
+import {
+  DEFAULT_AUTO_CONVERT_SETTINGS,
+  type VaultConfig,
+} from '~/types/vault-config'
 import { normalizeRelativePath } from '~/utils/paths'
 import SchemasSection from '~/components/vault-config/SchemasSection.vue'
 import FiltersSection from '~/components/vault-config/FiltersSection.vue'
@@ -42,14 +45,16 @@ function migrateKebabKeys(raw: Record<string, unknown>): void {
     delete raw['media-dir']
   }
   if (raw['auto-convert'] !== undefined) {
-    if (raw.autoConvert === undefined) raw.autoConvert = raw['auto-convert']
+    if (raw.autoConvert === undefined)
+      raw.autoConvert = raw['auto-convert']
     delete raw['auto-convert']
   }
 }
 
 /** Strip empty optional collections so the YAML stays clean. */
 function sanitize(cfg: VaultConfig): VaultConfig {
-  if (cfg.contentRoot) cfg.contentRoot = normalizeRelativePath(cfg.contentRoot)
+  if (cfg.contentRoot)
+    cfg.contentRoot = normalizeRelativePath(cfg.contentRoot)
   if (cfg.schemas && cfg.schemas.length === 0) delete cfg.schemas
   if (cfg.excludes && cfg.excludes.length === 0) delete cfg.excludes
   if (cfg.filters && cfg.filters.groups.length === 0) delete cfg.filters
@@ -59,20 +64,14 @@ function sanitize(cfg: VaultConfig): VaultConfig {
 async function loadConfig() {
   loading.value = true
   try {
-    const rawConfig = (await fs.readYaml<VaultConfig>(props.filePath)) || { version: 1 }
+    const rawConfig = (await fs.readYaml<VaultConfig>(props.filePath)) || {
+      version: 1,
+    }
     migrateKebabKeys(rawConfig as unknown as Record<string, unknown>)
 
     if (!rawConfig.version) {
       rawConfig.version = 1
     }
-    if (!rawConfig.mediaDir && rawConfig.media) {
-      rawConfig.mediaDir = {
-        mode: rawConfig.media.uploadMode,
-        folder: rawConfig.media.globalFolder,
-        naming: 'original',
-      }
-    }
-    delete rawConfig.media
     if (!rawConfig.mediaDir) {
       rawConfig.mediaDir = {
         mode: 'adjacent-folder',
@@ -86,10 +85,16 @@ async function loadConfig() {
 
     config.value = rawConfig
     // Snapshot AFTER mutations so the watcher does not auto-save on open.
-    lastSavedJson = JSON.stringify(sanitize(structuredClone(toRaw(rawConfig))))
+    lastSavedJson = JSON.stringify(
+      sanitize(structuredClone(toRaw(rawConfig))),
+    )
   }
   catch (error) {
-    toast.add({ title: t('vault.loadConfigFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('vault.loadConfigFailed'),
+      description: String(error),
+      color: 'error',
+    })
     config.value = {
       version: 1,
       mediaDir: {
@@ -127,7 +132,11 @@ async function saveConfig(): Promise<void> {
   }
   catch (error) {
     saveStatus.value = 'error'
-    toast.add({ title: t('vault.saveConfigFailed'), description: String(error), color: 'error' })
+    toast.add({
+      title: t('vault.saveConfigFailed'),
+      description: String(error),
+      color: 'error',
+    })
   }
 }
 
@@ -148,11 +157,15 @@ async function flushSave() {
   if (pendingSave) await saveConfig()
 }
 
-watch(config, () => {
-  if (!loading.value) {
-    scheduleSave()
-  }
-}, { deep: true })
+watch(
+  config,
+  () => {
+    if (!loading.value) {
+      scheduleSave()
+    }
+  },
+  { deep: true },
+)
 
 async function switchTo(next: 'ui' | 'text') {
   if (mode.value === next) return
@@ -209,7 +222,10 @@ function setAutoConvertEnabled(enabled: boolean | 'indeterminate') {
 }
 
 function addExclude() {
-  const raw = newExclude.value.trim().replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
+  const raw = newExclude.value
+    .trim()
+    .replace(/^[\\/]+/, '')
+    .replace(/[\\/]+$/, '')
   if (!raw) return
   if (!config.value) return
   if (!config.value.excludes) config.value.excludes = []
@@ -231,41 +247,53 @@ function removeExclude(idx: number) {
 <template>
   <div class="flex-1 overflow-hidden flex flex-col min-h-0 bg-default">
     <!-- Header with Toggle -->
-    <div class="shrink-0 h-12 border-b border-default px-4 flex items-center justify-between">
+    <div
+      class="shrink-0 h-12 border-b border-default px-4 flex items-center justify-between"
+    >
       <div class="font-medium text-sm flex items-center gap-2">
         <UIcon
           name="i-lucide-settings"
           class="size-4 text-muted"
         />
-        {{ vaultName }} — {{ t('vault.configuration') }}
+        {{ vaultName }} — {{ t("vault.configuration") }}
         <span
           v-if="saveStatus === 'saving'"
           class="text-xs text-muted ml-2"
-        >{{ t('vault.saving') }}</span>
+        >{{ t("vault.saving") }}</span>
         <span
           v-else-if="saveStatus === 'saved'"
           class="text-xs text-success ml-2"
-        >{{ t('vault.saved') }}</span>
+        >{{ t("vault.saved") }}</span>
         <span
           v-else-if="saveStatus === 'error'"
           class="text-xs text-error ml-2"
-        >{{ t('vault.saveConfigFailed') }}</span>
+        >{{ t("vault.saveConfigFailed") }}</span>
       </div>
 
-      <div class="flex items-center gap-1 bg-elevated/50 p-1 rounded-md border border-default">
+      <div
+        class="flex items-center gap-1 bg-elevated/50 p-1 rounded-md border border-default"
+      >
         <button
           class="px-3 py-1 text-xs font-medium rounded transition-colors"
-          :class="mode === 'ui' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted hover:text-default'"
+          :class="
+            mode === 'ui'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'text-muted hover:text-default'
+          "
           @click="switchTo('ui')"
         >
-          {{ t('vault.visualEditor') }}
+          {{ t("vault.visualEditor") }}
         </button>
         <button
           class="px-3 py-1 text-xs font-medium rounded transition-colors"
-          :class="mode === 'text' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted hover:text-default'"
+          :class="
+            mode === 'text'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'text-muted hover:text-default'
+          "
           @click="switchTo('text')"
         >
-          {{ t('vault.textEditor') }}
+          {{ t("vault.textEditor") }}
         </button>
       </div>
     </div>
@@ -290,13 +318,15 @@ function removeExclude(idx: number) {
       >
         <div>
           <h2 class="text-xl font-semibold mb-1">
-            {{ t('vault.configuration') }}
+            {{ t("vault.configuration") }}
           </h2>
           <p class="text-sm text-muted mb-6">
-            {{ t('vault.configSubtitle') }}
+            {{ t("vault.configSubtitle") }}
           </p>
 
-          <div class="space-y-6 bg-elevated/30 border border-default rounded-lg p-6">
+          <div
+            class="space-y-6 bg-elevated/30 border border-default rounded-lg p-6"
+          >
             <UFormField
               :label="$t('vault.contentFolder')"
               :hint="$t('vault.contentFolderHint')"
@@ -310,8 +340,10 @@ function removeExclude(idx: number) {
             <USeparator />
 
             <div class="space-y-4">
-              <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-                {{ $t('vault.mediaDir') }}
+              <h3
+                class="text-sm font-semibold text-muted uppercase tracking-wide"
+              >
+                {{ $t("vault.mediaDir") }}
               </h3>
               <UFormField :label="$t('vault.mediaMode')">
                 <ButtonGroupToggle
@@ -322,7 +354,11 @@ function removeExclude(idx: number) {
               <UFormField
                 v-if="config.mediaDir!.mode !== 'adjacent'"
                 :label="$t('vault.mediaFolder')"
-                :hint="config.mediaDir!.mode === 'global-folder' ? $t('vault.mediaGlobalFolderHint') : $t('vault.mediaAdjacentFolderHint')"
+                :hint="
+                  config.mediaDir!.mode === 'global-folder'
+                    ? $t('vault.mediaGlobalFolderHint')
+                    : $t('vault.mediaAdjacentFolderHint')
+                "
               >
                 <UInput v-model="config.mediaDir!.folder" />
               </UFormField>
@@ -337,11 +373,15 @@ function removeExclude(idx: number) {
             <USeparator />
 
             <div class="space-y-4">
-              <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-                {{ $t('vault.autoConvert') }}
+              <h3
+                class="text-sm font-semibold text-muted uppercase tracking-wide"
+              >
+                {{ $t("vault.autoConvert") }}
               </h3>
               <UCheckbox
-                :model-value="config.autoConvert?.enabled ?? false"
+                :model-value="
+                  config.autoConvert?.enabled ?? false
+                "
                 :label="$t('vault.autoConvertEnabled')"
                 @update:model-value="setAutoConvertEnabled"
               />
@@ -364,29 +404,54 @@ function removeExclude(idx: number) {
                       :step="0.05"
                       class="flex-1"
                     />
-                    <span class="text-sm text-muted w-12 text-right">
-                      {{ Math.round((config.autoConvert.quality ?? 0.85) * 100) }}%
+                    <span
+                      class="text-sm text-muted w-12 text-right"
+                    >
+                      {{
+                        Math.round(
+                          (config.autoConvert
+                            .quality ?? 0.85) * 100,
+                        )
+                      }}%
                     </span>
                   </div>
                 </UFormField>
-                <UFormField :label="$t('convertImage.maxDimension')">
+                <UFormField
+                  :label="$t('convertImage.maxDimension')"
+                >
                   <UInput
-                    v-model.number="config.autoConvert.maxDimension"
+                    v-model.number="
+                      config.autoConvert.maxDimension
+                    "
                     type="number"
                     :min="1"
-                    :placeholder="$t('convertImage.maxDimensionPlaceholder')"
+                    :placeholder="
+                      $t(
+                        'convertImage.maxDimensionPlaceholder',
+                      )
+                    "
                   />
                 </UFormField>
                 <UCheckbox
-                  v-model="config.autoConvert.preserveTransparency"
-                  :label="$t('convertImage.preserveTransparency')"
+                  v-model="
+                    config.autoConvert.preserveTransparency
+                  "
+                  :label="
+                    $t('convertImage.preserveTransparency')
+                  "
                 />
                 <UFormField
-                  v-if="!config.autoConvert.preserveTransparency || config.autoConvert.format === 'jpeg'"
+                  v-if="
+                    !config.autoConvert
+                      .preserveTransparency
+                      || config.autoConvert.format === 'jpeg'
+                  "
                   :label="$t('convertImage.backgroundColor')"
                 >
                   <UInput
-                    v-model="config.autoConvert.backgroundColor"
+                    v-model="
+                      config.autoConvert.backgroundColor
+                    "
                     type="text"
                     placeholder="#ffffff"
                   />
@@ -405,16 +470,20 @@ function removeExclude(idx: number) {
             <USeparator />
 
             <div class="space-y-4">
-              <h3 class="text-sm font-semibold text-muted uppercase tracking-wide">
-                {{ $t('vault.excludes') }}
+              <h3
+                class="text-sm font-semibold text-muted uppercase tracking-wide"
+              >
+                {{ $t("vault.excludes") }}
               </h3>
               <p class="text-xs text-muted">
-                {{ $t('vault.excludesHint') }}
+                {{ $t("vault.excludesHint") }}
               </p>
               <div class="flex items-center gap-2">
                 <UInput
                   v-model="newExclude"
-                  :placeholder="$t('vault.excludePlaceholder')"
+                  :placeholder="
+                    $t('vault.excludePlaceholder')
+                  "
                   class="flex-1"
                   @keydown.enter="addExclude"
                 />
@@ -426,7 +495,10 @@ function removeExclude(idx: number) {
                 />
               </div>
               <div
-                v-if="config.excludes && config.excludes.length > 0"
+                v-if="
+                  config.excludes
+                    && config.excludes.length > 0
+                "
                 class="space-y-1 mt-2"
               >
                 <div
@@ -434,7 +506,9 @@ function removeExclude(idx: number) {
                   :key="idx"
                   class="flex items-center justify-between rounded-md bg-neutral-100 dark:bg-neutral-800 px-3 py-1.5 text-sm"
                 >
-                  <span class="font-mono text-xs">{{ item }}</span>
+                  <span class="font-mono text-xs">{{
+                    item
+                  }}</span>
                   <UButton
                     icon="i-lucide-x"
                     size="xs"

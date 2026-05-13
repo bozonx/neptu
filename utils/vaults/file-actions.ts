@@ -7,6 +7,7 @@ import {
   fileExt,
   fileStem,
   replacePathPrefix,
+  stripLeadingDot,
 } from '~/utils/paths'
 import { applyAutoConvert, getVisibleImportIssue } from '~/utils/vaults/media'
 
@@ -186,7 +187,7 @@ export function createVaultFileActions(ctx: VaultFileActionsContext) {
 
     for (const sourcePath of paths) {
       try {
-        const name = basename(sourcePath)
+        const name = stripLeadingDot(basename(sourcePath))
         const destPath = await fs.join(targetDir, name)
         let importedPath = destPath
 

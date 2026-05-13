@@ -319,12 +319,13 @@ function closeLinkSuggestions() {
 
 function checkEditorLinkSuggestions() {
   const e = editor.value
-  if (!e || isSourceMode.value || !e.isFocused) {
+  if (!e || isSourceMode.value) {
     closeLinkSuggestions()
     return
   }
 
   const ctx = findEditorLinkContext(e)
+  console.log('[link-suggestions] context:', ctx)
   if (!ctx) {
     closeLinkSuggestions()
     return
@@ -332,11 +333,13 @@ function checkEditorLinkSuggestions() {
 
   const searchQuery = ctx.query.replace(/[|#].*$/, '').trim()
   const { items } = listSuggestionFiles(props.filePath)
+  console.log('[link-suggestions] items:', items.length, 'query:', searchQuery)
   const filtered = filterSuggestions(items, searchQuery, {
     documentPath: props.filePath,
     mode: ctx.mode,
     limit: 20,
   })
+  console.log('[link-suggestions] filtered:', filtered.length)
 
   if (filtered.length === 0 && !searchQuery) {
     closeLinkSuggestions()
@@ -345,9 +348,16 @@ function checkEditorLinkSuggestions() {
 
   linkSuggestionContext.value = ctx
   linkSuggestionItems.value = filtered
-  const coords = e.view.coordsAtPos(e.state.selection.from)
-  linkSuggestionPosition.value = { left: coords.left, top: coords.bottom }
-  linkSuggestionsOpen.value = true
+
+  try {
+    const coords = e.view.coordsAtPos(e.state.selection.from)
+    linkSuggestionPosition.value = { left: coords.left, top: coords.bottom }
+    linkSuggestionsOpen.value = true
+    console.log('[link-suggestions] opened at', coords.left, coords.bottom)
+  }
+  catch {
+    closeLinkSuggestions()
+  }
 }
 
 function checkSourceLinkSuggestions() {
@@ -359,6 +369,7 @@ function checkSourceLinkSuggestions() {
 
   const cursorPos = textarea.selectionStart
   const ctx = findLinkContextInText(textarea.value, cursorPos)
+  console.log('[link-suggestions] source context:', ctx)
   if (!ctx) {
     closeLinkSuggestions()
     return
@@ -366,11 +377,13 @@ function checkSourceLinkSuggestions() {
 
   const searchQuery = ctx.query.replace(/[|#].*$/, '').trim()
   const { items } = listSuggestionFiles(props.filePath)
+  console.log('[link-suggestions] source items:', items.length, 'query:', searchQuery)
   const filtered = filterSuggestions(items, searchQuery, {
     documentPath: props.filePath,
     mode: ctx.mode,
     limit: 20,
   })
+  console.log('[link-suggestions] source filtered:', filtered.length)
 
   if (filtered.length === 0 && !searchQuery) {
     closeLinkSuggestions()
@@ -382,6 +395,7 @@ function checkSourceLinkSuggestions() {
   const caretPos = getTextareaCaretPosition(textarea)
   linkSuggestionPosition.value = { left: caretPos.left, top: caretPos.top + 20 }
   linkSuggestionsOpen.value = true
+  console.log('[link-suggestions] source opened at', caretPos.left, caretPos.top)
 }
 
 function onLinkSuggestionSelect(item: LinkSuggestionItem) {
@@ -932,7 +946,7 @@ onUnmounted(() => {
       @close="isSearchOpen = false"
     />
 
-    <LinkSuggestions
+    <EditorLinkSuggestions
       ref="linkSuggestionsRef"
       :items="linkSuggestionItems"
       :position="linkSuggestionPosition"

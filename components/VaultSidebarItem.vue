@@ -388,6 +388,7 @@ async function handleDelete(node: FileNode) {
       :active-path="activePath"
       :filters="filters"
       :expanded-folders="expandedFolders"
+      :parent-path="vault.path"
       @open="openFile"
       @open-in-new-panel="openFileInNewPanel"
       @delete="handleDelete"

@@ -1,5 +1,6 @@
 import {
   convertImageBuffer,
+  extensionForFormat,
   isImageFileName,
   mimeFromImageFileName,
   replaceExtension,
@@ -106,6 +107,12 @@ export async function applyAutoConvert(
 
   const ext = fileExt(filePath)
   if (ext === '.svg' || ext === '.gif') return filePath
+
+  // Skip conversion when there is no resize and the format already matches.
+  // This preserves EXIF and avoids a pointless re-encode.
+  if (!settings.maxDimension && ext === extensionForFormat(settings.format)) {
+    return filePath
+  }
 
   try {
     return await writeConvertedImage(filePath, {
