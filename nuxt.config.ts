@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   pages: false,
   devtools: { enabled: true },
 
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/editor-text.css'],
 
   // Keep a flat project layout instead of the Nuxt 4 default `app/` srcDir
   srcDir: '.',

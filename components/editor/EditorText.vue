@@ -1,22 +1,8 @@
 <script setup lang="ts">
 import { EditorContent, useEditor } from '@tiptap/vue-3'
-import { BubbleMenu } from '@tiptap/vue-3/menus'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import Link from '@tiptap/extension-link'
-import { Table } from '@tiptap/extension-table'
-import { TableCell } from '@tiptap/extension-table-cell'
-import { TableHeader } from '@tiptap/extension-table-header'
-import { TableRow } from '@tiptap/extension-table-row'
-import { TaskList } from '@tiptap/extension-task-list'
-import { TaskItem } from '@tiptap/extension-task-item'
-import { Markdown } from '@tiptap/markdown'
-import { MediaImage } from '~/app-extensions/Media'
-import { SearchHighlight } from '~/app-extensions/SearchHighlight'
-import { isImageFile } from '~/utils/fileTypes'
+import { isMediaFile } from '~/utils/fileTypes'
 
 type CalloutVariant = 'note' | 'tip' | 'important' | 'warning' | 'caution'
-const CALLOUT_VARIANTS: CalloutVariant[] = ['note', 'tip', 'important', 'warning', 'caution']
 
 interface MarkdownNode {
   type?: string
@@ -41,12 +27,6 @@ interface MarkdownStorageHost {
   }
 }
 
-interface ClipboardMediaItem {
-  name: string
-  type?: string
-  bytes: Uint8Array
-}
-
 const props = defineProps<{
   filePath: string
 }>()
@@ -57,7 +37,7 @@ const { t } = useI18n()
 const toast = useToast()
 
 const titleInputRef = ref<HTMLInputElement | null>(null)
-const sourceTextareaRef = ref<HTMLTextAreaElement | null>(null)
+const sourceModeRef = ref<{ textarea: HTMLTextAreaElement | null } | null>(null)
 const editorScrollerRef = ref<HTMLElement | null>(null)
 const title = ref('')
 const isSourceMode = ref(false)
@@ -70,6 +50,10 @@ const contextMenuOpen = ref(false)
 const contextMenuVirtualEl = ref<HTMLElement | null>(null)
 
 const buffer = computed(() => props.filePath ? editorStore.buffers[props.filePath] : null)
+const sourceTextareaRef = computed(() => sourceModeRef.value?.textarea ?? null)
+const { clipboardHasImportableImages, importClipboardImages } = useEditorTextClipboardImport({
+  getFilePath: () => props.filePath,
+})
 
 function normalizeMarkdown(markdown: string): string {
   return markdown
@@ -102,134 +86,10 @@ function setStoreContent(markdown: string) {
   }
 }
 
-function clipboardImageName(file: File, index: number): string {
-  if (file.name) return file.name
-  switch (file.type) {
-    case 'image/jpeg': return `clipboard-image-${index + 1}.jpg`
-    case 'image/webp': return `clipboard-image-${index + 1}.webp`
-    case 'image/gif': return `clipboard-image-${index + 1}.gif`
-    case 'image/avif': return `clipboard-image-${index + 1}.avif`
-    case 'image/svg+xml': return `clipboard-image-${index + 1}.svg`
-    default: return `clipboard-image-${index + 1}.png`
-  }
-}
-
-function clipboardHasImportableImages(event: ClipboardEvent): boolean {
-  const hasImageFiles = Array.from(event.clipboardData?.files ?? [])
-    .some((file) => file.type.startsWith('image/') || isImageFile(file.name))
-  if (hasImageFiles) return true
-
-  return /<img\b[^>]*\bsrc=["']data:image\//i.test(event.clipboardData?.getData('text/html') ?? '')
-}
-
-async function dataUrlToMediaItem(src: string, index: number): Promise<ClipboardMediaItem | null> {
-  const match = src.match(/^data:([^;,]+)[^,]*,(.*)$/)
-  if (!match) return null
-
-  const response = await fetch(src)
-  const type = match[1] ?? response.headers.get('content-type') ?? 'image/png'
-  return {
-    name: clipboardImageName(new File([], '', { type }), index),
-    type,
-    bytes: new Uint8Array(await response.arrayBuffer()),
-  }
-}
-
-async function importClipboardImages(event: ClipboardEvent): Promise<boolean> {
-  if (!props.filePath) return false
-  const files = Array.from(event.clipboardData?.files ?? [])
-    .filter((file) => file.type.startsWith('image/') || isImageFile(file.name))
-
-  const html = event.clipboardData?.getData('text/html') ?? ''
-  if (files.length === 0 && !clipboardHasImportableImages(event)) return false
-
-  event.preventDefault()
-  event.stopPropagation()
-
-  try {
-    const items: ClipboardMediaItem[] = files.length > 0
-      ? await Promise.all(files.map(async (file, index) => ({
-          name: clipboardImageName(file, index),
-          type: file.type,
-          bytes: new Uint8Array(await file.arrayBuffer()),
-        })))
-      : []
-
-    if (items.length === 0) {
-      const dataItems = await Promise.all(
-        Array.from(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('img[src^="data:image/"]'))
-          .map((image, index) => dataUrlToMediaItem(image.getAttribute('src') ?? '', index)),
-      )
-      for (const item of dataItems) {
-        if (item) items.push(item)
-      }
-    }
-
-    const onConflict = importHelper.makeAskPolicy()
-    const imported = await useVaultsStore().importMediaBytesForDocument(items, props.filePath, { onConflict })
-    if (imported.length > 0) {
-      editorStore.insertImportedFiles(imported, props.filePath)
-      return true
-    }
-  }
-  catch (error) {
-    toast.add({
-      title: t('toast.importFailed'),
-      description: error instanceof Error ? error.message : String(error),
-      color: 'error',
-    })
-  }
-
-  return true
-}
-
 const editor = useEditor({
   content: buffer.value?.content ?? '',
   contentType: 'markdown',
-  extensions: [
-    StarterKit.configure({
-      heading: { levels: [2, 3, 4] },
-      link: false,
-    }),
-    Link.configure({
-      openOnClick: false,
-      autolink: true,
-      linkOnPaste: true,
-      defaultProtocol: 'https',
-      HTMLAttributes: {
-        class: 'text-primary underline underline-offset-2 cursor-pointer',
-      },
-    }),
-    MediaImage.configure({
-      allowBase64: true,
-      HTMLAttributes: {
-        class: 'max-w-full rounded-md border border-default',
-      },
-    }),
-    TaskList.configure({
-      HTMLAttributes: { class: 'neptu-task-list' },
-    }),
-    TaskItem.configure({
-      nested: true,
-      HTMLAttributes: { class: 'neptu-task-item' },
-    }),
-    SearchHighlight,
-    Markdown.configure({
-      markedOptions: {
-        gfm: true,
-        breaks: false,
-      },
-    }),
-    Placeholder.configure({
-      placeholder: () => t('editor.startWriting'),
-    }),
-    Table.configure({
-      resizable: true,
-    }),
-    TableRow,
-    TableHeader,
-    TableCell,
-  ],
+  extensions: useEditorTextExtensions(t),
   editorProps: {
     attributes: {
       class: 'neptu-tiptap focus:outline-none',
@@ -851,370 +711,30 @@ onUnmounted(() => {
       @blur="renameCurrentFile"
     />
 
-    <BubbleMenu
-      v-if="editor"
-      :editor="editor"
-      plugin-key="neptu-formatting-bubble"
-      :options="{ offset: 8, placement: 'top' }"
-      :should-show="({ editor: e, state }) => !isSourceMode && !isLinkMenuOpen && !state.selection.empty && !e.isActive('table') && !e.isActive('codeBlock')"
-    >
-      <div class="flex items-center gap-0.5 rounded-md border border-default bg-default p-1 shadow-lg">
-        <UButton
-          :color="editor.isActive('bold') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('bold') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-bold"
-          :aria-label="$t('editor.toolbar.bold')"
-          @click="editor.chain().focus().toggleBold().run()"
-        />
-        <UButton
-          :color="editor.isActive('italic') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('italic') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-italic"
-          :aria-label="$t('editor.toolbar.italic')"
-          @click="editor.chain().focus().toggleItalic().run()"
-        />
-        <UButton
-          :color="editor.isActive('strike') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('strike') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-strikethrough"
-          :aria-label="$t('editor.toolbar.strike')"
-          @click="editor.chain().focus().toggleStrike().run()"
-        />
-        <div class="mx-1 h-4 w-px bg-default" />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-link"
-          :aria-label="$t('editor.toolbar.link')"
-          @mousedown.prevent
-          @click="setLink"
-        />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-sparkles"
-          :aria-label="$t('editor.ai.rewrite')"
-          @click="showAiPlaceholder('rewrite')"
-        />
-      </div>
-    </BubbleMenu>
+    <EditorTextBubbleMenus
+      v-model:link-url-input="linkUrlInput"
+      :editor="editor ?? null"
+      :is-source-mode="isSourceMode"
+      :is-link-menu-open="isLinkMenuOpen"
+      @set-link="setLink"
+      @apply-link="applyLink"
+      @cancel-link="cancelLink"
+      @remove-link="removeLink"
+      @show-ai-placeholder="showAiPlaceholder"
+    />
 
-    <BubbleMenu
-      v-if="editor"
-      :editor="editor"
-      plugin-key="neptu-link-bubble"
-      :options="{ offset: 8, placement: 'top' }"
-      :should-show="() => isLinkMenuOpen"
-    >
-      <div class="flex items-center gap-2 rounded-md border border-default bg-default p-2 shadow-lg">
-        <UInput
-          v-model="linkUrlInput"
-          size="xs"
-          class="w-56"
-          placeholder="https://"
-          @keydown.enter="applyLink"
-          @keydown.esc="cancelLink"
-        />
-        <UButton
-          size="xs"
-          color="primary"
-          :label="$t('editor.apply')"
-          @click="applyLink"
-        />
-        <UButton
-          v-if="editor.isActive('link')"
-          size="xs"
-          color="error"
-          variant="ghost"
-          icon="i-lucide-trash-2"
-          :aria-label="$t('editor.toolbar.unlink')"
-          @click="removeLink"
-        />
-        <UButton
-          v-else
-          size="xs"
-          color="neutral"
-          variant="ghost"
-          icon="i-lucide-x"
-          :aria-label="$t('editor.close')"
-          @click="cancelLink"
-        />
-      </div>
-    </BubbleMenu>
-
-    <BubbleMenu
-      v-if="editor"
-      :editor="editor"
-      plugin-key="neptu-table-bubble"
-      :options="{ offset: 8, placement: 'bottom' }"
-      :should-show="({ editor: e }) => !isSourceMode && e.isActive('table')"
-    >
-      <div class="flex max-w-[90vw] items-center gap-0.5 overflow-x-auto rounded-md border border-default bg-default p-1 shadow-lg">
-        <UButton
-          size="xs"
-          variant="ghost"
-          icon="i-lucide-plus"
-          :aria-label="$t('editor.table.addColumnBefore')"
-          @click="editor.chain().focus().addColumnBefore().run()"
-        />
-        <UButton
-          size="xs"
-          variant="ghost"
-          icon="i-lucide-plus"
-          class="rotate-90"
-          :aria-label="$t('editor.table.addColumnAfter')"
-          @click="editor.chain().focus().addColumnAfter().run()"
-        />
-        <UButton
-          size="xs"
-          color="error"
-          variant="ghost"
-          icon="i-lucide-trash-2"
-          :aria-label="$t('editor.table.deleteColumn')"
-          @click="editor.chain().focus().deleteColumn().run()"
-        />
-        <div class="mx-1 h-4 w-px bg-default" />
-        <UButton
-          size="xs"
-          variant="ghost"
-          icon="i-lucide-panel-top"
-          :aria-label="$t('editor.table.addRowBefore')"
-          @click="editor.chain().focus().addRowBefore().run()"
-        />
-        <UButton
-          size="xs"
-          variant="ghost"
-          icon="i-lucide-panel-bottom"
-          :aria-label="$t('editor.table.addRowAfter')"
-          @click="editor.chain().focus().addRowAfter().run()"
-        />
-        <UButton
-          size="xs"
-          color="error"
-          variant="ghost"
-          icon="i-lucide-trash-2"
-          :aria-label="$t('editor.table.deleteRow')"
-          @click="editor.chain().focus().deleteRow().run()"
-        />
-        <div class="mx-1 h-4 w-px bg-default" />
-        <UButton
-          size="xs"
-          color="error"
-          variant="ghost"
-          icon="i-lucide-table-x"
-          :aria-label="$t('editor.table.deleteTable')"
-          @click="editor.chain().focus().deleteTable().run()"
-        />
-      </div>
-    </BubbleMenu>
-
-    <div class="mx-8 mb-3 flex shrink-0 flex-wrap items-center gap-1 rounded-md border border-default bg-muted/40 px-2 py-1">
-      <UButton
-        :color="isSourceMode ? 'primary' : 'neutral'"
-        :variant="isSourceMode ? 'soft' : 'ghost'"
-        size="xs"
-        icon="i-lucide-code-2"
-        :label="$t('editor.toolbar.markdown')"
-        @click="isSourceMode = !isSourceMode"
-      />
-      <div class="mx-1 h-5 w-px bg-default" />
-
-      <template v-if="!isSourceMode && editor">
-        <UButton
-          :color="editor.isActive('bold') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('bold') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-bold"
-          :aria-label="$t('editor.toolbar.bold')"
-          @click="editor.chain().focus().toggleBold().run()"
-        />
-        <UButton
-          :color="editor.isActive('italic') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('italic') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-italic"
-          :aria-label="$t('editor.toolbar.italic')"
-          @click="editor.chain().focus().toggleItalic().run()"
-        />
-        <UButton
-          :color="editor.isActive('strike') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('strike') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-strikethrough"
-          :aria-label="$t('editor.toolbar.strike')"
-          @click="editor.chain().focus().toggleStrike().run()"
-        />
-        <UButton
-          :color="editor.isActive('code') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('code') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-code"
-          :aria-label="$t('editor.toolbar.code')"
-          @click="editor.chain().focus().toggleCode().run()"
-        />
-        <div class="mx-1 h-5 w-px bg-default" />
-        <UButton
-          :color="editor.isActive('heading', { level: 2 }) ? 'primary' : 'neutral'"
-          :variant="editor.isActive('heading', { level: 2 }) ? 'soft' : 'ghost'"
-          size="xs"
-          label="H2"
-          @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-        />
-        <UButton
-          :color="editor.isActive('heading', { level: 3 }) ? 'primary' : 'neutral'"
-          :variant="editor.isActive('heading', { level: 3 }) ? 'soft' : 'ghost'"
-          size="xs"
-          label="H3"
-          @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-        />
-        <UButton
-          :color="editor.isActive('heading', { level: 4 }) ? 'primary' : 'neutral'"
-          :variant="editor.isActive('heading', { level: 4 }) ? 'soft' : 'ghost'"
-          size="xs"
-          label="H4"
-          @click="editor.chain().focus().toggleHeading({ level: 4 }).run()"
-        />
-        <div class="mx-1 h-5 w-px bg-default" />
-        <UButton
-          :color="editor.isActive('bulletList') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('bulletList') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-list"
-          :aria-label="$t('editor.toolbar.bulletList')"
-          @click="editor.chain().focus().toggleBulletList().run()"
-        />
-        <UButton
-          :color="editor.isActive('orderedList') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('orderedList') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-list-ordered"
-          :aria-label="$t('editor.toolbar.orderedList')"
-          @click="editor.chain().focus().toggleOrderedList().run()"
-        />
-        <UButton
-          :color="editor.isActive('taskList') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('taskList') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-check-square"
-          :aria-label="$t('editor.toolbar.taskList')"
-          @click="toggleTaskList"
-        />
-        <UButton
-          :color="editor.isActive('blockquote') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('blockquote') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-quote"
-          :aria-label="$t('editor.toolbar.quote')"
-          @click="editor.chain().focus().toggleBlockquote().run()"
-        />
-        <UDropdownMenu
-          :items="CALLOUT_VARIANTS.map(v => ({ label: $t(`editor.callout.${v}`), onSelect: () => insertCallout(v) }))"
-        >
-          <UButton
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            icon="i-lucide-alert-circle"
-            :aria-label="$t('editor.toolbar.callout')"
-          />
-        </UDropdownMenu>
-        <UButton
-          :color="editor.isActive('codeBlock') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('codeBlock') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-square-code"
-          :aria-label="$t('editor.toolbar.codeBlock')"
-          @click="editor.chain().focus().toggleCodeBlock().run()"
-        />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-minus"
-          :aria-label="$t('editor.toolbar.divider')"
-          @click="editor.chain().focus().setHorizontalRule().run()"
-        />
-        <div class="mx-1 h-5 w-px bg-default" />
-        <UButton
-          :color="(editor.isActive('link') || isLinkMenuOpen) ? 'primary' : 'neutral'"
-          :variant="(editor.isActive('link') || isLinkMenuOpen) ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-link"
-          :aria-label="$t('editor.toolbar.link')"
-          @mousedown.prevent
-          @click="setLink"
-        />
-        <UButton
-          :color="editor.isActive('table') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('table') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-table"
-          :aria-label="$t('editor.toolbar.table')"
-          @click="insertTable"
-        />
-        <div class="mx-1 h-5 w-px bg-default" />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-undo-2"
-          :aria-label="$t('editor.toolbar.undo')"
-          :disabled="!editor.can().undo()"
-          @click="editor.chain().focus().undo().run()"
-        />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-redo-2"
-          :aria-label="$t('editor.toolbar.redo')"
-          :disabled="!editor.can().redo()"
-          @click="editor.chain().focus().redo().run()"
-        />
-        <div class="mx-1 h-5 w-px bg-default" />
-        <UButton
-          :color="isSearchOpen ? 'primary' : 'neutral'"
-          :variant="isSearchOpen ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-search"
-          :aria-label="$t('editor.toolbar.search')"
-          @click="toggleSearch"
-        />
-      </template>
-
-      <div class="min-w-2 flex-1" />
-      <template v-if="!isSourceMode">
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-sparkles"
-          :label="$t('editor.ai.write')"
-          @click="showAiPlaceholder('write')"
-        />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-wand-sparkles"
-          :label="$t('editor.ai.rewrite')"
-          @click="showAiPlaceholder('rewrite')"
-        />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-languages"
-          :label="$t('editor.ai.translate')"
-          @click="showAiPlaceholder('translate')"
-        />
-      </template>
-    </div>
+    <EditorTextToolbar
+      v-model:source-mode="isSourceMode"
+      :editor="editor ?? null"
+      :is-link-menu-open="isLinkMenuOpen"
+      :is-search-open="isSearchOpen"
+      @set-link="setLink"
+      @insert-table="insertTable"
+      @toggle-task-list="toggleTaskList"
+      @insert-callout="insertCallout"
+      @toggle-search="toggleSearch"
+      @show-ai-placeholder="showAiPlaceholder"
+    />
 
     <EditorSearchPanel
       v-if="editor"
@@ -1244,82 +764,12 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div
+      <EditorTextStickyToolbar
         v-if="editor && !isSourceMode"
-        class="sticky top-0 z-20 hidden pb-2 md:flex items-center gap-1"
-      >
-        <UButton
-          :color="editor.isActive('bold') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('bold') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-bold"
-          :aria-label="$t('editor.toolbar.bold')"
-          @click="editor.chain().focus().toggleBold().run()"
-        />
-        <UButton
-          :color="editor.isActive('italic') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('italic') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-italic"
-          :aria-label="$t('editor.toolbar.italic')"
-          @click="editor.chain().focus().toggleItalic().run()"
-        />
-        <UButton
-          :color="editor.isActive('strike') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('strike') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-strikethrough"
-          :aria-label="$t('editor.toolbar.strike')"
-          @click="editor.chain().focus().toggleStrike().run()"
-        />
-        <UButton
-          :color="editor.isActive('heading', { level: 2 }) ? 'primary' : 'neutral'"
-          :variant="editor.isActive('heading', { level: 2 }) ? 'soft' : 'ghost'"
-          size="xs"
-          label="H2"
-          @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-        />
-        <UButton
-          :color="editor.isActive('heading', { level: 4 }) ? 'primary' : 'neutral'"
-          :variant="editor.isActive('heading', { level: 4 }) ? 'soft' : 'ghost'"
-          size="xs"
-          label="H4"
-          @click="editor.chain().focus().toggleHeading({ level: 4 }).run()"
-        />
-        <UButton
-          :color="editor.isActive('bulletList') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('bulletList') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-list"
-          :aria-label="$t('editor.toolbar.bulletList')"
-          @click="editor.chain().focus().toggleBulletList().run()"
-        />
-        <UButton
-          :color="editor.isActive('taskList') ? 'primary' : 'neutral'"
-          :variant="editor.isActive('taskList') ? 'soft' : 'ghost'"
-          size="xs"
-          icon="i-lucide-check-square"
-          :aria-label="$t('editor.toolbar.taskList')"
-          @click="toggleTaskList"
-        />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-minus"
-          :aria-label="$t('editor.toolbar.divider')"
-          @click="editor.chain().focus().setHorizontalRule().run()"
-        />
-        <div class="min-w-2 flex-1" />
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          icon="i-lucide-search"
-          :aria-label="$t('editor.toolbar.search')"
-          @click="toggleSearch"
-        />
-      </div>
+        :editor="editor"
+        @toggle-task-list="toggleTaskList"
+        @toggle-search="toggleSearch"
+      />
 
       <UContextMenu
         v-if="editor && !isSourceMode"
@@ -1336,15 +786,11 @@ onUnmounted(() => {
         />
       </UContextMenu>
 
-      <textarea
+      <EditorTextSourceMode
         v-show="isSourceMode"
-        :key="props.filePath"
-        ref="sourceTextareaRef"
-        :value="buffer?.content ?? ''"
-        class="h-full min-h-[480px] w-full resize-none bg-transparent pb-8 font-mono text-base leading-7 text-default outline-none"
-        spellcheck="false"
-        :data-editor-file-path="props.filePath"
-        :placeholder="$t('editor.startWriting')"
+        ref="sourceModeRef"
+        :file-path="props.filePath"
+        :content="buffer?.content ?? ''"
         @input="onSourceInput"
         @paste="onSourcePaste"
         @keydown="onSourceKeydown"
@@ -1356,226 +802,3 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-@reference "~/assets/css/main.css";
-
-:deep(.neptu-tiptap) {
-  min-height: 480px;
-  padding-bottom: 2rem;
-  color: var(--ui-text);
-  font-size: 1rem;
-  line-height: 1.75rem;
-  outline: none;
-}
-
-:deep(.neptu-tiptap > * + *) {
-  margin-top: 0.9rem;
-}
-
-:deep(.neptu-tiptap p.is-editor-empty:first-child::before) {
-  color: var(--ui-text-muted);
-  content: attr(data-placeholder);
-  float: left;
-  height: 0;
-  pointer-events: none;
-}
-
-:deep(.neptu-tiptap h1) {
-  margin-top: 1.6rem;
-  font-size: 1.9rem;
-  font-weight: 700;
-  line-height: 2.35rem;
-}
-
-:deep(.neptu-tiptap h2) {
-  margin-top: 1.35rem;
-  font-size: 1.45rem;
-  font-weight: 700;
-  line-height: 2rem;
-}
-
-:deep(.neptu-tiptap h3) {
-  margin-top: 1.1rem;
-  font-size: 1.15rem;
-  font-weight: 700;
-  line-height: 1.75rem;
-}
-
-:deep(.neptu-tiptap h4) {
-  margin-top: 0.85rem;
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.5rem;
-}
-
-:deep(.neptu-tiptap ul),
-:deep(.neptu-tiptap ol) {
-  padding-left: 1.35rem;
-}
-
-:deep(.neptu-tiptap ul) {
-  list-style: disc;
-}
-
-:deep(.neptu-tiptap ol) {
-  list-style: decimal;
-}
-
-:deep(.neptu-tiptap blockquote) {
-  border-left: 3px solid var(--ui-border-accented);
-  color: var(--ui-text-muted);
-  padding-left: 1rem;
-}
-
-:deep(.neptu-tiptap code) {
-  border-radius: 0.25rem;
-  background: var(--ui-bg-muted);
-  padding: 0.1rem 0.3rem;
-  font-family: var(--font-mono);
-  font-size: 0.92em;
-}
-
-:deep(.neptu-tiptap pre) {
-  overflow-x: auto;
-  border-radius: 0.375rem;
-  background: var(--ui-bg-muted);
-  padding: 0.85rem 1rem;
-}
-
-:deep(.neptu-tiptap pre code) {
-  background: transparent;
-  padding: 0;
-}
-
-:deep(.neptu-tiptap hr) {
-  border: 0;
-  border-top: 1px solid var(--ui-border);
-}
-
-:deep(.neptu-tiptap table) {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-
-:deep(.neptu-tiptap th),
-:deep(.neptu-tiptap td) {
-  border: 1px solid var(--ui-border);
-  padding: 0.45rem 0.6rem;
-  vertical-align: top;
-}
-
-:deep(.neptu-tiptap th) {
-  background: var(--ui-bg-muted);
-  font-weight: 600;
-}
-
-:deep(.neptu-tiptap .selectedCell::after) {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in oklab, var(--ui-primary) 14%, transparent);
-  content: "";
-  pointer-events: none;
-}
-
-:deep(.neptu-tiptap .column-resize-handle) {
-  position: absolute;
-  top: 0;
-  right: -2px;
-  bottom: -2px;
-  width: 4px;
-  background: var(--ui-primary);
-  pointer-events: none;
-}
-
-/* Task list (checkbox) */
-:deep(.neptu-tiptap ul[data-type="taskList"]) {
-  list-style: none;
-  padding-left: 0;
-}
-:deep(.neptu-tiptap ul[data-type="taskList"] li) {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.4rem;
-}
-:deep(.neptu-tiptap ul[data-type="taskList"] li > label) {
-  flex-shrink: 0;
-  margin-top: 0.25rem;
-}
-:deep(.neptu-tiptap ul[data-type="taskList"] li > div) {
-  flex: 1;
-}
-:deep(.neptu-tiptap ul[data-type="taskList"] li > div p) {
-  margin-top: 0;
-}
-
-/* GFM callout / alert blockquote */
-:deep(.neptu-tiptap blockquote[data-callout]) {
-  border-left: 4px solid var(--ui-border-accented);
-  padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  background: var(--ui-bg-muted);
-}
-:deep(.neptu-tiptap blockquote[data-callout="note"]) {
-  border-left-color: #3b82f6;
-}
-:deep(.neptu-tiptap blockquote[data-callout="tip"]) {
-  border-left-color: #22c55e;
-}
-:deep(.neptu-tiptap blockquote[data-callout="important"]) {
-  border-left-color: #a855f7;
-}
-:deep(.neptu-tiptap blockquote[data-callout="warning"]) {
-  border-left-color: #f59e0b;
-}
-:deep(.neptu-tiptap blockquote[data-callout="caution"]) {
-  border-left-color: #ef4444;
-}
-
-/* Media (audio, video) */
-:deep(.neptu-tiptap video),
-:deep(.neptu-tiptap audio) {
-  max-width: 100%;
-  border-radius: 0.375rem;
-}
-:deep(.neptu-tiptap video) {
-  display: block;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-:deep(.neptu-tiptap audio) {
-  display: block;
-  width: 100%;
-  max-width: 420px;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Search highlight */
-:deep(.neptu-search-match) {
-  background: color-mix(in oklab, var(--ui-warning) 20%, transparent);
-  border-radius: 2px;
-}
-:deep(.neptu-search-match-active) {
-  background: color-mix(in oklab, var(--ui-primary) 35%, transparent);
-  border-radius: 2px;
-}
-
-/* Attachment card (non-media link) */
-:deep(.neptu-tiptap a[data-attachment="true"]) {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 0.375rem;
-  background: var(--ui-bg-muted);
-  border: 1px solid var(--ui-border);
-  text-decoration: none;
-  font-size: 0.88em;
-  max-width: 100%;
-}
-:deep(.neptu-tiptap a[data-attachment="true"]:hover) {
-  background: var(--ui-bg-elevated);
-}
-</style>
