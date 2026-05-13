@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import { dump } from 'js-yaml'
-import { basename, dirname, fileStem, relativePath, replacePathPrefix, stripTrailingSlash } from '~/utils/paths'
+import { basename, dirname, fileExt, fileStem, relativePath } from '~/utils/paths'
 import {
   DEFAULT_FILE_FILTERS,
   type AddVaultPayload,
@@ -11,69 +10,28 @@ import {
   type Vault,
   type VaultGroup,
 } from '~/types'
-import { convertImageBuffer, isImageFileName, mimeFromImageFileName, replaceExtension, type ConvertOptions } from '~/composables/useImageConvert'
+import { isImageFileName, type ConvertOptions } from '~/composables/useImageConvert'
+import type { AutoConvertSettings, VaultConfig } from '~/types/vault-config'
+import { generateId, pickVaultForPath } from '~/utils/vaults/common'
+import { ensureVaultMarker as ensureVaultMarkerFile, getTemplateYaml, readVaultConfig } from '~/utils/vaults/config'
+import { createVaultFileActions } from '~/utils/vaults/file-actions'
 import {
-  DEFAULT_VAULT_CONFIG,
-  isValidVaultConfig,
-  type AutoConvertSettings,
-  type VaultConfig,
-} from '~/types/vault-config'
-import vaultTemplateRaw from '~/assets/templates/vault.neptu-vault.yaml?raw'
-import blogTemplateRaw from '~/assets/templates/blog.neptu-vault.yaml?raw'
-import siteTemplateRaw from '~/assets/templates/site.neptu-vault.yaml?raw'
-import customTemplateRaw from '~/assets/templates/custom.neptu-vault.yaml?raw'
+  getEffectiveAutoConvert as resolveEffectiveAutoConvert,
+  getEffectiveContentFolder as resolveEffectiveContentFolder,
+  getEffectiveContentRoot as resolveEffectiveContentRoot,
+  getEffectiveExcludes as resolveEffectiveExcludes,
+  getEffectiveFilters as resolveEffectiveFilters,
+  getEffectiveMediaDir as resolveEffectiveMediaDir,
+} from '~/utils/vaults/effective'
+import {
+  applyAutoConvert,
+  extFromMime,
+  resolveConflictPolicy,
+  writeConvertedImage,
+  type ConflictPolicy,
+} from '~/utils/vaults/media'
 
-function generateId() {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-export type ConflictChoice = 'rename' | 'overwrite' | 'skip'
-export type ConflictPolicy = ConflictChoice
-  | ((info: { name: string, existingPath: string }) => Promise<ConflictChoice>)
-
-function fileExt(name: string): string {
-  const lastDot = name.lastIndexOf('.')
-  return lastDot > 0 ? name.slice(lastDot).toLowerCase() : ''
-}
-
-function extFromMime(mime: string): string {
-  switch (mime.toLowerCase()) {
-    case 'image/jpeg': return '.jpg'
-    case 'image/png': return '.png'
-    case 'image/webp': return '.webp'
-    case 'image/gif': return '.gif'
-    case 'image/avif': return '.avif'
-    case 'image/svg+xml': return '.svg'
-    default: return ''
-  }
-}
-
-function sanitizeFilenamePart(value: string): string {
-  return value.trim().replace(/[<>:"/\\|?*]+/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'media'
-}
-
-async function hashBytes(bytes: Uint8Array): Promise<string> {
-  const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
-  const digest = await crypto.subtle.digest('SHA-256', data)
-  return Array.from(new Uint8Array(digest)).slice(0, 12).map((byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
-/**
- * Returns the deepest vault whose `path` is a prefix of `filePath`.
- * Used to associate the currently edited file with its owning vault.
- */
-function pickVaultForPath(vaults: Vault[], filePath: string): Vault | null {
-  let best: Vault | null = null
-  for (const v of vaults) {
-    const prefix = v.path.endsWith('/') || v.path.endsWith('\\')
-      ? v.path
-      : v.path + '/'
-    const candidate = filePath === v.path || filePath.startsWith(prefix)
-    if (!candidate) continue
-    if (!best || v.path.length > best.path.length) best = v
-  }
-  return best
-}
+export type { ConflictChoice, ConflictPolicy } from '~/utils/vaults/media'
 
 /**
  * Owns the list of vaults and their file trees. Filesystem scanning happens
@@ -133,66 +91,14 @@ export const useVaultsStore = defineStore('vaults', () => {
     await refreshAllTrees()
   }
 
-  function getContentStructureConfig(contentStructureId?: string): VaultConfig | null {
-    if (!contentStructureId || contentStructureId === 'custom') return null
-    return usePluginsStore().contentStructures.find((structure) => structure.fqid === contentStructureId)?.config ?? null
-  }
-
-  function getTemplateYaml(contentType?: string, contentStructureId?: string): string {
-    const structureConfig = contentType === 'custom' ? getContentStructureConfig(contentStructureId) : null
-    if (structureConfig) return dump(structureConfig, { noRefs: true, lineWidth: 100 })
-
-    switch (contentType) {
-      case 'blog': return blogTemplateRaw
-      case 'site': return siteTemplateRaw
-      case 'custom': return customTemplateRaw
-      default: return vaultTemplateRaw
-    }
-  }
-
-  function normalizeVaultConfig(config: unknown): unknown {
-    if (!config || typeof config !== 'object') return config
-    const raw = config as Record<string, unknown>
-    if (raw['media-dir'] !== undefined) {
-      if (raw.mediaDir === undefined) raw.mediaDir = raw['media-dir']
-      delete raw['media-dir']
-    }
-    if (raw['auto-convert'] !== undefined) {
-      if (raw.autoConvert === undefined) raw.autoConvert = raw['auto-convert']
-      delete raw['auto-convert']
-    }
-    return raw
-  }
-
-  async function writeVaultTemplate(path: string, contentType?: string, contentStructureId?: string) {
-    await useFs().writeText(path, getTemplateYaml(contentType, contentStructureId))
-  }
-
   async function ensureVaultMarker(vault: Vault) {
-    const fs = useFs()
-    const markerPath = await fs.join(vault.path, '.neptu-vault.yaml')
-    if (!(await fs.exists(markerPath))) {
-      await writeVaultTemplate(markerPath, vault.contentType, vault.contentStructureId)
-    }
+    await ensureVaultMarkerFile(vault)
   }
 
   async function loadVaultConfig(vault: Vault): Promise<VaultConfig> {
-    const fs = useFs()
-    const path = await fs.join(vault.path, '.neptu-vault.yaml')
-    try {
-      const data = normalizeVaultConfig(await fs.readYaml<unknown>(path))
-      if (isValidVaultConfig(data)) {
-        vaultConfigs.value[vault.id] = data
-        return data
-      }
-      console.warn('[vaults] Invalid .neptu-vault.yaml, using defaults', vault.path)
-    }
-    catch {
-      // File missing or unreadable — fall through to defaults
-    }
-    const fallback = { ...DEFAULT_VAULT_CONFIG }
-    vaultConfigs.value[vault.id] = fallback
-    return fallback
+    const config = await readVaultConfig(vault)
+    vaultConfigs.value[vault.id] = config
+    return config
   }
 
   async function addFavorite(path: string) {
@@ -380,344 +286,24 @@ export const useVaultsStore = defineStore('vaults', () => {
     if (needsRefresh) await refreshTree(vault)
   }
 
-  async function createVaultFolder(vault: Vault, parentDir: string, folderName: string) {
-    const fs = useFs()
-    const fullPath = await fs.createFolder(parentDir, folderName)
-    await refreshTree(vault)
-    return fullPath
-  }
-
-  async function moveNode(sourcePath: string, targetDirPath: string) {
-    const fs = useFs()
-    const editor = useEditorStore()
-    const git = useGitStore()
-    const name = basename(sourcePath)
-    const destPath = await fs.join(targetDirPath, name)
-    const sourceInfo = await fs.stat(sourcePath)
-
-    if (sourcePath === destPath) return
-
-    if (await fs.exists(destPath)) {
-      const overwrite = await confirm.ask(
-        t('confirm.overwriteTitle'),
-        t('confirm.overwriteMessage', { name }),
-      )
-      if (!overwrite) return
-    }
-
-    const sourceVault = findVaultForPath(sourcePath)
-    const targetVault = findVaultForPath(targetDirPath)
-
-    // Flush dirty buffers before moving files
-    if (sourceVault) await editor.flushVault(sourceVault)
-    if (targetVault && targetVault.id !== sourceVault?.id) await editor.flushVault(targetVault)
-
-    await fs.moveFile(sourcePath, destPath)
-
-    // Clean up stale search index entries
-    useSearchStore().removeFile(sourcePath)
-
-    if (sourceVault) await refreshTree(sourceVault)
-    if (targetVault && targetVault.id !== sourceVault?.id) await refreshTree(targetVault)
-
-    // Update editor/tabs if needed
-    const tabs = useTabsStore()
-    await tabs.updatePath(sourcePath, destPath, sourceInfo.isDirectory)
-
-    let favoritesChanged = false
-    favorites.value = favorites.value.map((favoritePath) => {
-      const nextPath = sourceInfo.isDirectory ? replacePathPrefix(favoritePath, sourcePath, destPath) : favoritePath === sourcePath ? destPath : favoritePath
-      if (nextPath !== favoritePath) favoritesChanged = true
-      return nextPath
-    })
-
-    if (sourceVault?.type === 'git') {
-      await git.commit(sourceVault.id)
-      await git.refreshStatus(sourceVault.id)
-    }
-    if (targetVault?.type === 'git' && targetVault.id !== sourceVault?.id) {
-      await git.commit(targetVault.id)
-      await git.refreshStatus(targetVault.id)
-    }
-    if (favoritesChanged) await useSettingsStore().persist()
-  }
-
-  async function copyNode(sourcePath: string, targetDirPath: string) {
-    const fs = useFs()
-    const editor = useEditorStore()
-    const git = useGitStore()
-    const name = basename(sourcePath)
-    const destPath = await fs.join(targetDirPath, name)
-
-    if (sourcePath === destPath) return
-
-    if (await fs.exists(destPath)) {
-      const overwrite = await confirm.ask(
-        t('confirm.overwriteTitle'),
-        t('confirm.overwriteMessage', { name }),
-      )
-      if (!overwrite) return
-    }
-
-    const targetVault = findVaultForPath(targetDirPath)
-    if (targetVault) await editor.flushVault(targetVault)
-
-    const info = await fs.stat(sourcePath)
-    if (info.isDirectory) {
-      await fs.copyFolder(sourcePath, destPath)
-    }
-    else {
-      await fs.copyFile(sourcePath, destPath)
-    }
-
-    if (targetVault) {
-      await refreshTree(targetVault)
-      if (targetVault.type === 'git') {
-        await git.commit(targetVault.id)
-        await git.refreshStatus(targetVault.id)
-      }
-    }
-  }
-
-  async function renameNode(vaultId: string, sourcePath: string, newName: string) {
-    if (!newName.trim()) return
-
-    const fs = useFs()
-    const editor = useEditorStore()
-    const git = useGitStore()
-    const tabs = useTabsStore()
-
-    const vault = findById(vaultId)
-    if (!vault) return
-
-    const dir = dirname(sourcePath)
-    const destPath = await fs.join(dir, newName.trim())
-
-    if (sourcePath === destPath) return
-
-    if (await fs.exists(destPath)) {
-      throw new Error(`An item named "${newName}" already exists.`)
-    }
-
-    const sourceInfo = await fs.stat(sourcePath)
-
-    // Flush if needed
-    await editor.flushVault(vault)
-
-    await fs.renameFile(sourcePath, destPath)
-
-    // Clean up stale search index entries
-    useSearchStore().removeFile(sourcePath)
-
-    await refreshTree(vault)
-
-    // Update tabs
-    await tabs.updatePath(sourcePath, destPath, sourceInfo.isDirectory)
-
-    let favoritesChanged = false
-    favorites.value = favorites.value.map((favoritePath) => {
-      const nextPath = sourceInfo.isDirectory ? replacePathPrefix(favoritePath, sourcePath, destPath) : favoritePath === sourcePath ? destPath : favoritePath
-      if (nextPath !== favoritePath) favoritesChanged = true
-      return nextPath
-    })
-
-    if (vault.type === 'git') {
-      await git.commit(vault.id)
-      await git.refreshStatus(vault.id)
-    }
-    if (favoritesChanged) await useSettingsStore().persist()
-  }
-
-  async function importExternalFiles(paths: string[], targetDir: string): Promise<string[]> {
-    const fs = useFs()
-    const vault = findVaultForPath(targetDir)
-    if (!vault) return []
-
-    const importedPaths: string[] = []
-    const hiddenPaths: string[] = []
-    const filters = getEffectiveFilters(vault)
-    const excludes = getEffectiveExcludes(vault)
-    const settingsStore = useSettingsStore()
-    const showHidden = settingsStore.settings.showHiddenFiles
-
-    for (const sourcePath of paths) {
-      try {
-        const name = basename(sourcePath)
-        const destPath = await fs.join(targetDir, name)
-        let importedPath = destPath
-
-        if (sourcePath === destPath) {
-          importedPaths.push(destPath)
-          continue
-        }
-
-        if (await fs.exists(destPath)) {
-          importedPaths.push(destPath)
-          continue
-        }
-
-        const info = await fs.stat(sourcePath)
-        if (info.isDirectory) {
-          await fs.copyFolder(sourcePath, destPath)
-          importedPaths.push(destPath)
-        }
-        else {
-          await fs.copyFile(sourcePath, destPath)
-          const finalPath = await applyAutoConvert(vault, destPath)
-          importedPath = finalPath
-          importedPaths.push(finalPath)
-        }
-
-        // Check if it's visible
-        const importedName = basename(importedPath)
-        let isVisible = true
-        if (!showHidden && importedName.startsWith('.')) {
-          isVisible = false
-        }
-        else {
-          const extMatch = importedName.match(/\.([^.]+)$/)
-          const ext = extMatch ? extMatch[1]?.toLowerCase() ?? '' : ''
-          const isExcluded = excludes.some((pattern) => importedName.includes(pattern)) // Basic exclude check
-
-          if (isExcluded) {
-            isVisible = false
-          }
-          else if (filters && ext) {
-            let matchesGroup = false
-            let hasAnyEnabledGroup = false
-            for (const group of filters.groups) {
-              if (group.enabled) {
-                hasAnyEnabledGroup = true
-                if (group.extensions.some((e) => e.ext.toLowerCase() === ext)) {
-                  matchesGroup = true
-                  break
-                }
-              }
-            }
-            if (hasAnyEnabledGroup && !matchesGroup) {
-              isVisible = false
-            }
-          }
-        }
-
-        if (!isVisible) {
-          hiddenPaths.push(importedName)
-        }
-      }
-      catch (e) {
-        console.error('Failed to import file', sourcePath, e)
-      }
-    }
-
-    if (importedPaths.length > 0) {
-      await refreshTree(vault)
-      if (vault.type === 'git') {
-        const git = useGitStore()
-        await git.commit(vault.id)
-        await git.refreshStatus(vault.id)
-      }
-    }
-
-    if (hiddenPaths.length > 0) {
-      const { useToast } = await import('#imports')
-      const toast = useToast()
-      toast.add({
-        title: t('toast.hiddenFilesImported'),
-        description: t('toast.hiddenFilesImportedDesc', { files: hiddenPaths.join(', ') }),
-        color: 'warning',
-      })
-    }
-
-    return importedPaths
-  }
-
   function getEffectiveFilters(vault: Vault): FileFilterSettings {
-    const configFilters = vaultConfigs.value[vault.id]?.filters
-    if (vault.filters !== undefined) return JSON.parse(JSON.stringify(vault.filters))
-    if (configFilters !== undefined) return JSON.parse(JSON.stringify(configFilters))
-    return JSON.parse(JSON.stringify(DEFAULT_FILE_FILTERS))
+    return resolveEffectiveFilters(vault, vaultConfigs.value[vault.id])
   }
 
   function getEffectiveExcludes(vault: Vault): string[] {
-    const configExcludes = vaultConfigs.value[vault.id]?.excludes
-    if (vault.excludes !== undefined) return [...vault.excludes]
-    if (configExcludes !== undefined) return [...configExcludes]
-    return []
+    return resolveEffectiveExcludes(vault, vaultConfigs.value[vault.id])
   }
 
   function getEffectiveContentFolder(vault: Vault): string | undefined {
-    const configRoot = vaultConfigs.value[vault.id]?.contentRoot
-    if (vault.contentFolder !== undefined) return vault.contentFolder
-    return configRoot
+    return resolveEffectiveContentFolder(vault, vaultConfigs.value[vault.id])
   }
 
   function getEffectiveMediaDir(vault: Vault): MediaDirSettings {
-    if (vault.mediaDir !== undefined) return { ...vault.mediaDir }
-    const config = vaultConfigs.value[vault.id]
-    const mediaDir = config?.mediaDir
-    if (mediaDir !== undefined) return { ...mediaDir }
-    if (config?.media) {
-      return {
-        mode: config.media.uploadMode,
-        folder: config.media.globalFolder,
-        naming: 'original',
-      }
-    }
-    return {
-      mode: 'adjacent-folder',
-      folder: 'media',
-      naming: 'original',
-    }
+    return resolveEffectiveMediaDir(vault, vaultConfigs.value[vault.id])
   }
 
   function getEffectiveAutoConvert(vault: Vault): AutoConvertSettings | undefined {
-    if (vault.autoConvert !== undefined) return vault.autoConvert
-    const config = vaultConfigs.value[vault.id]
-    return config?.autoConvert
-  }
-
-  async function writeConvertedImage(filePath: string, options: ConvertOptions): Promise<string> {
-    const fs = useFs()
-    const sourceBytes = await fs.readBytes(filePath)
-    const { bytes, ext } = await convertImageBuffer(sourceBytes, mimeFromImageFileName(filePath), options)
-
-    const dir = filePath.includes('\\')
-      ? filePath.slice(0, filePath.lastIndexOf('\\'))
-      : filePath.slice(0, filePath.lastIndexOf('/'))
-    const newName = replaceExtension(filePath.split(/[\\/]/).pop()!, ext)
-    let newPath = await fs.join(dir, newName)
-
-    let suffix = 2
-    while (newPath !== filePath && await fs.exists(newPath)) {
-      const baseName = newName.slice(0, newName.lastIndexOf('.'))
-      newPath = await fs.join(dir, `${baseName}-${suffix}${ext}`)
-      suffix++
-    }
-
-    await fs.writeBytes(newPath, bytes)
-    if (newPath !== filePath) {
-      await fs.deleteFile(filePath)
-    }
-    return newPath
-  }
-
-  async function applyAutoConvert(vault: Vault, filePath: string): Promise<string> {
-    const settings = getEffectiveAutoConvert(vault)
-    if (!settings?.enabled || !isImageFileName(filePath)) return filePath
-
-    try {
-      return await writeConvertedImage(filePath, {
-        format: settings.format,
-        quality: settings.quality,
-        maxDimension: settings.maxDimension,
-        backgroundColor: settings.backgroundColor,
-        preserveTransparency: settings.preserveTransparency,
-      })
-    }
-    catch (error) {
-      console.warn('[vaults] Failed to auto-convert image, keeping original', filePath, error)
-      return filePath
-    }
+    return resolveEffectiveAutoConvert(vault, vaultConfigs.value[vault.id])
   }
 
   async function convertImageFile(vaultId: string, filePath: string, options: ConvertOptions): Promise<string> {
@@ -752,93 +338,6 @@ export const useVaultsStore = defineStore('vaults', () => {
     return finalPath
   }
 
-  async function resolveMediaDestination(
-    vault: Vault,
-    documentPath: string,
-    sourceName: string,
-    index: number,
-    sourceBytes?: Uint8Array,
-    options?: { conflict?: 'rename' | 'overwrite' | 'skip' },
-  ): Promise<{ destPath: string, markdownPath: string, existed: boolean } | null> {
-    const fs = useFs()
-    const settings = getEffectiveMediaDir(vault)
-    const documentDir = dirname(documentPath)
-    const ext = fileExt(sourceName)
-    const documentStem = sanitizeFilenamePart(fileStem(basename(documentPath)))
-
-    let destDir = documentDir
-    if (settings.mode === 'global-folder') {
-      const folder = normalizeRelativePath(settings.folder || 'media')
-      destDir = await fs.join(stripTrailingSlash(vault.path), folder)
-    }
-    else if (settings.mode === 'adjacent-folder') {
-      const folder = sanitizeFilenamePart(settings.folder || 'media')
-      destDir = await fs.join(documentDir, folder)
-    }
-
-    let baseName: string
-    if (settings.naming === 'document-index') {
-      baseName = `${documentStem}-${index + 1}`
-    }
-    else if (settings.naming === 'hash') {
-      if (!sourceBytes) throw new Error('Source bytes are required for hash-based media naming')
-      baseName = await hashBytes(sourceBytes)
-    }
-    else {
-      baseName = sanitizeFilenamePart(fileStem(sourceName))
-    }
-
-    const initialPath = await fs.join(destDir, `${baseName}${ext}`)
-    const existed = await fs.exists(initialPath)
-    const policy = options?.conflict ?? 'rename'
-
-    if (existed && policy === 'skip') return null
-    if (existed && policy === 'overwrite') {
-      return { destPath: initialPath, markdownPath: relativePath(documentDir, initialPath), existed }
-    }
-
-    let candidate = initialPath
-    let suffix = 2
-    while (await fs.exists(candidate)) {
-      candidate = await fs.join(destDir, `${baseName}-${suffix}${ext}`)
-      suffix += 1
-    }
-
-    return {
-      destPath: candidate,
-      markdownPath: relativePath(documentDir, candidate),
-      existed,
-    }
-  }
-
-  async function resolveConflictPolicy(
-    vault: Vault,
-    documentPath: string,
-    sourceName: string,
-    index: number,
-    sourceBytes: Uint8Array | undefined,
-    policy: ConflictPolicy | undefined,
-  ): Promise<{ destPath: string, markdownPath: string } | null> {
-    // First pass: see whether the initial candidate exists.
-    const probe = await resolveMediaDestination(vault, documentPath, sourceName, index, sourceBytes, { conflict: 'rename' })
-    if (!probe) return null
-    if (!probe.existed || !policy) return probe
-
-    let choice: ConflictChoice
-    if (typeof policy === 'function') {
-      // Recompute the initial path so the callback gets the actual conflicting path.
-      const initial = await resolveMediaDestination(vault, documentPath, sourceName, index, sourceBytes, { conflict: 'overwrite' })
-      const existingPath = initial?.destPath ?? probe.destPath
-      choice = await policy({ name: sourceName, existingPath })
-    }
-    else {
-      choice = policy
-    }
-
-    if (choice === 'rename') return probe
-    return resolveMediaDestination(vault, documentPath, sourceName, index, sourceBytes, { conflict: choice })
-  }
-
   async function importMediaBytesForDocument(
     items: Array<{ name: string, type?: string, bytes: Uint8Array }>,
     documentPath: string,
@@ -855,13 +354,13 @@ export const useVaultsStore = defineStore('vaults', () => {
       try {
         const fallbackExt = extFromMime(item.type ?? '') || '.png'
         const sourceName = fileExt(item.name) ? item.name : `${fileStem(item.name || 'clipboard-image')}${fallbackExt}`
-        const decision = await resolveConflictPolicy(vault, documentPath, sourceName, i, item.bytes, options?.onConflict)
+        const decision = await resolveConflictPolicy(vault, documentPath, sourceName, i, item.bytes, getEffectiveMediaDir(vault), options?.onConflict)
         if (!decision) continue
         const { destPath, markdownPath } = decision
         const destDir = dirname(destPath)
         await fs.ensureDir(destDir)
         await fs.writeBytes(destPath, item.bytes)
-        const finalPath = await applyAutoConvert(vault, destPath)
+        const finalPath = await applyAutoConvert(vault, destPath, getEffectiveAutoConvert)
         const finalMarkdownPath = finalPath === destPath
           ? markdownPath
           : relativePath(dirname(documentPath), finalPath)
@@ -899,7 +398,7 @@ export const useVaultsStore = defineStore('vaults', () => {
       const sourcePath = paths[i]!
       try {
         const sourceBytes = await fs.readBytes(sourcePath)
-        const decision = await resolveConflictPolicy(vault, documentPath, basename(sourcePath), i, sourceBytes, options?.onConflict)
+        const decision = await resolveConflictPolicy(vault, documentPath, basename(sourcePath), i, sourceBytes, getEffectiveMediaDir(vault), options?.onConflict)
         if (!decision) continue
         const { destPath, markdownPath } = decision
         const destDir = dirname(destPath)
@@ -907,7 +406,7 @@ export const useVaultsStore = defineStore('vaults', () => {
         if (sourcePath !== destPath) {
           await fs.copyFile(sourcePath, destPath)
         }
-        const finalPath = await applyAutoConvert(vault, destPath)
+        const finalPath = await applyAutoConvert(vault, destPath, getEffectiveAutoConvert)
         const finalMarkdownPath = finalPath === destPath
           ? markdownPath
           : relativePath(dirname(documentPath), finalPath)
@@ -1030,12 +529,7 @@ export const useVaultsStore = defineStore('vaults', () => {
    * Returns the absolute path that should be scanned as the content root for a vault.
    */
   function getEffectiveContentRoot(vault: Vault): string {
-    const folder = getEffectiveContentFolder(vault)
-    if (!folder || vault.contentType === 'vault' || !vault.contentType) {
-      return vault.path.replace(/[/\\]+$/, '')
-    }
-    const base = vault.path.replace(/[/\\]+$/, '')
-    return `${base}/${folder}`
+    return resolveEffectiveContentRoot(vault, getEffectiveContentFolder(vault))
   }
 
   async function resetVaultOverrides(
@@ -1052,6 +546,24 @@ export const useVaultsStore = defineStore('vaults', () => {
     await useSettingsStore().persist()
     await refreshTree(vault)
   }
+
+  const {
+    createVaultFolder,
+    moveNode,
+    copyNode,
+    renameNode,
+    importExternalFiles,
+  } = createVaultFileActions({
+    t,
+    confirm,
+    favorites,
+    findById,
+    findVaultForPath,
+    refreshTree,
+    getEffectiveFilters,
+    getEffectiveExcludes,
+    getEffectiveAutoConvert,
+  })
 
   return {
     list,
