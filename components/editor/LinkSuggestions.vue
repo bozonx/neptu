@@ -3,12 +3,12 @@ import type { LinkSuggestionItem } from '~/composables/useLinkSuggestions'
 
 const props = defineProps<{
   items: LinkSuggestionItem[]
-  position: { left: number; top: number } | null
+  position: { left: number, top: number } | null
 }>()
 
 const emit = defineEmits<{
-  select: [item: LinkSuggestionItem]
-  close: []
+  'select': [item: LinkSuggestionItem]
+  'close': []
   'focus-editor': []
 }>()
 
@@ -65,7 +65,10 @@ defineExpose({ handleKeydown })
       class="fixed z-50 w-80 max-h-64 overflow-y-auto rounded-lg border border-default bg-elevated shadow-lg"
       :style="{ left: `${position.left}px`, top: `${position.top + 4}px` }"
     >
-      <ul ref="listRef" class="py-1">
+      <ul
+        ref="listRef"
+        class="py-1"
+      >
         <li
           v-for="(item, index) in items"
           :key="item.path"

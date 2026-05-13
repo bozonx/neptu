@@ -4,7 +4,7 @@
  */
 export function getTextareaCaretPosition(
   textarea: HTMLTextAreaElement,
-): { left: number; top: number } {
+): { left: number, top: number } {
   const style = window.getComputedStyle(textarea)
   const div = document.createElement('div')
   document.body.appendChild(div)

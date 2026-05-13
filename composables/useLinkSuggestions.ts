@@ -123,7 +123,7 @@ function collectTextBeforeEditor(editor: Editor, maxChars = 500): { text: string
   const startPos = Math.max(0, from - maxChars * 2)
 
   editor.state.doc.nodesBetween(startPos, from, (node, pos) => {
-    if (node.isText) {
+    if (node.isText && node.text) {
       const sliceStart = Math.max(pos, startPos)
       const sliceEnd = Math.min(pos + node.text.length, from)
       const slice = node.text.slice(sliceStart - pos, sliceEnd - pos)
@@ -149,7 +149,7 @@ export function findEditorLinkContext(editor: Editor): LinkSuggestionContext | n
   const { from } = editor.state.selection
   const { text, positions } = collectTextBeforeEditor(editor, from)
 
-  const wikiMatch = text.match(/\[\[([^\[\]\n]*)$/)
+  const wikiMatch = text.match(/\[\[([^[\]\n]*)$/)
   if (wikiMatch) {
     const idx = text.length - wikiMatch[0].length
     const query = wikiMatch[1]!
@@ -162,7 +162,7 @@ export function findEditorLinkContext(editor: Editor): LinkSuggestionContext | n
     }
   }
 
-  const mdMatch = text.match(/\[([^\[\]\n]*)\]\(([^)]*)$/)
+  const mdMatch = text.match(/\[([^[\]\n]*)\]\(([^)]*)$/)
   if (mdMatch) {
     const displayText = mdMatch[1]!
     const query = mdMatch[2]!
@@ -185,7 +185,7 @@ export function findEditorLinkContext(editor: Editor): LinkSuggestionContext | n
 export function findLinkContextInText(text: string, cursorPos: number): LinkSuggestionContext | null {
   const textBefore = text.slice(0, cursorPos)
 
-  const wikiMatch = textBefore.match(/\[\[([^\[\]\n]*)$/)
+  const wikiMatch = textBefore.match(/\[\[([^[\]\n]*)$/)
   if (wikiMatch) {
     const query = wikiMatch[1]!
     const start = cursorPos - wikiMatch[0].length
@@ -198,7 +198,7 @@ export function findLinkContextInText(text: string, cursorPos: number): LinkSugg
     }
   }
 
-  const mdMatch = textBefore.match(/\[([^\[\]\n]*)\]\(([^)]*)$/)
+  const mdMatch = textBefore.match(/\[([^[\]\n]*)\]\(([^)]*)$/)
   if (mdMatch) {
     const displayText = mdMatch[1]!
     const query = mdMatch[2]!

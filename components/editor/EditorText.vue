@@ -54,7 +54,7 @@ const contextMenuVirtualEl = ref<HTMLElement | null>(null)
 
 const linkSuggestionsOpen = ref(false)
 const linkSuggestionItems = ref<LinkSuggestionItem[]>([])
-const linkSuggestionPosition = ref<{ left: number; top: number } | null>(null)
+const linkSuggestionPosition = ref<{ left: number, top: number } | null>(null)
 const linkSuggestionContext = ref<LinkSuggestionContext | null>(null)
 const linkSuggestionsRef = ref<{ handleKeydown: (event: KeyboardEvent) => void } | null>(null)
 
@@ -106,6 +106,7 @@ const editor = useEditor({
     handleDOMEvents: {
       blur: () => {
         saveCursorState()
+        closeLinkSuggestions()
         return false
       },
       paste: (_view, event) => {
@@ -191,6 +192,7 @@ function getOldTitle(path: string): string {
 watch(() => props.filePath, (path) => {
   title.value = path ? getOldTitle(path) : ''
   editorStore.activeSelectionText = ''
+  closeLinkSuggestions()
   const e = editor.value
   if (e) {
     const storage = e.storage as unknown as Record<string, { documentPath?: string | null } | undefined>
@@ -209,6 +211,7 @@ watch(() => buffer.value?.content ?? '', (content) => {
 }, { immediate: true })
 
 watch(isSourceMode, (sourceMode) => {
+  closeLinkSuggestions()
   if (sourceMode) {
     nextTick(() => {
       restoreCursorState()
@@ -302,6 +305,11 @@ function onSourceSelect() {
   checkSourceLinkSuggestions()
 }
 
+function onSourceBlur() {
+  saveCursorState()
+  closeLinkSuggestions()
+}
+
 function closeLinkSuggestions() {
   linkSuggestionsOpen.value = false
   linkSuggestionItems.value = []
@@ -311,7 +319,7 @@ function closeLinkSuggestions() {
 
 function checkEditorLinkSuggestions() {
   const e = editor.value
-  if (!e || isSourceMode.value) {
+  if (!e || isSourceMode.value || !e.isFocused) {
     closeLinkSuggestions()
     return
   }
@@ -322,7 +330,7 @@ function checkEditorLinkSuggestions() {
     return
   }
 
-  const searchQuery = ctx.query.split('|')[0].split('#')[0].trim()
+  const searchQuery = ctx.query.replace(/[|#].*$/, '').trim()
   const { items } = listSuggestionFiles(props.filePath)
   const filtered = filterSuggestions(items, searchQuery, {
     documentPath: props.filePath,
@@ -344,7 +352,7 @@ function checkEditorLinkSuggestions() {
 
 function checkSourceLinkSuggestions() {
   const textarea = sourceTextareaRef.value
-  if (!textarea || !isSourceMode.value) {
+  if (!textarea || !isSourceMode.value || document.activeElement !== textarea) {
     closeLinkSuggestions()
     return
   }
@@ -356,7 +364,7 @@ function checkSourceLinkSuggestions() {
     return
   }
 
-  const searchQuery = ctx.query.split('|')[0].split('#')[0].trim()
+  const searchQuery = ctx.query.replace(/[|#].*$/, '').trim()
   const { items } = listSuggestionFiles(props.filePath)
   const filtered = filterSuggestions(items, searchQuery, {
     documentPath: props.filePath,
@@ -986,7 +994,7 @@ onUnmounted(() => {
         @keydown="onSourceKeydown"
         @keyup="updateSourceSelection"
         @mouseup="onSourceMouseup"
-        @blur="saveCursorState"
+        @blur="onSourceBlur"
         @select="onSourceSelect"
       />
     </div>
