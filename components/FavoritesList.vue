@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
+import { SidebarDialogsKey } from '~/composables/useSidebarDialogs'
+import { isImageFile } from '~/utils/fileTypes'
+
 const vaults = useVaultsStore()
 const tabs = useTabsStore()
+const editor = useEditorStore()
 const dnd = useDnd()
 const toast = useToast()
+const settings = useSettingsStore()
 const { t } = useI18n()
+const dialogs = inject(SidebarDialogsKey)
 const isDropTarget = ref(false)
 
 function fileName(path: string): string {
@@ -16,9 +23,71 @@ function vaultName(path: string): string | null {
 }
 
 function openFile(path: string) {
-  tabs.openFile(path).catch((error: unknown) => {
+  tabs.openFile(path, { skipReveal: true }).catch((error: unknown) => {
     toast.add({ title: t('toast.openFileFailed'), description: String(error), color: 'error' })
   })
+}
+
+function openInNewPanel(path: string) {
+  tabs.openFileInNewPanel(path).catch((error: unknown) => {
+    toast.add({ title: t('toast.openFilePanelFailed'), description: String(error), color: 'error' })
+  })
+}
+
+function revealInFiles(path: string) {
+  tabs.revealFile(path)
+  nextTick(() => {
+    document.querySelector('[data-active-file]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
+
+async function handleDelete(path: string) {
+  const vault = vaults.findVaultForPath(path)
+  if (!vault) return
+  const name = fileName(path)
+  const needsConfirm = vault.type === 'git'
+    ? settings.settings.confirmDeleteGit
+    : settings.settings.confirmDeleteLocal
+  if (needsConfirm && !confirm(t('confirm.deleteFile', { name }))) return
+  try {
+    await useEditorStore().deleteNote({ vault, path })
+    await vaults.removeFavorite(path)
+  }
+  catch (error) {
+    toast.add({ title: t('toast.deleteFailed'), description: String(error), color: 'error' })
+  }
+}
+
+function fileMenuItems(path: string): DropdownMenuItem[][] {
+  const vault = vaults.findVaultForPath(path)
+  const items: DropdownMenuItem[] = [
+    { label: t('vault.openInNewPanel'), icon: 'i-lucide-panel-right-open', onSelect: () => openInNewPanel(path) },
+    { label: t('sidebar.revealInFiles'), icon: 'i-lucide-folder-search', onSelect: () => revealInFiles(path) },
+    { label: t('sidebar.removeFromFavorites'), icon: 'i-lucide-star-off', onSelect: () => vaults.removeFavorite(path) },
+  ]
+  if (isImageFile(path) && vault && dialogs) {
+    items.push({
+      label: t('vault.convertImage'),
+      icon: 'i-lucide-image-upscale',
+      onSelect: () => dialogs.openConvertImage(vault, { name: fileName(path), path, isDir: false }),
+    })
+  }
+  if (vault && dialogs) {
+    items.push({
+      label: t('vault.rename'),
+      icon: 'i-lucide-pencil',
+      onSelect: () => dialogs.openRenameNode(vault, { name: fileName(path), path, isDir: false }),
+    })
+  }
+  if (vault) {
+    items.push({
+      label: t('vault.delete'),
+      icon: 'i-lucide-trash-2',
+      color: 'error',
+      onSelect: () => handleDelete(path),
+    })
+  }
+  return [items]
 }
 
 function canAcceptDrop() {
@@ -72,19 +141,12 @@ async function onDrop() {
     <UContextMenu
       v-for="path in vaults.favorites"
       :key="path"
-      :items="[
-        [
-          {
-            label: $t('sidebar.removeFromFavorites'),
-            icon: 'i-lucide-star-off',
-            onSelect: () => vaults.removeFavorite(path),
-          },
-        ],
-      ]"
+      :items="fileMenuItems(path)"
       :modal="false"
     >
       <div
         class="group flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer hover:bg-elevated transition-colors"
+        :class="editor.currentFilePath === path ? 'bg-primary/10 text-primary border-l-2 border-primary' : ''"
         draggable="true"
         @click="openFile(path)"
         @dragstart="dnd.onPathDragStart($event, path, { isDir: false, source: 'tree' })"

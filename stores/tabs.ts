@@ -49,7 +49,10 @@ export const useTabsStore = defineStore('tabs', () => {
     closeMobileTab: mobileTabsController.closeMobileTab,
   })
 
-  async function openFile(path: string) {
+  async function openFile(path: string, options?: { skipReveal?: boolean }) {
+    if (options?.skipReveal) {
+      sidebar.suppressNextAutoReveal(path)
+    }
     if (isMobile.value) {
       await mobileTabsController.openMobileFile(path)
     }
@@ -199,5 +202,6 @@ export const useTabsStore = defineStore('tabs', () => {
     toggleExpandAll: sidebar.toggleExpandAll,
     toggleAutoReveal: sidebar.toggleAutoReveal,
     revealFile: sidebar.revealFile,
+    consumeSuppressedAutoReveal: sidebar.consumeSuppressedAutoReveal,
   }
 })

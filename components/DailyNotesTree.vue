@@ -2,6 +2,8 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { FileNode } from '~/types'
 import type { DailyNotesMonth } from '~/composables/useDailyNotes'
+import { SidebarDialogsKey } from '~/composables/useSidebarDialogs'
+import { isImageFile } from '~/utils/fileTypes'
 
 const props = defineProps<{
   // When true, the tree adapts to the content height instead of stretching
@@ -12,8 +14,10 @@ const props = defineProps<{
 const settings = useSettingsStore()
 const tabs = useTabsStore()
 const editor = useEditorStore()
+const vaults = useVaultsStore()
 const toast = useToast()
 const { t } = useI18n()
+const dialogs = inject(SidebarDialogsKey)
 
 const dn = useDailyNotes()
 
@@ -36,6 +40,9 @@ async function loadTree() {
 }
 
 watch([baseDir, showEmptyMonths], loadTree, { immediate: true })
+watch(() => vaults.trees, () => {
+  void loadTree()
+}, { deep: true })
 
 const currentMonth = computed(() => dn.formatMonthFolder(new Date()))
 
@@ -58,7 +65,7 @@ async function onCreate() {
   try {
     const path = await dn.createDailyNote(baseDir.value)
     await loadTree()
-    await tabs.openFile(path)
+    await tabs.openFile(path, { skipReveal: true })
     if (settings.mainRepoPath) {
       await dn.commitIfGit(settings.mainRepoPath)
     }
@@ -69,7 +76,13 @@ async function onCreate() {
 }
 
 async function onOpen(file: FileNode) {
-  await tabs.openFile(file.path)
+  await tabs.openFile(file.path, { skipReveal: true })
+}
+
+function openInNewPanel(file: FileNode) {
+  tabs.openFileInNewPanel(file.path).catch((error: unknown) => {
+    toast.add({ title: t('toast.openFilePanelFailed'), description: String(error), color: 'error' })
+  })
 }
 
 function isToday(file: FileNode): boolean {
@@ -77,13 +90,18 @@ function isToday(file: FileNode): boolean {
 }
 
 async function onDeleteFile(file: FileNode) {
-  if (!baseDir.value) return
+  const vault = vaults.findVaultForPath(file.path)
+  if (!vault) return
+  const needsConfirm = vault.type === 'git'
+    ? settings.settings.confirmDeleteGit
+    : settings.settings.confirmDeleteLocal
+  if (needsConfirm && !confirm(t('confirm.deleteFile', { name: file.name }))) return
   try {
-    await dn.deleteFile(file.path)
-    await loadTree()
-    if (settings.mainRepoPath) {
-      await dn.commitIfGit(settings.mainRepoPath)
+    await editor.deleteNote({ vault, path: file.path })
+    if (vaults.isFavorite(file.path)) {
+      await vaults.removeFavorite(file.path)
     }
+    await loadTree()
   }
   catch (error) {
     toast.add({ title: t('toast.deleteFailed'), description: String(error), color: 'error' })
@@ -105,9 +123,37 @@ async function onDeleteFolder(month: DailyNotesMonth) {
 }
 
 function fileMenuItems(file: FileNode): DropdownMenuItem[][] {
-  return [[
-    { label: t('sidebar.deleteFile'), icon: 'i-lucide-trash-2', color: 'error', onSelect: () => onDeleteFile(file) },
-  ]]
+  const vault = vaults.findVaultForPath(file.path)
+  const isFav = vaults.isFavorite(file.path)
+  const items: DropdownMenuItem[] = [
+    { label: t('vault.openInNewPanel'), icon: 'i-lucide-panel-right-open', onSelect: () => openInNewPanel(file) },
+    {
+      label: isFav ? t('sidebar.removeFromFavorites') : t('sidebar.addToFavorites'),
+      icon: isFav ? 'i-lucide-star-off' : 'i-lucide-star',
+      onSelect: () => isFav ? vaults.removeFavorite(file.path) : vaults.addFavorite(file.path),
+    },
+  ]
+  if (isImageFile(file.path) && vault && dialogs) {
+    items.push({
+      label: t('vault.convertImage'),
+      icon: 'i-lucide-image-upscale',
+      onSelect: () => dialogs.openConvertImage(vault, file),
+    })
+  }
+  if (vault && dialogs) {
+    items.push({
+      label: t('vault.rename'),
+      icon: 'i-lucide-pencil',
+      onSelect: () => dialogs.openRenameNode(vault, file),
+    })
+  }
+  items.push({
+    label: t('sidebar.deleteFile'),
+    icon: 'i-lucide-trash-2',
+    color: 'error',
+    onSelect: () => onDeleteFile(file),
+  })
+  return [items]
 }
 
 function folderMenuItems(month: DailyNotesMonth): DropdownMenuItem[][] {

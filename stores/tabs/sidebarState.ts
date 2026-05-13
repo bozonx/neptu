@@ -73,6 +73,7 @@ export function createSidebarState() {
 
   const autoRevealFile = ref(false)
   const expandAllActive = ref(false)
+  const suppressedAutoRevealPath = ref<string | null>(null)
 
   watch(rightSidebarCollapsed, () => {
     void useEditorStore().saveUiState()
@@ -156,6 +157,18 @@ export function createSidebarState() {
     await useEditorStore().saveUiState()
   }
 
+  function suppressNextAutoReveal(path: string) {
+    suppressedAutoRevealPath.value = path
+  }
+
+  function consumeSuppressedAutoReveal(path: string): boolean {
+    if (suppressedAutoRevealPath.value === path) {
+      suppressedAutoRevealPath.value = null
+      return true
+    }
+    return false
+  }
+
   function revealFile(path: string) {
     const vaults = useVaultsStore()
     const vault = vaults.findVaultForPath(path)
@@ -200,5 +213,7 @@ export function createSidebarState() {
     toggleExpandAll,
     toggleAutoReveal,
     revealFile,
+    suppressNextAutoReveal,
+    consumeSuppressedAutoReveal,
   }
 }

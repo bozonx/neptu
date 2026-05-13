@@ -62,6 +62,7 @@
     "noDailyNotes": "No daily notes yet",
     "deleteFile": "Delete file",
     "deleteFolder": "Delete folder",
+    "revealInFiles": "Reveal in files",
     "backlinks": "Backlinks",
     "noBacklinks": "No backlinks found"
   },

@@ -3,7 +3,9 @@ export function useAutoReveal() {
   const editor = useEditorStore()
 
   watch(() => editor.currentFilePath, (path, oldPath) => {
-    if (!path || !tabs.autoRevealFile || path === oldPath) return
+    if (!path || path === oldPath) return
+    if (tabs.consumeSuppressedAutoReveal(path)) return
+    if (!tabs.autoRevealFile) return
 
     tabs.revealFile(path)
 
