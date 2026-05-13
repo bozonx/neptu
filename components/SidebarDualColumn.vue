@@ -149,7 +149,7 @@ watchEffect(() => {
 
 <template>
   <Splitpanes
-    class="flex-1"
+    class="flex-1 flex min-w-0 min-h-0"
     @resized="handleDualResize"
   >
     <!-- First column: vault picker -->
@@ -157,7 +157,7 @@ watchEffect(() => {
       :size="tabs.leftSidebarDualFirstColumnSize"
       min-size="10"
       max-size="60"
-      class="flex flex-col bg-default border-r border-default"
+      class="flex flex-col min-w-0 min-h-0 bg-default border-r border-default"
     >
       <div class="flex-1 overflow-y-auto p-1 gap-1 flex flex-col min-h-0">
         <!-- Favorites -->
@@ -295,7 +295,7 @@ watchEffect(() => {
     <!-- Second column: selected vault tree or favorites -->
     <Pane
       :size="100 - tabs.leftSidebarDualFirstColumnSize"
-      class="flex flex-col min-w-0 bg-default relative p-2 overflow-y-auto"
+      class="flex flex-col min-w-0 min-h-0 bg-default relative p-2 overflow-y-auto"
     >
       <template v-if="tabs.leftSidebarDualShowFavorites">
         <div class="flex items-center gap-1.5 px-2 py-1 mb-1">
