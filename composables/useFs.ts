@@ -14,12 +14,14 @@ import {
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { dirname, join } from '@tauri-apps/api/path'
 import { load, dump } from 'js-yaml'
-import { globToRegex } from '~/utils/glob'
 import type { FileFilterSettings, FileNode, FileSortMode } from '~/types'
-
-// Non-hidden directories we still want to skip while scanning vaults.
-// Dot-prefixed directories are filtered by `startsWith('.')`.
-const SKIP_DIRS = new Set(['node_modules', '.git'])
+import {
+  compareFileNodes,
+  createExcludeMatcher,
+  getEnabledFileExtensions,
+  getFileExtension,
+  SKIPPED_TREE_DIRS,
+} from '~/utils/vaults/tree'
 
 /**
  * Native filesystem helpers backed by Tauri plugins.
@@ -51,6 +53,10 @@ export function useFs() {
     return await readFile(path)
   }
 
+  async function listDir(path: string) {
+    return await readDir(path)
+  }
+
   async function writeText(path: string, content: string) {
     await writeTextFile(path, content)
   }
@@ -70,6 +76,10 @@ export function useFs() {
 
   async function deleteFile(path: string) {
     await remove(path)
+  }
+
+  async function deleteFolder(path: string) {
+    await remove(path, { recursive: true })
   }
 
   async function renameFile(oldPath: string, newPath: string) {
@@ -166,66 +176,8 @@ export function useFs() {
     const { showHidden = false, filterSettings, sortMode = 'nameAsc', excludes } = options
     const normRoot = rootPath.replace(/[/]+$/, '')
 
-    const enabledExts = new Set<string>()
-    if (filterSettings) {
-      for (const group of filterSettings.groups) {
-        if (!group.enabled) continue
-        for (const e of group.extensions) {
-          if (e.enabled) enabledExts.add(e.ext.toLowerCase())
-        }
-      }
-    }
-    else {
-      enabledExts.add('md')
-    }
-
-    function getExt(name: string): string | null {
-      const idx = name.lastIndexOf('.')
-      if (idx <= 0 || idx === name.length - 1) return null
-      return name.slice(idx + 1).toLowerCase()
-    }
-
-    function getGroupIndex(node: FileNode): number {
-      const isHidden = node.name.startsWith('.')
-      if (node.isDir && isHidden) return 0
-      if (node.isDir) return 1
-      if (isHidden) return 2
-      return 3
-    }
-
-    function compareNodes(a: FileNode, b: FileNode): number {
-      const ga = getGroupIndex(a)
-      const gb = getGroupIndex(b)
-      if (ga !== gb) return ga - gb
-
-      switch (sortMode) {
-        case 'nameDesc':
-          return b.name.localeCompare(a.name)
-        case 'mtimeDesc':
-          return (b.mtime ?? 0) - (a.mtime ?? 0)
-        case 'mtimeAsc':
-          return (a.mtime ?? 0) - (b.mtime ?? 0)
-        case 'birthtimeDesc':
-          return (b.birthtime ?? 0) - (a.birthtime ?? 0)
-        case 'birthtimeAsc':
-          return (a.birthtime ?? 0) - (b.birthtime ?? 0)
-        case 'nameAsc':
-        default:
-          return a.name.localeCompare(b.name)
-      }
-    }
-
-    const excludeRegexes = excludes ? excludes.map(globToRegex) : []
-
-    function isExcluded(absPath: string): boolean {
-      if (excludeRegexes.length === 0) return false
-      let rel = absPath.slice(normRoot.length)
-      if (rel.startsWith('/') || rel.startsWith('\\')) rel = rel.slice(1)
-      for (const re of excludeRegexes) {
-        if (re.test(rel)) return true
-      }
-      return false
-    }
+    const enabledExts = getEnabledFileExtensions(filterSettings)
+    const isExcluded = createExcludeMatcher(normRoot, excludes)
 
     async function walk(dirPath: string): Promise<FileNode[]> {
       const entries = await readDir(dirPath)
@@ -236,7 +188,7 @@ export function useFs() {
 
         const isHidden = entry.name.startsWith('.')
         if (entry.isDirectory) {
-          if (SKIP_DIRS.has(entry.name)) continue
+          if (SKIPPED_TREE_DIRS.has(entry.name)) continue
           if (isHidden && !showHidden) continue
           const childPath = await join(dirPath, entry.name)
           if (isExcluded(childPath)) continue
@@ -253,7 +205,7 @@ export function useFs() {
         }
         else if (entry.isFile) {
           if (isHidden && !showHidden) continue
-          const ext = getExt(entry.name)
+          const ext = getFileExtension(entry.name)
           if (!ext || !enabledExts.has(ext)) continue
           const childPath = await join(dirPath, entry.name)
           if (isExcluded(childPath)) continue
@@ -268,7 +220,7 @@ export function useFs() {
         }
       }
 
-      nodes.sort(compareNodes)
+      nodes.sort(compareFileNodes(sortMode))
       return nodes
     }
 
@@ -330,11 +282,13 @@ export function useFs() {
     exists,
     readText,
     readBytes,
+    readDir: listDir,
     writeText,
     writeBytes,
     readYaml,
     writeYaml,
     deleteFile,
+    deleteFolder,
     renameFile,
     copyFile,
     copyFolder,

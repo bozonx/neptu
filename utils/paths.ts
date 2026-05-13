@@ -14,6 +14,24 @@ export function stripTrailingSlash(path: string): string {
   return path.replace(/[/\\]+$/, '')
 }
 
+export function isAbsolutePath(path: string): boolean {
+  return path.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(path)
+}
+
+export function makePathRelativeToRoot(path: string, root: string): string {
+  const normalizedRoot = stripTrailingSlash(root)
+  const prefix = `${normalizedRoot}/`
+  if (path === normalizedRoot) return '.'
+  if (path.startsWith(prefix)) return path.slice(prefix.length)
+  return path
+}
+
+export function makePathAbsoluteFromRoot(path: string, root: string): string {
+  if (isAbsolutePath(path)) return path
+  if (path === '.' || path === '') return root
+  return `${stripTrailingSlash(root)}/${path.replace(/^[/\\]+/, '')}`
+}
+
 export function relativePath(fromDir: string, toPath: string): string {
   const from = stripTrailingSlash(fromDir).replace(/\\/g, '/').split('/').filter(Boolean)
   const to = toPath.replace(/\\/g, '/').split('/').filter(Boolean)

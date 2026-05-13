@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { convertFileSrc } from '@tauri-apps/api/core'
-
 const props = defineProps<{
   filePath: string
   viewType: 'image' | 'video' | 'audio'
@@ -59,8 +57,7 @@ function onMouseUp(e: MouseEvent) {
 watch(() => props.filePath, (path) => {
   resetView()
   if (path) {
-    // Convert absolute path to a Tauri asset URL
-    assetUrl.value = convertFileSrc(path)
+    assetUrl.value = convertLocalFileSrc(path)
   }
   else {
     assetUrl.value = ''

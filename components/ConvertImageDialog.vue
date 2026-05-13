@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { convertFileSrc } from '@tauri-apps/api/core'
 import { isImageFileName } from '~/composables/useImageConvert'
 
 interface Props {
@@ -29,7 +28,7 @@ const qualitySupported = computed(() => format.value !== 'png')
 
 watch(() => props.filePath, (path) => {
   if (path) {
-    previewUrl.value = convertFileSrc(path)
+    previewUrl.value = convertLocalFileSrc(path)
   }
   else {
     previewUrl.value = ''

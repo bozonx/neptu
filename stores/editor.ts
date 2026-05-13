@@ -46,6 +46,7 @@ export const useEditorStore = defineStore('editor', () => {
     createFile: documents.createFile,
     deleteNote: documents.deleteNote,
     reset: editorBuffers.reset,
+    clearTimers: editorBuffers.clearTimers,
     scrollToLine: cursorState.scrollToLine,
     saveCursorPosition: cursorState.saveCursorPosition,
     getCursorPosition: cursorState.getCursorPosition,

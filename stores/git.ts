@@ -1,27 +1,19 @@
 import { defineStore } from 'pinia'
-import type { CommitStatus, GitAuthor, GitStatusInfo, Vault } from '~/types'
-
-/** Resolves the effective commit mode for a vault, honouring `respect_config`. */
-function getEffectiveCommitMode(vault: Vault): 'auto' | 'manual' {
-  const mode = vault.git?.commitMode ?? 'respect_config'
-  if (mode !== 'respect_config') return mode
-  const settings = useSettingsStore()
-  return settings.settings.defaultCommitMode
-}
-
-/** Resolves the effective commit debounce for a vault. */
-function getEffectiveCommitDebounceMs(vault: Vault): number {
-  const custom = vault.git?.commitDebounceMs
-  if (custom !== undefined) return Math.max(1000, custom)
-  const settings = useSettingsStore()
-  return Math.max(1000, settings.settings.defaultCommitDebounceMs)
-}
+import type { CommitStatus, GitAuthor, GitStatusInfo } from '~/types'
+import { buildCommitMessage, getEffectiveCommitDebounceMs, getEffectiveCommitMode } from '~/utils/git'
 
 /**
  * Per-vault scheduled commit timers. Lives outside reactive state so that
  * Pinia does not try to make `setTimeout` handles reactive.
  */
 const commitTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+export function clearGitCommitTimers() {
+  for (const timer of commitTimers.values()) {
+    clearTimeout(timer)
+  }
+  commitTimers.clear()
+}
 
 /**
  * Owns git-related runtime state: per-vault status, commit status and the
@@ -98,9 +90,10 @@ export const useGitStore = defineStore('git', () => {
   function scheduleCommit(vaultId: string) {
     const vault = useVaultsStore().findById(vaultId)
     if (!vault || vault.type !== 'git' || !vault.git) return
-    if (getEffectiveCommitMode(vault) !== 'auto') return
+    const settings = useSettingsStore()
+    if (getEffectiveCommitMode(vault, settings.settings.defaultCommitMode) !== 'auto') return
     cancelCommit(vaultId)
-    const delay = getEffectiveCommitDebounceMs(vault)
+    const delay = getEffectiveCommitDebounceMs(vault, settings.settings.defaultCommitDebounceMs)
     pendingCommits.value[vaultId] = true
     const handle = setTimeout(() => {
       commitTimers.delete(vaultId)
@@ -136,11 +129,8 @@ export const useGitStore = defineStore('git', () => {
         return
       }
       const settings = useSettingsStore()
-      const template = settings.settings.gitAutoMessageTemplate || 'Update notes ({files} {fileWord})'
       const count = current.changedFiles
-      const autoMessage = template
-        .replace(/\{files\}/g, String(count))
-        .replace(/\{fileWord\}/g, count === 1 ? 'file' : 'files')
+      const autoMessage = buildCommitMessage(settings.settings.gitAutoMessageTemplate, count)
       const finalMessage = message?.trim() || autoMessage
       const result = await git.commitAll({
         path: vault.path,
@@ -165,10 +155,15 @@ export const useGitStore = defineStore('git', () => {
 
   /** Drops cached status for a removed vault. */
   function dropVault(vaultId: string) {
+    cancelCommit(vaultId)
     Reflect.deleteProperty(status.value, vaultId)
     Reflect.deleteProperty(commitStatus.value, vaultId)
     Reflect.deleteProperty(pendingCommits.value, vaultId)
   }
+
+  onScopeDispose(() => {
+    clearGitCommitTimers()
+  })
 
   return {
     status,
@@ -182,5 +177,6 @@ export const useGitStore = defineStore('git', () => {
     commit,
     resetCommitStatus,
     dropVault,
+    clearTimers: clearGitCommitTimers,
   }
 })

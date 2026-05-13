@@ -7,28 +7,11 @@ import {
   type SharedSettings,
   type Vault,
 } from '~/types'
-
-/* Helpers to make paths portable (relative to mainRepoPath) for shared config. */
-function isAbsolutePath(p: string): boolean {
-  return p.startsWith('/') || (p.length > 1 && p[1] === ':')
-}
-
-function makeRelative(p: string, root: string): string {
-  const prefix = root.replace(/[/\\]+$/, '') + '/'
-  if (p === root) return '.'
-  if (p.startsWith(prefix)) return p.slice(prefix.length)
-  return p
-}
-
-function makeAbsolute(p: string, root: string): string {
-  if (isAbsolutePath(p)) return p
-  if (p === '.' || p === '') return root
-  return root.replace(/[/\\]+$/, '') + '/' + p.replace(/^[/\\]+/, '')
-}
+import { isAbsolutePath, makePathAbsoluteFromRoot, makePathRelativeToRoot } from '~/utils/paths'
 
 function toRelativeVaults(vaults: Vault[], root: string): Vault[] {
   return vaults.map((v) => {
-    const rel = makeRelative(v.path, root)
+    const rel = makePathRelativeToRoot(v.path, root)
     if (rel !== v.path) return { ...v, path: rel }
     return { ...v }
   })
@@ -37,16 +20,16 @@ function toRelativeVaults(vaults: Vault[], root: string): Vault[] {
 function fromRelativeVaults(vaults: Vault[], root: string): Vault[] {
   return vaults.map((v) => {
     if (isAbsolutePath(v.path)) return v
-    return { ...v, path: makeAbsolute(v.path, root) }
+    return { ...v, path: makePathAbsoluteFromRoot(v.path, root) }
   })
 }
 
 function toRelativeFavorites(abs: string[], root: string): string[] {
-  return abs.map((p) => makeRelative(p, root))
+  return abs.map((p) => makePathRelativeToRoot(p, root))
 }
 
 function fromRelativeFavorites(rel: string[], root: string): string[] {
-  return rel.map((p) => makeAbsolute(p, root))
+  return rel.map((p) => makePathAbsoluteFromRoot(p, root))
 }
 
 const SHARED_SETTINGS_KEYS: Array<keyof SharedSettings> = [

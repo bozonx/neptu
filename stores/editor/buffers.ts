@@ -17,6 +17,7 @@ function findVaultForPath(path: string | null): Vault | null {
 
 export function useEditorBuffers() {
   const buffers = ref<Record<string, EditorBuffer>>({})
+  const savedHintTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const settings = useSettingsStore()
   const debounceMs = computed(
     () => Math.max(100, settings.settings.autosaveDebounceMs),
@@ -28,11 +29,15 @@ export function useEditorBuffers() {
     buffer.saveStatus = next
     buffer.saveError = error
     if (next === 'saved') {
-      setTimeout(() => {
+      const existingTimer = savedHintTimers.get(path)
+      if (existingTimer) clearTimeout(existingTimer)
+      const timer = setTimeout(() => {
+        savedHintTimers.delete(path)
         if (buffers.value[path]?.saveStatus === 'saved') {
           buffers.value[path].saveStatus = 'idle'
         }
       }, SAVED_HINT_MS)
+      savedHintTimers.set(path, timer)
     }
   }
 
@@ -158,10 +163,16 @@ export function useEditorBuffers() {
 
   function reset(path?: string) {
     if (path) {
+      const timer = savedHintTimers.get(path)
+      if (timer) {
+        clearTimeout(timer)
+        savedHintTimers.delete(path)
+      }
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete buffers.value[path]
     }
     else {
+      clearSavedHintTimers()
       buffers.value = {}
     }
   }
@@ -173,7 +184,7 @@ export function useEditorBuffers() {
     delete buffers.value[oldPath]
   }
 
-  setInterval(async () => {
+  const autosaveInterval = setInterval(async () => {
     const now = Date.now()
     const entries = Object.entries(buffers.value)
     for (const [path, buffer] of entries) {
@@ -188,6 +199,22 @@ export function useEditorBuffers() {
     }
   }, 500)
 
+  function clearSavedHintTimers() {
+    for (const timer of savedHintTimers.values()) {
+      clearTimeout(timer)
+    }
+    savedHintTimers.clear()
+  }
+
+  function clearBufferTimers() {
+    clearInterval(autosaveInterval)
+    clearSavedHintTimers()
+  }
+
+  onScopeDispose(() => {
+    clearBufferTimers()
+  })
+
   return {
     buffers,
     openFile,
@@ -197,5 +224,6 @@ export function useEditorBuffers() {
     flushVault,
     reset,
     migrateBufferPath,
+    clearTimers: clearBufferTimers,
   }
 }
