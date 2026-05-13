@@ -295,54 +295,56 @@ watchEffect(() => {
     <!-- Second column: selected vault tree or favorites -->
     <Pane
       :size="100 - tabs.leftSidebarDualFirstColumnSize"
-      class="flex flex-col min-w-0 min-h-0 bg-default relative p-2 overflow-y-auto"
+      class="flex flex-col min-w-0 min-h-0 bg-default relative"
     >
-      <template v-if="tabs.leftSidebarDualShowFavorites">
-        <div class="flex items-center gap-1.5 px-2 py-1 mb-1">
-          <UIcon
-            name="i-lucide-star"
-            class="size-3.5 text-primary shrink-0"
-          />
-          <span class="text-[10px] font-semibold text-muted uppercase tracking-wider">{{ $t('sidebar.favorites') }}</span>
-        </div>
-        <FavoritesList />
-      </template>
-      <template v-else-if="tabs.leftSidebarDualShowDailyNotes">
-        <DailyNotesTree />
-      </template>
-      <template v-else-if="tabs.leftSidebarDualSelectedVaultId && vaults.findById(tabs.leftSidebarDualSelectedVaultId)">
+      <div class="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col">
+        <template v-if="tabs.leftSidebarDualShowFavorites">
+          <div class="flex items-center gap-1.5 px-2 py-1 mb-1">
+            <UIcon
+              name="i-lucide-star"
+              class="size-3.5 text-primary shrink-0"
+            />
+            <span class="text-[10px] font-semibold text-muted uppercase tracking-wider">{{ $t('sidebar.favorites') }}</span>
+          </div>
+          <FavoritesList />
+        </template>
+        <template v-else-if="tabs.leftSidebarDualShowDailyNotes">
+          <DailyNotesTree />
+        </template>
+        <template v-else-if="tabs.leftSidebarDualSelectedVaultId && vaults.findById(tabs.leftSidebarDualSelectedVaultId)">
+          <div
+            class="rounded-md transition-colors"
+            :class="dualVaultDropTargetId === tabs.leftSidebarDualSelectedVaultId ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : ''"
+            @dragover="openDualVaultDrop($event, vaults.findById(tabs.leftSidebarDualSelectedVaultId!)!)"
+            @dragleave="clearDualVaultDrop(tabs.leftSidebarDualSelectedVaultId!)"
+            @drop="dropToVaultRoot($event, vaults.findById(tabs.leftSidebarDualSelectedVaultId!)!)"
+          >
+            <VaultSidebarItem
+              :key="tabs.leftSidebarDualSelectedVaultId"
+              :vault="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!"
+              :expanded="true"
+              :nodes="vaults.trees[tabs.leftSidebarDualSelectedVaultId] ?? []"
+              :active-path="editor.currentFilePath"
+              :filters="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!.filters"
+              :expanded-folders="tabs.expandedFolders"
+              @toggle="() => {}"
+              @toggle-folder="toggleFolder"
+              @create-note="(v, d) => emit('createNote', v, d)"
+              @create-file="(v, d) => emit('createFile', v, d)"
+              @create-folder="(v, d) => emit('createFolder', v, d)"
+              @rename-node="(v, n) => emit('renameNode', v, n)"
+              @convert-image="(v, n) => emit('convertImage', v, n)"
+              @edit-vault="(v) => emit('editVault', v)"
+              @remove-vault="(v) => emit('removeVault', v)"
+            />
+          </div>
+        </template>
         <div
-          class="flex flex-col flex-1 min-h-0 rounded-md transition-colors"
-          :class="dualVaultDropTargetId === tabs.leftSidebarDualSelectedVaultId ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : ''"
-          @dragover="openDualVaultDrop($event, vaults.findById(tabs.leftSidebarDualSelectedVaultId!)!)"
-          @dragleave="clearDualVaultDrop(tabs.leftSidebarDualSelectedVaultId!)"
-          @drop="dropToVaultRoot($event, vaults.findById(tabs.leftSidebarDualSelectedVaultId!)!)"
+          v-else
+          class="flex flex-1 items-center justify-center text-muted text-sm px-2 text-center"
         >
-          <VaultSidebarItem
-            :key="tabs.leftSidebarDualSelectedVaultId"
-            :vault="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!"
-            :expanded="true"
-            :nodes="vaults.trees[tabs.leftSidebarDualSelectedVaultId] ?? []"
-            :active-path="editor.currentFilePath"
-            :filters="vaults.findById(tabs.leftSidebarDualSelectedVaultId)!.filters"
-            :expanded-folders="tabs.expandedFolders"
-            @toggle="() => {}"
-            @toggle-folder="toggleFolder"
-            @create-note="(v, d) => emit('createNote', v, d)"
-            @create-file="(v, d) => emit('createFile', v, d)"
-            @create-folder="(v, d) => emit('createFolder', v, d)"
-            @rename-node="(v, n) => emit('renameNode', v, n)"
-            @convert-image="(v, n) => emit('convertImage', v, n)"
-            @edit-vault="(v) => emit('editVault', v)"
-            @remove-vault="(v) => emit('removeVault', v)"
-          />
+          {{ $t('sidebar.noVaultSelected') }}
         </div>
-      </template>
-      <div
-        v-else
-        class="flex h-full items-center justify-center text-muted text-sm px-2 text-center"
-      >
-        {{ $t('sidebar.noVaultSelected') }}
       </div>
     </Pane>
   </Splitpanes>
