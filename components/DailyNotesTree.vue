@@ -2,8 +2,8 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { FileNode } from '~/types'
 import type { DailyNotesMonth } from '~/composables/useDailyNotes'
+import { isConvertibleImageFileName } from '~/composables/useImageConvert'
 import { SidebarDialogsKey } from '~/composables/useSidebarDialogs'
-import { isImageFile } from '~/utils/fileTypes'
 
 const props = defineProps<{
   // When true, the tree adapts to the content height instead of stretching
@@ -133,7 +133,7 @@ function fileMenuItems(file: FileNode): DropdownMenuItem[][] {
       onSelect: () => isFav ? vaults.removeFavorite(file.path) : vaults.addFavorite(file.path),
     },
   ]
-  if (isImageFile(file.path) && vault && dialogs) {
+  if (isConvertibleImageFileName(file.path) && vault && dialogs) {
     items.push({
       label: t('vault.convertImage'),
       icon: 'i-lucide-image-upscale',

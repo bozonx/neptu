@@ -1,8 +1,9 @@
 import {
   convertImageBuffer,
   extensionForFormat,
-  isImageFileName,
+  isConvertibleImageFileName,
   mimeFromImageFileName,
+  replaceMarkdownAssetReference,
   replaceExtension,
   type ConvertOptions,
 } from '~/composables/useImageConvert'
@@ -17,6 +18,7 @@ import {
   relativePath,
   stripTrailingSlash,
 } from '~/utils/paths'
+import { isMarkdownFile } from '~/utils/fileTypes'
 
 export type ConflictChoice = 'rename' | 'overwrite' | 'skip'
 export type ConflictPolicy
@@ -97,19 +99,58 @@ export async function writeConvertedImage(
   return newPath
 }
 
+async function collectMarkdownFiles(dirPath: string, files: string[] = []): Promise<string[]> {
+  const fs = useFs()
+  const entries = await fs.readDir(dirPath)
+  for (const entry of entries) {
+    const entryPath = await fs.join(dirPath, entry.name)
+    if (entry.isDirectory) {
+      await collectMarkdownFiles(entryPath, files)
+    }
+    else if (isMarkdownFile(entryPath)) {
+      files.push(entryPath)
+    }
+  }
+  return files
+}
+
+export async function updateMarkdownAssetReferences(
+  vault: Vault,
+  oldPath: string,
+  newPath: string,
+): Promise<string[]> {
+  if (oldPath === newPath) return []
+
+  const fs = useFs()
+  const changed: string[] = []
+  const markdownFiles = await collectMarkdownFiles(vault.path)
+
+  for (const markdownPath of markdownFiles) {
+    const oldReference = relativePath(dirname(markdownPath), oldPath)
+    const newReference = relativePath(dirname(markdownPath), newPath)
+    const content = await fs.readText(markdownPath)
+    const nextContent = replaceMarkdownAssetReference(content, oldReference, newReference)
+    if (nextContent === content) continue
+
+    await fs.writeText(markdownPath, nextContent)
+    useSearchStore().updateFile(markdownPath, nextContent)
+    changed.push(markdownPath)
+  }
+
+  return changed
+}
+
 export async function applyAutoConvert(
   vault: Vault,
   filePath: string,
   getSettings: (vault: Vault) => AutoConvertSettings | undefined,
 ): Promise<string> {
   const settings = getSettings(vault)
-  if (!settings?.enabled || !isImageFileName(filePath)) return filePath
-
-  const ext = fileExt(filePath)
-  if (ext === '.svg' || ext === '.gif') return filePath
+  if (!settings?.enabled || !isConvertibleImageFileName(filePath)) return filePath
 
   // Skip conversion when there is no resize and the format already matches.
   // This preserves EXIF and avoids a pointless re-encode.
+  const ext = fileExt(filePath)
   if (!settings.maxDimension && ext === extensionForFormat(settings.format)) {
     return filePath
   }

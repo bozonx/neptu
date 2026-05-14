@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isImageFileName } from '~/composables/useImageConvert'
+import { isConvertibleImageFileName } from '~/composables/useImageConvert'
 
 interface Props {
   filePath: string
@@ -42,7 +42,7 @@ const formatItems = [
 ]
 
 async function submitConvert() {
-  if (!props.filePath || !isImageFileName(props.filePath)) return
+  if (!props.filePath || !isConvertibleImageFileName(props.filePath)) return
 
   isConverting.value = true
   try {

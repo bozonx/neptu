@@ -18,7 +18,8 @@ import {
   type VaultGroup,
 } from '~/types'
 import {
-  isImageFileName,
+  isConvertibleImageFileName,
+  replaceMarkdownAssetReference,
   type ConvertOptions,
 } from '~/composables/useImageConvert'
 import type { AutoConvertSettings, VaultConfig } from '~/types/vault-config'
@@ -41,6 +42,7 @@ import {
   applyAutoConvert,
   extFromMime,
   resolveConflictPolicy,
+  updateMarkdownAssetReferences,
   writeConvertedImage,
   type ConflictPolicy,
 } from '~/utils/vaults/media'
@@ -351,7 +353,7 @@ export const useVaultsStore = defineStore('vaults', () => {
     filePath: string,
     options: ConvertOptions,
   ): Promise<string> {
-    if (!isImageFileName(filePath)) return filePath
+    if (!isConvertibleImageFileName(filePath)) return filePath
 
     const vault = findById(vaultId) ?? findVaultForPath(filePath)
     if (!vault) return filePath
@@ -362,6 +364,23 @@ export const useVaultsStore = defineStore('vaults', () => {
 
     await editor.flushVault(vault)
     const finalPath = await writeConvertedImage(filePath, options)
+    const updatedMarkdownPaths = await updateMarkdownAssetReferences(
+      vault,
+      filePath,
+      finalPath,
+    )
+    for (const markdownPath of updatedMarkdownPaths) {
+      const buffer = editor.buffers[markdownPath]
+      if (!buffer) continue
+
+      buffer.content = replaceMarkdownAssetReference(
+        buffer.content,
+        relativePath(dirname(markdownPath), filePath),
+        relativePath(dirname(markdownPath), finalPath),
+      )
+      buffer.isDirty = false
+      buffer.revision += 1
+    }
 
     await refreshTree(vault)
     await tabs.updatePath(filePath, finalPath, false)

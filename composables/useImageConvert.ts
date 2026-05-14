@@ -127,3 +127,67 @@ export function isImageFileName(fileName: string): boolean {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
   return ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'avif', 'svg'].includes(ext)
 }
+
+export function isConvertibleImageFileName(fileName: string): boolean {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
+  return ['png', 'jpg', 'jpeg', 'webp'].includes(ext)
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function referenceVariants(reference: string): string[] {
+  const normalized = reference.replace(/\\/g, '/')
+  const variants = new Set([normalized])
+  if (normalized.startsWith('./')) {
+    variants.add(normalized.slice(2))
+  }
+  else if (!normalized.startsWith('../') && !normalized.startsWith('/')) {
+    variants.add(`./${normalized}`)
+  }
+  return [...variants]
+}
+
+function replacementForReference(
+  current: string,
+  oldReference: string,
+  newReference: string,
+): string | null {
+  const suffixMatch = current.match(/([?#].*)$/)
+  const suffix = suffixMatch?.[1] ?? ''
+  const comparable = suffix ? current.slice(0, -suffix.length) : current
+  const normalizedComparable = comparable.replace(/\\/g, '/')
+  const oldVariants = referenceVariants(oldReference)
+  if (!oldVariants.includes(normalizedComparable)) return null
+
+  const newVariants = referenceVariants(newReference)
+  const shouldUseBare = !normalizedComparable.startsWith('./')
+    && oldVariants.some((v) => !v.startsWith('./') && v === normalizedComparable)
+  const next = shouldUseBare
+    ? (newVariants.find((v) => !v.startsWith('./')) ?? newReference)
+    : newReference
+  return `${next}${suffix}`
+}
+
+export function replaceMarkdownAssetReference(
+  content: string,
+  oldReference: string,
+  newReference: string,
+): string {
+  const oldDestinations = referenceVariants(oldReference).map(escapeRegExp).join('|')
+  if (!oldDestinations) return content
+
+  const markdownLinkPattern = new RegExp(`(!?\\[[^\\]\\n]*\\]\\()(${oldDestinations})([?#][^\\s)]*)?(\\))`, 'g')
+  const htmlAttrPattern = /\b((?:src|href)=["'])([^"']+)(["'])/gi
+
+  return content
+    .replace(markdownLinkPattern, (match, prefix: string, destination: string, suffix: string | undefined, closing: string) => {
+      const replacement = replacementForReference(`${destination}${suffix ?? ''}`, oldReference, newReference)
+      return replacement ? `${prefix}${replacement}${closing}` : match
+    })
+    .replace(htmlAttrPattern, (match, prefix: string, destination: string, quote: string) => {
+      const replacement = replacementForReference(destination, oldReference, newReference)
+      return replacement ? `${prefix}${replacement}${quote}` : match
+    })
+}

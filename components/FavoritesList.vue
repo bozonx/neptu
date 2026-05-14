@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
+import { isConvertibleImageFileName } from '~/composables/useImageConvert'
 import { SidebarDialogsKey } from '~/composables/useSidebarDialogs'
-import { isImageFile } from '~/utils/fileTypes'
 
 const vaults = useVaultsStore()
 const tabs = useTabsStore()
@@ -65,7 +65,7 @@ function fileMenuItems(path: string): DropdownMenuItem[][] {
     { label: t('sidebar.revealInFiles'), icon: 'i-lucide-folder-search', onSelect: () => revealInFiles(path) },
     { label: t('sidebar.removeFromFavorites'), icon: 'i-lucide-star-off', onSelect: () => vaults.removeFavorite(path) },
   ]
-  if (isImageFile(path) && vault && dialogs) {
+  if (isConvertibleImageFileName(path) && vault && dialogs) {
     items.push({
       label: t('vault.convertImage'),
       icon: 'i-lucide-image-upscale',

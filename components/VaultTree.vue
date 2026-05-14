@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { FileFilterSettings, FileNode, Vault } from '~/types'
-import { isImageFile } from '~/utils/fileTypes'
+import { isConvertibleImageFileName } from '~/composables/useImageConvert'
 
 interface Props {
   vault: Vault
@@ -161,7 +161,7 @@ function fileMenuItems(node: FileNode): DropdownMenuItem[][] {
       },
     ],
   ]
-  if (isImageFile(node.path)) {
+  if (isConvertibleImageFileName(node.path)) {
     items[0]!.push({
       label: t('vault.convertImage', 'Convert image'),
       icon: 'i-lucide-image-upscale',
