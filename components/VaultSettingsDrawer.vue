@@ -54,6 +54,7 @@ const editAutoConvertFormat = ref<ConvertibleImageFormat>('webp')
 const editAutoConvertQuality = ref(0.85)
 const editAutoConvertMaxDimension = ref<number | undefined>(undefined)
 const editAutoConvertPreserveTransparency = ref(true)
+const editAutoConvertPreserveExif = ref(false)
 const editAutoConvertBackgroundColor = ref('#ffffff')
 
 let skipNextWatch = false
@@ -135,6 +136,7 @@ async function save() {
             quality: editAutoConvertQuality.value,
             maxDimension: editAutoConvertMaxDimension.value || undefined,
             preserveTransparency: editAutoConvertPreserveTransparency.value,
+            preserveExif: editAutoConvertFormat.value !== 'png' && editAutoConvertPreserveExif.value,
             backgroundColor: editAutoConvertPreserveTransparency.value && editAutoConvertFormat.value !== 'jpeg' ? undefined : editAutoConvertBackgroundColor.value,
           }
         : null as never,
@@ -152,7 +154,7 @@ async function save() {
 const debouncedSave = useDebounceFn(save, 500)
 
 watch(
-  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentFolder, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce, editAutoConvertEnabled, editAutoConvertFormat, editAutoConvertQuality, editAutoConvertMaxDimension, editAutoConvertPreserveTransparency, editAutoConvertBackgroundColor, editingAutoConvert],
+  [editVaultName, editVaultPath, editCommitMode, editCommitDebounceSec, editFilters, editContentFolder, editExcludes, editMediaMode, editMediaFolder, editMediaNaming, editingContentFolder, editingFilters, editingExcludes, editingMediaDir, editingCommitDebounce, editAutoConvertEnabled, editAutoConvertFormat, editAutoConvertQuality, editAutoConvertMaxDimension, editAutoConvertPreserveTransparency, editAutoConvertPreserveExif, editAutoConvertBackgroundColor, editingAutoConvert],
   () => {
     if (skipNextWatch || !open.value) return
     debouncedSave()
@@ -253,6 +255,7 @@ function setAutoConvertFields(autoConvert: AutoConvertSettings | undefined) {
   editAutoConvertQuality.value = autoConvert?.quality ?? 0.85
   editAutoConvertMaxDimension.value = autoConvert?.maxDimension
   editAutoConvertPreserveTransparency.value = autoConvert?.preserveTransparency ?? true
+  editAutoConvertPreserveExif.value = autoConvert?.preserveExif ?? false
   editAutoConvertBackgroundColor.value = autoConvert?.backgroundColor ?? '#ffffff'
 }
 
@@ -351,6 +354,7 @@ function resetAutoConvertOverride() {
             v-model:quality="editAutoConvertQuality"
             v-model:max-dimension="editAutoConvertMaxDimension"
             v-model:preserve-transparency="editAutoConvertPreserveTransparency"
+            v-model:preserve-exif="editAutoConvertPreserveExif"
             v-model:background-color="editAutoConvertBackgroundColor"
             :has-override="vault?.autoConvert !== undefined"
             :format-items="autoConvertFormatItems"

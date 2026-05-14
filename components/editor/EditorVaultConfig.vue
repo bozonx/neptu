@@ -249,6 +249,14 @@ const autoConvertPreserveTransparencyModel = computed({
   },
 })
 
+const autoConvertPreserveExifModel = computed({
+  get: () => ensureAutoConvert()?.preserveExif ?? false,
+  set: (value: boolean) => {
+    const autoConvert = ensureAutoConvert()
+    if (autoConvert) autoConvert.preserveExif = value
+  },
+})
+
 const autoConvertBackgroundColorModel = computed({
   get: () => ensureAutoConvert()?.backgroundColor ?? '#ffffff',
   set: (value: string) => {
@@ -420,6 +428,7 @@ function removeExclude(idx: number) {
                 v-model:quality="autoConvertQualityModel"
                 v-model:max-dimension="autoConvertMaxDimensionModel"
                 v-model:preserve-transparency="autoConvertPreserveTransparencyModel"
+                v-model:preserve-exif="autoConvertPreserveExifModel"
                 v-model:background-color="autoConvertBackgroundColorModel"
                 show-enabled
               />

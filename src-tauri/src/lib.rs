@@ -1,5 +1,6 @@
 mod file_ops;
 mod git;
+mod image_convert;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -18,6 +19,7 @@ pub fn run() {
             git::git_push,
             git::git_diff,
             file_ops::write_text_atomic,
+            image_convert::convert_image,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

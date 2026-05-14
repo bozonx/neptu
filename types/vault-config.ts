@@ -132,6 +132,7 @@ export const DEFAULT_AUTO_CONVERT_SETTINGS: AutoConvertSettings = {
   format: 'webp',
   quality: 0.85,
   preserveTransparency: true,
+  preserveExif: false,
 }
 
 export const DEFAULT_VAULT_CONFIG: VaultConfig = {
@@ -367,6 +368,8 @@ function isValidAutoConvertSettings(obj: unknown): boolean {
   if (o.backgroundColor !== undefined && typeof o.backgroundColor !== 'string')
     return false
   if (typeof o.preserveTransparency !== 'boolean') return false
+  if (o.preserveExif !== undefined && typeof o.preserveExif !== 'boolean')
+    return false
   return true
 }
 

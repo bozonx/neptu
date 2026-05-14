@@ -20,6 +20,7 @@ const format = ref<'webp' | 'png' | 'jpeg'>('webp')
 const quality = ref(0.85)
 const maxDimension = ref<number | undefined>(undefined)
 const preserveTransparency = ref(true)
+const preserveExif = ref(false)
 const backgroundColor = ref('#ffffff')
 const isConverting = ref(false)
 const previewUrl = ref('')
@@ -47,6 +48,7 @@ async function submitConvert() {
       maxDimension: maxDimension.value || undefined,
       backgroundColor: preserveTransparency.value && format.value !== 'jpeg' ? undefined : backgroundColor.value,
       preserveTransparency: preserveTransparency.value,
+      preserveExif: format.value !== 'png' && preserveExif.value,
     })
 
     toast.add({
@@ -92,6 +94,7 @@ async function submitConvert() {
           v-model:quality="quality"
           v-model:max-dimension="maxDimension"
           v-model:preserve-transparency="preserveTransparency"
+          v-model:preserve-exif="preserveExif"
           v-model:background-color="backgroundColor"
         />
       </div>

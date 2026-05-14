@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core'
 import type { ConvertibleImageFormat } from '~/types'
 
 export interface ConvertOptions {
@@ -6,6 +7,7 @@ export interface ConvertOptions {
   maxDimension?: number
   backgroundColor?: string
   preserveTransparency: boolean
+  preserveExif: boolean
 }
 
 export function extensionForFormat(format: ConvertibleImageFormat): string {
@@ -113,6 +115,14 @@ export async function convertImageBuffer(
 
   const bytes = await blobToUint8Array(resultBlob)
   return { bytes, ext: extensionForFormat(options.format) }
+}
+
+export async function convertImageFileNative(
+  sourcePath: string,
+  targetPath: string,
+  options: ConvertOptions,
+): Promise<void> {
+  await invoke('convert_image', { sourcePath, targetPath, options })
 }
 
 export function replaceExtension(fileName: string, newExt: string): string {

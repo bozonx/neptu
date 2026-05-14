@@ -25,6 +25,7 @@ const format = defineModel<ConvertibleImageFormat>('format', { required: true })
 const quality = defineModel<number>('quality', { required: true })
 const maxDimension = defineModel<number | undefined>('maxDimension', { required: true })
 const preserveTransparency = defineModel<boolean>('preserveTransparency', { required: true })
+const preserveExif = defineModel<boolean>('preserveExif', { required: true })
 const backgroundColor = defineModel<string>('backgroundColor', { required: true })
 
 const qualityValue = computed({
@@ -83,6 +84,12 @@ const showControls = computed(() => !props.showEnabled || enabled.value)
       <UCheckbox
         v-model="preserveTransparency"
         :label="$t('convertImage.preserveTransparency')"
+      />
+
+      <UCheckbox
+        v-if="format !== 'png'"
+        v-model="preserveExif"
+        :label="$t('convertImage.preserveExif')"
       />
 
       <UFormField

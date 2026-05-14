@@ -11,6 +11,7 @@ auto-convert:
   format: webp
   quality: 0.85
   preserveTransparency: true
+  preserveExif: false
 
 schemas:
   - glob: "src/post/**/*.md"

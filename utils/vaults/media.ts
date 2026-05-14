@@ -1,8 +1,7 @@
 import {
-  convertImageBuffer,
+  convertImageFileNative,
   extensionForFormat,
   isConvertibleImageFileName,
-  mimeFromImageFileName,
   replaceMarkdownAssetReference,
   replaceExtension,
   type ConvertOptions,
@@ -72,12 +71,7 @@ export async function writeConvertedImage(
   options: ConvertOptions,
 ): Promise<string> {
   const fs = useFs()
-  const sourceBytes = await fs.readBytes(filePath)
-  const { bytes, ext } = await convertImageBuffer(
-    sourceBytes,
-    mimeFromImageFileName(filePath),
-    options,
-  )
+  const ext = extensionForFormat(options.format)
 
   const dir = filePath.includes('\\')
     ? filePath.slice(0, filePath.lastIndexOf('\\'))
@@ -92,7 +86,7 @@ export async function writeConvertedImage(
     suffix++
   }
 
-  await fs.writeBytes(newPath, bytes)
+  await convertImageFileNative(filePath, newPath, options)
   if (newPath !== filePath) {
     await fs.deleteFile(filePath)
   }
@@ -162,6 +156,7 @@ export async function applyAutoConvert(
       maxDimension: settings.maxDimension,
       backgroundColor: settings.backgroundColor,
       preserveTransparency: settings.preserveTransparency,
+      preserveExif: settings.preserveExif ?? false,
     })
   }
   catch (error) {

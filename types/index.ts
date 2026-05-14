@@ -31,6 +31,8 @@ export interface AutoConvertSettings {
   backgroundColor?: string
   /** Whether to preserve transparency when the format supports it */
   preserveTransparency: boolean
+  /** Whether to preserve EXIF metadata for JPEG/WebP outputs */
+  preserveExif: boolean
 }
 
 export interface FileFilterExtension {

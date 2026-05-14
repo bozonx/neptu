@@ -21,6 +21,7 @@ const format = defineModel<ConvertibleImageFormat>('format', { required: true })
 const quality = defineModel<number>('quality', { required: true })
 const maxDimension = defineModel<number | undefined>('maxDimension', { required: true })
 const preserveTransparency = defineModel<boolean>('preserveTransparency', { required: true })
+const preserveExif = defineModel<boolean>('preserveExif', { required: true })
 const backgroundColor = defineModel<string>('backgroundColor', { required: true })
 </script>
 
@@ -67,6 +68,7 @@ const backgroundColor = defineModel<string>('backgroundColor', { required: true 
           v-model:quality="quality"
           v-model:max-dimension="maxDimension"
           v-model:preserve-transparency="preserveTransparency"
+          v-model:preserve-exif="preserveExif"
           v-model:background-color="backgroundColor"
           :format-items="formatItems"
         />

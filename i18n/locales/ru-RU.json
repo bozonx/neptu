@@ -347,6 +347,7 @@
     "maxDimension": "Макс. размер (px)",
     "maxDimensionPlaceholder": "Исходный размер",
     "preserveTransparency": "Сохранять прозрачность",
+    "preserveExif": "Сохранять EXIF",
     "backgroundColor": "Цвет фона",
     "backgroundColorPlaceholder": "#ffffff",
     "previewAlt": "Предпросмотр",

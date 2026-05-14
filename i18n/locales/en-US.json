@@ -347,6 +347,7 @@
     "maxDimension": "Max dimension (px)",
     "maxDimensionPlaceholder": "Original size",
     "preserveTransparency": "Preserve transparency",
+    "preserveExif": "Preserve EXIF",
     "backgroundColor": "Background color",
     "backgroundColorPlaceholder": "#ffffff",
     "previewAlt": "Preview",
