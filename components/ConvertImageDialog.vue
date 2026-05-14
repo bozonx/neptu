@@ -24,8 +24,6 @@ const backgroundColor = ref('#ffffff')
 const isConverting = ref(false)
 const previewUrl = ref('')
 
-const qualitySupported = computed(() => format.value !== 'png')
-
 watch(() => props.filePath, (path) => {
   if (path) {
     previewUrl.value = convertLocalFileSrc(path)
@@ -34,12 +32,6 @@ watch(() => props.filePath, (path) => {
     previewUrl.value = ''
   }
 }, { immediate: true })
-
-const formatItems = [
-  { label: 'WebP', value: 'webp' as const },
-  { label: 'PNG', value: 'png' as const },
-  { label: 'JPEG', value: 'jpeg' as const },
-]
 
 async function submitConvert() {
   if (!props.filePath || !isConvertibleImageFileName(props.filePath)) return
@@ -51,7 +43,7 @@ async function submitConvert() {
 
     const finalPath = await vaults.convertImageFile(vault.id, props.filePath, {
       format: format.value,
-      quality: qualitySupported.value ? quality.value : undefined,
+      quality: format.value !== 'png' ? quality.value : undefined,
       maxDimension: maxDimension.value || undefined,
       backgroundColor: preserveTransparency.value && format.value !== 'jpeg' ? undefined : backgroundColor.value,
       preserveTransparency: preserveTransparency.value,
@@ -95,53 +87,13 @@ async function submitConvert() {
           />
         </div>
 
-        <UFormField :label="$t('convertImage.format', 'Format')">
-          <URadioGroup
-            v-model="format"
-            :items="formatItems"
-          />
-        </UFormField>
-
-        <UFormField
-          v-if="qualitySupported"
-          :label="$t('convertImage.quality', 'Quality')"
-        >
-          <div class="flex items-center gap-3">
-            <USlider
-              v-model="quality"
-              :min="0.1"
-              :max="1"
-              :step="0.05"
-              class="flex-1"
-            />
-            <span class="text-sm text-muted w-12 text-right">{{ Math.round(quality * 100) }}%</span>
-          </div>
-        </UFormField>
-
-        <UFormField :label="$t('convertImage.maxDimension', 'Max dimension (px)')">
-          <UInput
-            v-model="maxDimension"
-            type="number"
-            :min="1"
-            :placeholder="$t('convertImage.maxDimensionPlaceholder', 'Original size')"
-          />
-        </UFormField>
-
-        <UCheckbox
-          v-model="preserveTransparency"
-          :label="$t('convertImage.preserveTransparency', 'Preserve transparency')"
+        <ImageConvertOptionsForm
+          v-model:format="format"
+          v-model:quality="quality"
+          v-model:max-dimension="maxDimension"
+          v-model:preserve-transparency="preserveTransparency"
+          v-model:background-color="backgroundColor"
         />
-
-        <UFormField
-          v-if="!preserveTransparency || format === 'jpeg'"
-          :label="$t('convertImage.backgroundColor', 'Background color')"
-        >
-          <UInput
-            v-model="backgroundColor"
-            type="text"
-            :placeholder="$t('convertImage.backgroundColorPlaceholder')"
-          />
-        </UFormField>
       </div>
     </template>
 

@@ -199,12 +199,6 @@ const mediaNamingItems = computed(() => [
   { label: t('vault.mediaNamingHash'), value: 'hash' },
 ])
 
-const autoConvertFormatItems = computed(() => [
-  { label: 'WebP', value: 'webp' },
-  { label: 'PNG', value: 'png' },
-  { label: 'JPEG', value: 'jpeg' },
-])
-
 const newExclude = ref('')
 
 function ensureAutoConvert() {
@@ -215,11 +209,53 @@ function ensureAutoConvert() {
   return config.value.autoConvert
 }
 
-function setAutoConvertEnabled(enabled: boolean | 'indeterminate') {
-  const autoConvert = ensureAutoConvert()
-  if (!autoConvert) return
-  autoConvert.enabled = enabled === true
-}
+const autoConvertEnabledModel = computed({
+  get: () => ensureAutoConvert()?.enabled ?? false,
+  set: (value: boolean) => {
+    const autoConvert = ensureAutoConvert()
+    if (autoConvert) autoConvert.enabled = value
+  },
+})
+
+const autoConvertFormatModel = computed({
+  get: () => ensureAutoConvert()?.format ?? 'webp',
+  set: (value: 'webp' | 'jpeg' | 'png') => {
+    const autoConvert = ensureAutoConvert()
+    if (autoConvert) autoConvert.format = value
+  },
+})
+
+const autoConvertQualityModel = computed({
+  get: () => ensureAutoConvert()?.quality ?? 0.85,
+  set: (value: number) => {
+    const autoConvert = ensureAutoConvert()
+    if (autoConvert) autoConvert.quality = value
+  },
+})
+
+const autoConvertMaxDimensionModel = computed({
+  get: () => ensureAutoConvert()?.maxDimension,
+  set: (value: number | undefined) => {
+    const autoConvert = ensureAutoConvert()
+    if (autoConvert) autoConvert.maxDimension = value || undefined
+  },
+})
+
+const autoConvertPreserveTransparencyModel = computed({
+  get: () => ensureAutoConvert()?.preserveTransparency ?? true,
+  set: (value: boolean) => {
+    const autoConvert = ensureAutoConvert()
+    if (autoConvert) autoConvert.preserveTransparency = value
+  },
+})
+
+const autoConvertBackgroundColorModel = computed({
+  get: () => ensureAutoConvert()?.backgroundColor ?? '#ffffff',
+  set: (value: string) => {
+    const autoConvert = ensureAutoConvert()
+    if (autoConvert) autoConvert.backgroundColor = value
+  },
+})
 
 function addExclude() {
   const raw = newExclude.value
@@ -378,85 +414,15 @@ function removeExclude(idx: number) {
               >
                 {{ $t("vault.autoConvert") }}
               </h3>
-              <UCheckbox
-                :model-value="
-                  config.autoConvert?.enabled ?? false
-                "
-                :label="$t('vault.autoConvertEnabled')"
-                @update:model-value="setAutoConvertEnabled"
+              <ImageConvertOptionsForm
+                v-model:enabled="autoConvertEnabledModel"
+                v-model:format="autoConvertFormatModel"
+                v-model:quality="autoConvertQualityModel"
+                v-model:max-dimension="autoConvertMaxDimensionModel"
+                v-model:preserve-transparency="autoConvertPreserveTransparencyModel"
+                v-model:background-color="autoConvertBackgroundColorModel"
+                show-enabled
               />
-              <template v-if="config.autoConvert?.enabled">
-                <UFormField :label="$t('convertImage.format')">
-                  <ButtonGroupToggle
-                    v-model="config.autoConvert.format"
-                    :items="autoConvertFormatItems"
-                  />
-                </UFormField>
-                <UFormField
-                  v-if="config.autoConvert.format !== 'png'"
-                  :label="$t('convertImage.quality')"
-                >
-                  <div class="flex items-center gap-3">
-                    <USlider
-                      v-model="config.autoConvert.quality"
-                      :min="0.1"
-                      :max="1"
-                      :step="0.05"
-                      class="flex-1"
-                    />
-                    <span
-                      class="text-sm text-muted w-12 text-right"
-                    >
-                      {{
-                        Math.round(
-                          (config.autoConvert
-                            .quality ?? 0.85) * 100,
-                        )
-                      }}%
-                    </span>
-                  </div>
-                </UFormField>
-                <UFormField
-                  :label="$t('convertImage.maxDimension')"
-                >
-                  <UInput
-                    v-model.number="
-                      config.autoConvert.maxDimension
-                    "
-                    type="number"
-                    :min="1"
-                    :placeholder="
-                      $t(
-                        'convertImage.maxDimensionPlaceholder',
-                      )
-                    "
-                  />
-                </UFormField>
-                <UCheckbox
-                  v-model="
-                    config.autoConvert.preserveTransparency
-                  "
-                  :label="
-                    $t('convertImage.preserveTransparency')
-                  "
-                />
-                <UFormField
-                  v-if="
-                    !config.autoConvert
-                      .preserveTransparency
-                      || config.autoConvert.format === 'jpeg'
-                  "
-                  :label="$t('convertImage.backgroundColor')"
-                >
-                  <UInput
-                    v-model="
-                      config.autoConvert.backgroundColor
-                    "
-                    type="text"
-                    placeholder="#ffffff"
-                  />
-                </UFormField>
-              </template>
             </div>
 
             <USeparator />
